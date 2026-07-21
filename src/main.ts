@@ -13,6 +13,7 @@ import { CurriculumUnitModal } from "./curriculum-unit-modal";
 import { CurriculumView, CURRICULUM_VIEW_TYPE } from "./curriculum-view";
 import { CurriculumOpsView, CURRICULUM_OPS_VIEW_TYPE } from "./curriculum-ops-view";
 import { NavigatorView, NAVIGATOR_VIEW_TYPE } from "./navigator-view";
+import { TodayView, TODAY_VIEW_TYPE } from "./today-view";
 import { ProgressImportModal } from "./progress-import-modal";
 import { ProgressPinModal } from "./progress-pin-modal";
 import { addDays, mondayOf, semesterForDate, semesterRange } from "./academic-calendar";
@@ -145,9 +146,13 @@ export default class ClassManagementPlugin extends Plugin {
       (leaf) => new CurriculumOpsView(leaf, this)
     );
     this.registerView(NAVIGATOR_VIEW_TYPE, (leaf) => new NavigatorView(leaf, this));
+    this.registerView(TODAY_VIEW_TYPE, (leaf) => new TodayView(leaf, this));
     this.app.workspace.onLayoutReady(() => {
       if (this.app.workspace.getLeavesOfType(NAVIGATOR_VIEW_TYPE).length === 0) {
         void this.openNavigator();
+      }
+      if (this.app.workspace.getLeavesOfType(TODAY_VIEW_TYPE).length === 0) {
+        void this.openToday();
       }
     });
     this.registerView(REPORT_VIEW_TYPE, (leaf) => new ReportView(leaf, this));
@@ -171,6 +176,11 @@ export default class ClassManagementPlugin extends Plugin {
       id: "open-navigator",
       name: "학급 메뉴 열기 (왼쪽 패널)",
       callback: () => void this.openNavigator()
+    });
+    this.addCommand({
+      id: "open-today",
+      name: "오늘 패널 열기 (오른쪽 패널)",
+      callback: () => void this.openToday()
     });
     this.addCommand({
       id: "initialize-workspace",
@@ -521,6 +531,14 @@ export default class ClassManagementPlugin extends Plugin {
       (view) => view.name !== name
     );
     await this.saveData(this.settings);
+  }
+
+  async openToday(): Promise<void> {
+    const existing = this.app.workspace.getLeavesOfType(TODAY_VIEW_TYPE)[0];
+    const leaf = existing ?? this.app.workspace.getRightLeaf(false);
+    if (!leaf) return;
+    if (!existing) await leaf.setViewState({ type: TODAY_VIEW_TYPE, active: false });
+    await this.app.workspace.revealLeaf(leaf);
   }
 
   async openNavigator(): Promise<void> {
@@ -1271,7 +1289,12 @@ export default class ClassManagementPlugin extends Plugin {
       .getLeavesOfType(CURRICULUM_OPS_VIEW_TYPE)
       .map((leaf) => leaf.view)
       .filter((view): view is CurriculumOpsView => view instanceof CurriculumOpsView);
+    const todayViews = this.app.workspace
+      .getLeavesOfType(TODAY_VIEW_TYPE)
+      .map((leaf) => leaf.view)
+      .filter((view): view is TodayView => view instanceof TodayView);
     await Promise.all([
+      ...todayViews.map((view) => view.refresh()),
       ...opsViews.map((view) => view.refresh()),
       ...activityViews.map((view) => view.refresh()),
       ...timelineViews.map((view) => view.refresh()),

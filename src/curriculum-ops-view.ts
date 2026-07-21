@@ -10,6 +10,7 @@ import {
 } from "./academic-calendar";
 import { isRemovedSubject, plannedHoursBySubject, resolveDay } from "./timetable";
 import { buildAssignedSlotContents } from "./progress";
+import { collectSubjectOptions } from "./subject-options";
 import { buildHoursAudit } from "./hours-audit";
 import { addDays } from "./academic-calendar";
 import { localDate } from "./utils";
@@ -365,22 +366,7 @@ export class CurriculumOpsView extends ItemView {
     standard: HoursStandard | null,
     timetable: BaseTimetable | null
   ): string[] {
-    const subjects: string[] = [];
-    const push = (subject: string): void => {
-      const trimmed = subject.trim();
-      if (!trimmed || isRemovedSubject(trimmed)) return;
-      if (!subjects.includes(trimmed)) subjects.push(trimmed);
-    };
-    // 기준 시수 노트가 있으면 그 목록이 학급의 교과 목록이다.
-    // (학교자율시간의 실제 과목명 등 학교 편성을 그대로 따른다)
-    for (const entry of standard?.entries ?? []) push(entry.subject);
-    for (const row of timetable?.grid ?? []) for (const cell of row) push(cell);
-    for (const table of tables) push(table.subject);
-    for (const area of ["창체(자율)", "창체(동아리)", "창체(진로)"]) push(area);
-    if (subjects.length === 0) {
-      for (const subject of this.plugin.settings.schoolSubjects) push(subject);
-    }
-    return subjects;
+    return collectSubjectOptions(this.plugin.settings.schoolSubjects, tables, standard, timetable);
   }
 
   private renderHoursAudit(
