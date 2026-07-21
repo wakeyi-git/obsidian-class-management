@@ -1852,6 +1852,25 @@
   border-collapse: collapse;
   margin: 8px 0 16px;
   font-size: 0.9em;
+  table-layout: fixed;
+}
+
+/* 교시 열은 내용 폭으로 고정, 요일 열은 균등 분배 */
+.class-management-ops-week-table th:first-child,
+.class-management-ops-week-table td:first-child {
+  width: 34px;
+  white-space: nowrap;
+}
+
+.class-management-ops-week-table td,
+.class-management-ops-week-table th {
+  overflow-wrap: break-word;
+}
+
+/* 시수 점검: 교과·영역 열만 넓게, 숫자 열은 균등 */
+.class-management-ops-audit-table th:first-child,
+.class-management-ops-audit-table td:first-child {
+  width: 26%;
 }
 
 .class-management-ops-week-table th,
