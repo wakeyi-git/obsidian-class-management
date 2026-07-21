@@ -75,6 +75,19 @@ export class TimetableCellModal extends Modal {
         text.setPlaceholder("동아리 지정일, 보강 등").onChange((value) => (this.reason = value))
       );
 
+    if (this.context.currentSubject && !this.context.isRemoved) {
+      new Setting(this.contentEl)
+        .setName("진도 고정")
+        .setDesc(`${this.context.currentSubject} 진도표의 차시를 이 날짜·교시에 고정합니다.`)
+        .addButton((button) =>
+          button.setButtonText("이 교시에 차시 고정").onClick(() => {
+            const { date, period, currentSubject } = this.context;
+            this.close();
+            void this.plugin.pinProgressRowAt(date, period, currentSubject);
+          })
+        );
+    }
+
     const buttons = new Setting(this.contentEl);
     if (!this.context.isRemoved) {
       buttons.addButton((button) =>

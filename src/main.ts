@@ -13,6 +13,7 @@ import { CurriculumUnitModal } from "./curriculum-unit-modal";
 import { CurriculumView, CURRICULUM_VIEW_TYPE } from "./curriculum-view";
 import { CurriculumOpsView, CURRICULUM_OPS_VIEW_TYPE } from "./curriculum-ops-view";
 import { ProgressImportModal } from "./progress-import-modal";
+import { ProgressPinModal } from "./progress-pin-modal";
 import { addDays, mondayOf, semesterForDate, semesterRange } from "./academic-calendar";
 import { isRemovedSubject, resolveDay, subjectSlots } from "./timetable";
 import { assignProgress, buildAssignedSlotContents } from "./progress";
@@ -746,6 +747,66 @@ export default class ClassManagementPlugin extends Plugin {
       return null;
     }
     return semester;
+  }
+
+  async pinProgressRowAt(date: string, period: number, subject: string): Promise<void> {
+    try {
+      const calendar = await this.repository.getAcademicCalendar();
+      if (!calendar) {
+        new Notice("학사일정 노트가 필요합니다.");
+        return;
+      }
+      const semester = semesterForDate(calendar, date);
+      if (!semester) {
+        new Notice(`${date}는 학기 기간 밖 날짜입니다.`);
+        return;
+      }
+      const tables = await this.repository.getProgressTables(semester);
+      const table = tables.find((item) => item.subject === subject);
+      if (!table) {
+        new Notice(`${subject} 진도표가 없습니다. 먼저 '진도표 차시 가져오기'로 만들어 주세요.`);
+        return;
+      }
+      new ProgressPinModal(this.app, table.rows, { date, period, subject }, (row) => {
+        void (async () => {
+          try {
+            const unpin = row.fixedDate === date && row.fixedPeriod === period;
+            await this.repository.updateProgressRowFixed(
+              table,
+              row.order,
+              unpin ? "" : date,
+              unpin ? 0 : period
+            );
+            const range = semesterRange(calendar, semester);
+            if (range.from && range.to) {
+              const timetable = await this.repository.getBaseTimetable(semester);
+              if (timetable) {
+                const refreshed = (await this.repository.getProgressTables(semester)).find(
+                  (item) => item.subject === subject
+                );
+                if (refreshed) {
+                  const slots = subjectSlots(calendar, timetable, range.from, range.to, subject);
+                  await this.repository.writeProgressAssignments(
+                    refreshed,
+                    assignProgress(refreshed.rows, slots)
+                  );
+                }
+              }
+            }
+            new Notice(
+              unpin
+                ? `${row.order}. ${row.topic} 고정을 해제했습니다.`
+                : `${row.order}. ${row.topic} → ${date} ${period}교시에 고정하고 재배정했습니다.`
+            );
+            await this.refreshViews();
+          } catch (error) {
+            new Notice(error instanceof Error ? error.message : "차시 고정에 실패했습니다.");
+          }
+        })();
+      }).open();
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "차시 고정에 실패했습니다.");
+    }
   }
 
   async saveTimetableOverride(override: TimetableOverride): Promise<void> {

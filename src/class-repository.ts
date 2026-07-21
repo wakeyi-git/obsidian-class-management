@@ -1208,6 +1208,23 @@ export class ClassRepository {
     );
   }
 
+  async updateProgressRowFixed(
+    table: ProgressTable,
+    order: number,
+    fixedDate: string,
+    fixedPeriod: number
+  ): Promise<void> {
+    this.assertWritableClass();
+    const settings = this.getSettings();
+    const rows = table.rows.map((row) =>
+      row.order === order ? { ...row, fixedDate, fixedPeriod } : row
+    );
+    await this.app.vault.modify(
+      table.file,
+      progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)
+    );
+  }
+
   async writeProgressAssignments(
     table: ProgressTable,
     assignment: ProgressAssignment
