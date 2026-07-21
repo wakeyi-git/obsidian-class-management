@@ -28,7 +28,7 @@ export function parseProgressTable(
       if (!topic && !unit) return null;
       const order = Number((cells[0] ?? "").trim());
       const hours = Number((cells[3] ?? "").trim());
-      const fixedDate = (cells[6] ?? "").trim();
+      const fixed = parseFixedCell((cells[6] ?? "").trim());
       return {
         order: Number.isFinite(order) && order > 0 ? Math.floor(order) : index + 1,
         unit,
@@ -36,7 +36,8 @@ export function parseProgressTable(
         hours: Number.isFinite(hours) && hours > 0 ? Math.floor(hours) : 1,
         standard: (cells[4] ?? "").trim(),
         materials: (cells[5] ?? "").trim(),
-        fixedDate: /^\d{4}-\d{2}-\d{2}$/.test(fixedDate) ? fixedDate : "",
+        fixedDate: fixed.date,
+        fixedPeriod: fixed.period,
         assigned: (cells[7] ?? "").trim(),
         note: (cells[8] ?? "").trim()
       };
@@ -51,6 +52,22 @@ export function parseProgressTable(
     subject: stringValue(frontmatter.subject),
     rows
   };
+}
+
+/** `2026-10-15`, `2026-10-15(3)`, `2026-10-15 3교시` 표기를 해석한다. */
+export function parseFixedCell(value: string): { date: string; period: number } {
+  const match = value.match(/^(\d{4}-\d{2}-\d{2})(?:[\s(]+(\d{1,2})\s*\)?\s*교?시?)?\s*$/);
+  if (!match) return { date: "", period: 0 };
+  const period = Number(match[2] ?? "0");
+  return {
+    date: match[1] ?? "",
+    period: Number.isFinite(period) && period > 0 ? Math.floor(period) : 0
+  };
+}
+
+export function formatFixedCell(date: string, period: number): string {
+  if (!date) return "";
+  return period > 0 ? `${date}(${period})` : date;
 }
 
 export function progressRowLine(row: ProgressRow): string {
@@ -68,7 +85,7 @@ export function progressRowLine(row: ProgressRow): string {
     "|",
     escapeTableCell(row.materials),
     "|",
-    row.fixedDate,
+    formatFixedCell(row.fixedDate, row.fixedPeriod),
     "|",
     escapeTableCell(row.assigned),
     "|",
@@ -98,7 +115,7 @@ export function progressTableMarkdown(
     `# ${schoolYear} ${semester} ${subject} 진도표`,
     "",
     "행을 직접 추가·수정하거나 `진도표 차시 가져오기` 명령으로 붙여넣을 수 있습니다.",
-    "고정 날짜를 지정한 차시는 항상 그 날짜의 수업 시간에 배정됩니다.",
+    "고정 날짜에 `2026-10-15`(날짜 고정) 또는 `2026-10-15(3)`(3교시까지 고정)을 적으면 그 차시가 항상 그 자리에 배정됩니다.",
     "",
     "## 진도표",
     "",
@@ -144,6 +161,7 @@ export function parseProgressImport(text: string, startOrder: number): ProgressI
       standard: (cells[3] ?? "").trim(),
       materials: (cells[4] ?? "").trim(),
       fixedDate: "",
+      fixedPeriod: 0,
       assigned: "",
       note: (cells[5] ?? "").trim()
     });
@@ -197,8 +215,40 @@ export function assignProgress(rows: ProgressRow[], slots: SubjectSlot[]): Progr
 
   const assigned: AssignedProgressRow[] = rows.map((row) => ({ row, slots: [], shortage: 0 }));
 
+  // 1순위: 날짜+교시 고정 차시가 정확한 자리를 먼저 확보한다.
   for (const entry of assigned) {
-    if (!entry.row.fixedDate) continue;
+    if (!entry.row.fixedDate || entry.row.fixedPeriod <= 0) continue;
+    const daySlots = slotPool
+      .filter(
+        (item) =>
+          !item.taken &&
+          item.slot.date === entry.row.fixedDate &&
+          item.slot.period >= entry.row.fixedPeriod
+      )
+      .sort((a, b) => a.slot.period - b.slot.period);
+    const exact = daySlots[0];
+    if (!exact || exact.slot.period !== entry.row.fixedPeriod) {
+      issues.push(
+        `${entry.row.order}. ${entry.row.topic}: 고정한 ${entry.row.fixedDate} ${entry.row.fixedPeriod}교시에 해당 과목 수업이 없습니다. 주간 시간표에서 그 교시에 과목을 먼저 배치하세요.`
+      );
+      entry.shortage = entry.row.hours;
+      continue;
+    }
+    for (const item of daySlots.slice(0, entry.row.hours)) {
+      item.taken = true;
+      entry.slots.push(item.slot);
+    }
+    entry.shortage = Math.max(0, entry.row.hours - entry.slots.length);
+    if (entry.shortage > 0) {
+      issues.push(
+        `${entry.row.order}. ${entry.row.topic}: 고정 교시부터 배정할 수업 시간이 ${entry.shortage}차시 부족합니다.`
+      );
+    }
+  }
+
+  // 2순위: 날짜만 고정한 차시.
+  for (const entry of assigned) {
+    if (!entry.row.fixedDate || entry.row.fixedPeriod > 0) continue;
     const daySlots = slotPool.filter(
       (item) => !item.taken && item.slot.date === entry.row.fixedDate
     );

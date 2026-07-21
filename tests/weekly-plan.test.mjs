@@ -56,6 +56,7 @@ test("주간학습안내를 생성한다", () => {
         standard: "",
         materials: "분수 막대",
         fixedDate: "",
+        fixedPeriod: 0,
         assigned: "",
         note: ""
       }

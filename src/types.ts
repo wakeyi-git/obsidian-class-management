@@ -498,6 +498,8 @@ export interface ProgressRow {
   standard: string;
   materials: string;
   fixedDate: string;
+  /** 고정 교시 (0이면 날짜만 고정). 표기: `2026-10-15(3)` */
+  fixedPeriod: number;
   assigned: string;
   note: string;
 }

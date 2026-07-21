@@ -13,7 +13,7 @@ const {
 
 const file = { path: "진도표.md", basename: "진도표", stat: { ctime: 1 } };
 
-function makeRow(order, topic, hours, fixedDate = "") {
+function makeRow(order, topic, hours, fixedDate = "", fixedPeriod = 0) {
   return {
     order,
     unit: "1. 분수",
@@ -22,6 +22,7 @@ function makeRow(order, topic, hours, fixedDate = "") {
     standard: "",
     materials: "",
     fixedDate,
+    fixedPeriod,
     assigned: "",
     note: ""
   };
@@ -107,6 +108,65 @@ test("부족·잉여 시수를 경고한다", () => {
     { date: "2026-08-17", period: 1 }
   ]);
   assert.ok(missingFixed.issues.some((issue) => /수업이 없습니다/.test(issue)));
+});
+
+test("고정 날짜의 교시 표기를 해석하고 되쓴다", () => {
+  const markdown = progressTableMarkdown("2026", "2학기", "사회", "우리 반", [
+    { ...makeRow(1, "다문화 놀이 한마당", 2, "2026-10-15", 3), unit: "1. 사회 변화와 다양한 문화" }
+  ]);
+  assert.match(markdown, /2026-10-15\(3\)/);
+  const parsed = parseProgressTable(
+    { path: "사회.md", basename: "사회", stat: { ctime: 1 } },
+    { schoolYear: "2026", semester: "2학기", subject: "사회" },
+    markdown
+  );
+  assert.equal(parsed.rows[0].fixedDate, "2026-10-15");
+  assert.equal(parsed.rows[0].fixedPeriod, 3);
+});
+
+test("교시까지 고정한 차시는 정확한 자리를 먼저 차지한다", () => {
+  const slots = [
+    { date: "2026-10-15", period: 1 },
+    { date: "2026-10-15", period: 3 },
+    { date: "2026-10-15", period: 4 },
+    { date: "2026-10-16", period: 2 }
+  ];
+  const assignment = assignProgress(
+    [
+      makeRow(1, "일반 차시 A", 1),
+      makeRow(2, "행사 연계 차시", 2, "2026-10-15", 3),
+      makeRow(3, "일반 차시 B", 1)
+    ],
+    slots
+  );
+  assert.deepEqual(assignment.rows[1].slots, [
+    { date: "2026-10-15", period: 3 },
+    { date: "2026-10-15", period: 4 }
+  ]);
+  assert.deepEqual(assignment.rows[0].slots, [{ date: "2026-10-15", period: 1 }]);
+  assert.deepEqual(assignment.rows[2].slots, [{ date: "2026-10-16", period: 2 }]);
+  assert.equal(assignment.issues.length, 0);
+});
+
+test("고정한 교시에 과목 수업이 없으면 경고하고 배정하지 않는다", () => {
+  const assignment = assignProgress(
+    [makeRow(1, "행사 연계 차시", 1, "2026-10-15", 5)],
+    [{ date: "2026-10-15", period: 1 }]
+  );
+  assert.equal(assignment.rows[0].slots.length, 0);
+  assert.equal(assignment.rows[0].shortage, 1);
+  assert.ok(assignment.issues.some((issue) => /5교시에 해당 과목 수업이 없습니다/.test(issue)));
+
+  const conflict = assignProgress(
+    [
+      makeRow(1, "먼저 고정", 1, "2026-10-15", 3),
+      makeRow(2, "나중 고정", 1, "2026-10-15", 3)
+    ],
+    [{ date: "2026-10-15", period: 3 }]
+  );
+  assert.equal(conflict.rows[0].slots.length, 1);
+  assert.equal(conflict.rows[1].slots.length, 0);
+  assert.ok(conflict.issues.some((issue) => /나중 고정/.test(issue)));
 });
 
 test("배정 결과 표기와 슬롯 맵을 만든다", () => {
