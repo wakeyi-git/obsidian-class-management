@@ -29,6 +29,10 @@ export class TimetableCellModal extends Modal {
     this.contentEl.createEl("p", {
       text: `이 날짜의 해당 교시만 바뀌며, 기초시간표 노트의 '시간표 변경' 표에 기록됩니다. 현재: ${this.context.currentSubject || "(비어 있음)"}`
     });
+    this.contentEl.createEl("p", {
+      cls: "setting-item-description",
+      text: "기준 교시 밖(예: 5교시 요일의 6교시, 체험학습 7·8교시)에 저장하면 그날 교시가 추가되고, 변경을 제거하면 다시 사라집니다."
+    });
 
     new Setting(this.contentEl).setName("과목").addDropdown((dropdown) => {
       const options = [...this.context.subjects];

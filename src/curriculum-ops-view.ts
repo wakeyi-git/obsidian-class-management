@@ -184,11 +184,15 @@ export class CurriculumOpsView extends ItemView {
     if (editable) {
       section.createEl("p", {
         cls: "class-management-ops-hint",
-        text: "칸을 클릭하면 그 날짜의 교시만 다른 과목으로 바꿀 수 있습니다. 행사 교시는 학사일정 노트에서 수정하세요."
+        text: "칸을 클릭하면 그 날짜의 교시만 다른 과목으로 바꿀 수 있습니다. 빈 칸(＋)을 클릭하면 6~8교시처럼 기준 교시 밖의 수업을 추가합니다. 행사 교시는 학사일정 노트에서 수정하세요."
       });
     }
 
-    const maxPeriods = Math.max(1, ...days.map((day) => day.periods.length));
+    const maxResolvedPeriod = Math.max(
+      1,
+      ...days.flatMap((day) => day.periods.map((item) => item.period))
+    );
+    const maxPeriods = editable ? Math.min(8, maxResolvedPeriod + 1) : maxResolvedPeriod;
     const table = section.createEl("table", { cls: "class-management-ops-week-table" });
     const head = table.createEl("thead").createEl("tr");
     head.createEl("th", { text: "교시" });
@@ -217,7 +221,22 @@ export class CurriculumOpsView extends ItemView {
           continue;
         }
         const resolved = day.periods.find((item) => item.period === period);
-        if (!resolved) continue;
+        if (!resolved) {
+          if (editable) {
+            cell.addClass("is-empty");
+            cell.createEl("span", { text: "＋", cls: "class-management-ops-add" });
+            this.attachCellEditor(cell, {
+              date: day.date,
+              period,
+              currentSubject: "",
+              hasOverride: false,
+              isEvent: false,
+              subjects,
+              label: `${day.date} ${period}교시 수업 추가`
+            });
+          }
+          continue;
+        }
         if (resolved.source === "event") cell.addClass("is-event");
         if (resolved.source === "override") cell.addClass("is-override");
         cell.createEl("strong", { text: resolved.subject });
@@ -229,36 +248,56 @@ export class CurriculumOpsView extends ItemView {
           });
         }
         if (editable) {
-          cell.addClass("is-editable");
-          cell.setAttribute("role", "button");
-          cell.setAttribute("tabindex", "0");
-          cell.setAttribute(
-            "aria-label",
-            `${day.date} ${period}교시 ${resolved.subject || "빈 교시"} 과목 변경`
-          );
-          const openEditor = (): void => {
-            if (resolved.source === "event") {
-              new Notice("행사가 배정된 교시입니다. 학사일정 노트의 행사 표에서 수정하세요.");
-              return;
-            }
-            new TimetableCellModal(this.plugin, {
-              date: day.date,
-              period,
-              currentSubject: resolved.subject,
-              hasOverride: resolved.source === "override",
-              subjects
-            }).open();
-          };
-          cell.addEventListener("click", openEditor);
-          cell.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              openEditor();
-            }
+          this.attachCellEditor(cell, {
+            date: day.date,
+            period,
+            currentSubject: resolved.subject,
+            hasOverride: resolved.source === "override",
+            isEvent: resolved.source === "event",
+            subjects,
+            label: `${day.date} ${period}교시 ${resolved.subject || "빈 교시"} 과목 변경`
           });
         }
       }
     }
+  }
+
+  private attachCellEditor(
+    cell: HTMLElement,
+    options: {
+      date: string;
+      period: number;
+      currentSubject: string;
+      hasOverride: boolean;
+      isEvent: boolean;
+      subjects: string[];
+      label: string;
+    }
+  ): void {
+    cell.addClass("is-editable");
+    cell.setAttribute("role", "button");
+    cell.setAttribute("tabindex", "0");
+    cell.setAttribute("aria-label", options.label);
+    const openEditor = (): void => {
+      if (options.isEvent) {
+        new Notice("행사가 배정된 교시입니다. 학사일정 노트의 행사 표에서 수정하세요.");
+        return;
+      }
+      new TimetableCellModal(this.plugin, {
+        date: options.date,
+        period: options.period,
+        currentSubject: options.currentSubject,
+        hasOverride: options.hasOverride,
+        subjects: options.subjects
+      }).open();
+    };
+    cell.addEventListener("click", openEditor);
+    cell.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openEditor();
+      }
+    });
   }
 
   private collectSubjects(tables: ProgressTable[]): string[] {

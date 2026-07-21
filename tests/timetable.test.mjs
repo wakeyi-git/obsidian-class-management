@@ -143,6 +143,49 @@ test("시간표 변경을 노트 내용에 추가·교체·제거한다", () => 
   assert.match(removed, /## 시간표 변경/);
 });
 
+test("기준 교시를 넘는 변경·행사는 그날 교시를 확장한다", () => {
+  const extended = upsertTimetableOverrideContent(timetableContent, {
+    date: "2026-05-04",
+    period: 6,
+    subject: "창체(동아리)",
+    reason: "동아리 지정일"
+  });
+  const parsed = parseBaseTimetable(timetableFile, { schoolYear: "2026", semester: "1학기" }, extended);
+  const monday = resolveDay(calendar, parsed, "2026-05-04");
+  assert.equal(monday.periods.length, 6);
+  assert.equal(monday.periods[5]?.period, 6);
+  assert.equal(monday.periods[5]?.subject, "창체(동아리)");
+  assert.equal(monday.periods[5]?.source, "override");
+
+  const slots = subjectSlots(calendar, parsed, "2026-05-04", "2026-05-04", "창체(동아리)");
+  assert.deepEqual(slots, [{ date: "2026-05-04", period: 6 }]);
+
+  const reverted = removeTimetableOverrideContent(extended, "2026-05-04", 6);
+  const parsedReverted = parseBaseTimetable(timetableFile, { schoolYear: "2026", semester: "1학기" }, reverted);
+  assert.equal(resolveDay(calendar, parsedReverted, "2026-05-04").periods.length, 5);
+});
+
+test("행사 교시가 기준을 넘으면 7·8교시도 생긴다", () => {
+  const eventCalendar = parseAcademicCalendar(calendarFile, {
+    schoolYear: "2026",
+    semester1Start: "2026-03-02",
+    semester1End: "2026-07-17",
+    semester2Start: "2026-08-17",
+    semester2End: "2027-01-08",
+    weekdayPeriods: [5, 6, 5, 6, 5]
+  }, [
+    "## 행사",
+    "| 날짜 | 유형 | 명칭 | 교시 | 과목 | 비고 |",
+    "| --- | --- | --- | --- | --- | --- |",
+    "| 2026-05-04 | 행사 | 현장체험학습 | 1-8 | 창체(자율) |  |"
+  ].join("\n"));
+  const monday = resolveDay(eventCalendar, timetable, "2026-05-04");
+  assert.equal(monday.periods.length, 8);
+  assert.equal(monday.periods[7]?.period, 8);
+  assert.equal(monday.periods[7]?.subject, "창체(자율)");
+  assert.equal(monday.periods[7]?.source, "event");
+});
+
 test("시간표 변경 절이 없으면 새로 만든다", () => {
   const withoutSection = timetableContent.split("## 시간표 변경")[0];
   const added = upsertTimetableOverrideContent(withoutSection, {

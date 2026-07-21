@@ -130,6 +130,34 @@ export function resolveDay(
     }
     day.periods.push(resolved);
   }
+
+  // 기준 교시를 넘는 교시에 기록된 변경·행사는 그날의 교시를 확장한다
+  // (예: 5교시 요일의 6교시 수업, 체험학습을 위한 7·8교시 운영).
+  if (!allDayEvent) {
+    const extras = new Map<number, ResolvedPeriod>();
+    for (const override of timetable?.overrides ?? []) {
+      if (override.date !== date || override.period <= periodCount) continue;
+      extras.set(override.period, {
+        period: override.period,
+        subject: override.subject,
+        source: "override"
+      });
+    }
+    for (const event of periodEvents) {
+      for (const period of event.periods) {
+        if (period <= periodCount) continue;
+        extras.set(period, {
+          period,
+          subject: event.subject || event.name,
+          source: "event"
+        });
+      }
+    }
+    for (const period of [...extras.keys()].sort((a, b) => a - b)) {
+      const resolved = extras.get(period);
+      if (resolved) day.periods.push(resolved);
+    }
+  }
   return day;
 }
 

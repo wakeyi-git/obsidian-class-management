@@ -25,7 +25,10 @@ export function buildWeeklyPlanDays(
 }
 
 export function buildWeeklyPlanMarkdown(input: WeeklyPlanInput): string {
-  const maxPeriods = Math.max(1, ...input.days.map((day) => day.cells.length));
+  const maxPeriods = Math.max(
+    1,
+    ...input.days.flatMap((day) => day.cells.map((cell) => cell.period))
+  );
   const headerCells = input.days.map(
     (day) => `${day.date.slice(5)} (${weekdayLabel(day.date)})`
   );

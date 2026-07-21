@@ -1949,3 +1949,18 @@
   outline: 2px solid var(--interactive-accent);
   outline-offset: -2px;
 }
+
+.class-management-ops-week-table td.is-empty {
+  color: var(--text-faint);
+}
+
+.class-management-ops-add {
+  font-size: 0.9em;
+  opacity: 0.35;
+}
+
+.class-management-ops-week-table td.is-empty:hover .class-management-ops-add,
+.class-management-ops-week-table td.is-empty:focus-visible .class-management-ops-add {
+  opacity: 1;
+  color: var(--interactive-accent);
+}
