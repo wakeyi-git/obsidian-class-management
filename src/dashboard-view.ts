@@ -104,7 +104,7 @@ export class ClassDashboardView extends ItemView {
         cls: "class-management-student-number"
       });
       note.createEl("span", { text: student.name });
-      note.addEventListener("click", () => void this.plugin.openFile(student.file));
+      note.addEventListener("click", () => void this.plugin.inspectStudent(student.number));
       const timeline = row.createEl("button", {
         text: "타임라인",
         cls: "class-management-timeline-button"

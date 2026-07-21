@@ -136,6 +136,7 @@ export class TodayView extends ItemView {
         row.setAttribute("tabindex", "0");
         row.setAttribute("aria-label", `${today} ${period.period}교시 ${period.subject} 편집`);
         const open = (): void => {
+          this.plugin.updateLessonInspector(today, period.period);
           new TimetableCellModal(this.plugin, {
             date: today,
             period: period.period,

@@ -84,7 +84,8 @@ export class NavigatorView extends ItemView {
         { label: "가정통신문 회신", icon: "mail", run: () => plugin.openNoticeFlow() },
         { label: "학생부 근거 기록", icon: "file-text", run: () => plugin.openSchoolRecordEvidenceFlow() },
         { label: "학생부 학급 일괄", icon: "files", run: () => plugin.openSchoolRecordBatch() },
-        { label: "학생 추가·명렬표", icon: "user-plus", run: () => plugin.openStudentModal() }
+        { label: "학생 추가·명렬표", icon: "user-plus", run: () => plugin.openStudentModal() },
+        { label: "학생 인스펙터", icon: "user-search", run: () => plugin.openStudentInspectorFlow() }
       ],
       [CURRICULUM_OPS_VIEW_TYPE]: [
         { label: "주간학습안내 생성", icon: "newspaper", run: () => void plugin.generateWeeklyPlan() },
@@ -92,7 +93,8 @@ export class NavigatorView extends ItemView {
         { label: "진도표 차시 가져오기", icon: "download", run: () => plugin.openProgressImportModal() },
         { label: "학사일정 노트", icon: "calendar", run: () => void plugin.openAcademicCalendarNote() },
         { label: "기준 시수 노트", icon: "clock", run: () => void plugin.openHoursStandardNote() },
-        { label: "기초시간표 노트", icon: "table", run: () => void plugin.openBaseTimetableNote() }
+        { label: "기초시간표 노트", icon: "table", run: () => void plugin.openBaseTimetableNote() },
+        { label: "차시 인스펙터", icon: "book-open", run: () => void plugin.openLessonInspector() }
       ],
       [CALENDAR_VIEW_TYPE]: [
         { label: "학생 빠른 기록", icon: "pencil", run: () => plugin.openRecordFlow() },

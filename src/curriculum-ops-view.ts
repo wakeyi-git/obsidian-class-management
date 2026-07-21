@@ -341,6 +341,7 @@ export class CurriculumOpsView extends ItemView {
     cell.setAttribute("tabindex", "0");
     cell.setAttribute("aria-label", options.label);
     const openEditor = (): void => {
+      this.plugin.updateLessonInspector(options.date, options.period);
       new TimetableCellModal(this.plugin, {
         date: options.date,
         period: options.period,

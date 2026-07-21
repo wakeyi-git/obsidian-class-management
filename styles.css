@@ -2224,3 +2224,78 @@
 .class-management-today-badge.is-warning {
   color: var(--color-orange, #d19a66);
 }
+
+/* ===== 인스펙터 ===== */
+
+.class-management-inspector-empty {
+  padding: 16px 8px;
+  text-align: center;
+}
+
+.class-management-inspector-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.class-management-inspector-buttons {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.class-management-inspector-buttons button {
+  padding: 3px 7px;
+  display: flex;
+  align-items: center;
+}
+
+.class-management-inspector-buttons svg {
+  width: 14px;
+  height: 14px;
+}
+
+.class-management-inspector-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0 4px 14px;
+}
+
+.class-management-inspector-card {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  border: 1px solid var(--class-management-card-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+}
+
+.class-management-inspector-card strong {
+  font-size: 1.1em;
+}
+
+.class-management-inspector-card span {
+  font-size: 0.75em;
+  color: var(--text-muted);
+}
+
+.class-management-today-item.is-static {
+  cursor: default;
+}
+
+.class-management-today-item.is-static:hover {
+  background: transparent;
+}
+
+.class-management-inspector-value {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.class-management-inspector-actions {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  flex-wrap: wrap;
+}

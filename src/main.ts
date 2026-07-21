@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFile } from "obsidian";
+import { Notice, Plugin, TFile, type WorkspaceLeaf } from "obsidian";
 import { EMPTY_ACTIVITY_FILTERS } from "./activity";
 import { ActivityIndex } from "./activity-index";
 import { ActivityListView, ACTIVITY_LIST_VIEW_TYPE } from "./activity-list-view";
@@ -14,6 +14,8 @@ import { CurriculumView, CURRICULUM_VIEW_TYPE } from "./curriculum-view";
 import { CurriculumOpsView, CURRICULUM_OPS_VIEW_TYPE } from "./curriculum-ops-view";
 import { NavigatorView, NAVIGATOR_VIEW_TYPE } from "./navigator-view";
 import { TodayView, TODAY_VIEW_TYPE } from "./today-view";
+import { StudentInspectorView, STUDENT_INSPECTOR_VIEW_TYPE } from "./student-inspector-view";
+import { LessonInspectorView, LESSON_INSPECTOR_VIEW_TYPE } from "./lesson-inspector-view";
 import { ProgressImportModal } from "./progress-import-modal";
 import { ProgressPinModal } from "./progress-pin-modal";
 import { addDays, mondayOf, semesterForDate, semesterRange } from "./academic-calendar";
@@ -147,6 +149,14 @@ export default class ClassManagementPlugin extends Plugin {
     );
     this.registerView(NAVIGATOR_VIEW_TYPE, (leaf) => new NavigatorView(leaf, this));
     this.registerView(TODAY_VIEW_TYPE, (leaf) => new TodayView(leaf, this));
+    this.registerView(
+      STUDENT_INSPECTOR_VIEW_TYPE,
+      (leaf) => new StudentInspectorView(leaf, this)
+    );
+    this.registerView(
+      LESSON_INSPECTOR_VIEW_TYPE,
+      (leaf) => new LessonInspectorView(leaf, this)
+    );
     this.app.workspace.onLayoutReady(() => {
       if (this.app.workspace.getLeavesOfType(NAVIGATOR_VIEW_TYPE).length === 0) {
         void this.openNavigator();
@@ -181,6 +191,16 @@ export default class ClassManagementPlugin extends Plugin {
       id: "open-today",
       name: "오늘 패널 열기 (오른쪽 패널)",
       callback: () => void this.openToday()
+    });
+    this.addCommand({
+      id: "open-student-inspector",
+      name: "학생 인스펙터 열기 (오른쪽 패널)",
+      callback: () => this.openStudentInspectorFlow()
+    });
+    this.addCommand({
+      id: "open-lesson-inspector",
+      name: "차시 인스펙터 열기 (오른쪽 패널)",
+      callback: () => void this.openLessonInspector()
     });
     this.addCommand({
       id: "initialize-workspace",
@@ -539,6 +559,49 @@ export default class ClassManagementPlugin extends Plugin {
     if (!leaf) return;
     if (!existing) await leaf.setViewState({ type: TODAY_VIEW_TYPE, active: false });
     await this.app.workspace.revealLeaf(leaf);
+  }
+
+  private async ensureRightView(viewType: string): Promise<WorkspaceLeaf | null> {
+    const existing = this.app.workspace.getLeavesOfType(viewType)[0];
+    if (existing) return existing;
+    const leaf = this.app.workspace.getRightLeaf(false);
+    if (!leaf) return null;
+    await leaf.setViewState({ type: viewType, active: false });
+    return leaf;
+  }
+
+  async inspectStudent(studentNumber: string): Promise<void> {
+    const leaf = await this.ensureRightView(STUDENT_INSPECTOR_VIEW_TYPE);
+    if (!leaf) return;
+    if (leaf.view instanceof StudentInspectorView) await leaf.view.setStudent(studentNumber);
+    await this.app.workspace.revealLeaf(leaf);
+  }
+
+  openStudentInspectorFlow(): void {
+    const students = this.repository.getStudents();
+    if (students.length === 0) {
+      new Notice("먼저 학생을 추가해 주세요.");
+      return;
+    }
+    new StudentSuggestModal(
+      this.app,
+      students,
+      (student) => void this.inspectStudent(student.number),
+      "인스펙터로 볼 학생을 검색하세요"
+    ).open();
+  }
+
+  async openLessonInspector(): Promise<void> {
+    const leaf = await this.ensureRightView(LESSON_INSPECTOR_VIEW_TYPE);
+    if (!leaf) return;
+    await this.app.workspace.revealLeaf(leaf);
+  }
+
+  /** 시간표 교시 클릭 시 호출 — 차시 인스펙터가 열려 있을 때만 조용히 갱신한다. */
+  updateLessonInspector(date: string, period: number): void {
+    const leaf = this.app.workspace.getLeavesOfType(LESSON_INSPECTOR_VIEW_TYPE)[0];
+    if (!leaf || !(leaf.view instanceof LessonInspectorView)) return;
+    void leaf.view.setSlot(date, period);
   }
 
   async openNavigator(): Promise<void> {
@@ -1293,8 +1356,18 @@ export default class ClassManagementPlugin extends Plugin {
       .getLeavesOfType(TODAY_VIEW_TYPE)
       .map((leaf) => leaf.view)
       .filter((view): view is TodayView => view instanceof TodayView);
+    const inspectorViews = [
+      ...this.app.workspace.getLeavesOfType(STUDENT_INSPECTOR_VIEW_TYPE),
+      ...this.app.workspace.getLeavesOfType(LESSON_INSPECTOR_VIEW_TYPE)
+    ]
+      .map((leaf) => leaf.view)
+      .filter(
+        (view): view is StudentInspectorView | LessonInspectorView =>
+          view instanceof StudentInspectorView || view instanceof LessonInspectorView
+      );
     await Promise.all([
       ...todayViews.map((view) => view.refresh()),
+      ...inspectorViews.map((view) => view.refresh()),
       ...opsViews.map((view) => view.refresh()),
       ...activityViews.map((view) => view.refresh()),
       ...timelineViews.map((view) => view.refresh()),
