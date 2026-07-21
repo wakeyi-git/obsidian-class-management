@@ -5,8 +5,7 @@ import { loadTypeScriptModule } from "./helpers.mjs";
 const {
   buildHoursAudit,
   hoursStandardMarkdown,
-  parseHoursStandard,
-  taughtHoursBySubject
+  parseHoursStandard
 } = await loadTypeScriptModule("../src/hours-audit.ts");
 
 const file = { path: "기준 시수.md", basename: "기준 시수", stat: { ctime: 1 } };
@@ -33,15 +32,6 @@ test("스캐폴드에 교과와 창체 영역 행이 들어간다", () => {
   assert.match(markdown, /class-management: hours-standard/);
   assert.match(markdown, /\| 국어 \|/);
   assert.match(markdown, /창체\(자율\)/);
-});
-
-test("완료된 수업일지만 실행 시수로 집계한다", () => {
-  const taught = taughtHoursBySubject([
-    { subject: "수학", hours: 2, status: "completed" },
-    { subject: "수학", hours: 1, status: "planned" },
-    { subject: "국어", hours: 1, status: "completed" }
-  ]);
-  assert.deepEqual(taught, { 수학: 2, 국어: 1 });
 });
 
 test("기준·편성·실행 3단 대조와 허용 범위를 판정한다", () => {

@@ -128,13 +128,15 @@ export function resolveDay(
       resolved = {
         period,
         subject: allDayEvent.subject || allDayEvent.name,
-        source: "event"
+        source: "event",
+        unmapped: !allDayEvent.subject
       };
     } else if (periodEvent) {
       resolved = {
         period,
         subject: periodEvent.subject || periodEvent.name,
-        source: "event"
+        source: "event",
+        unmapped: !periodEvent.subject
       };
     } else {
       const base = timetable?.grid[period - 1]?.[weekday] ?? "";
@@ -153,7 +155,8 @@ export function resolveDay(
         extras.set(period, {
           period,
           subject: event.subject || event.name,
-          source: "event"
+          source: "event",
+          unmapped: !event.subject
         });
       }
     }
@@ -198,6 +201,7 @@ export function subjectSlots(
   for (const date of listDates(from, to)) {
     const day = resolveDay(calendar, timetable, date);
     for (const period of day.periods) {
+      if (period.unmapped) continue;
       if (period.subject === subject) slots.push({ date, period: period.period });
     }
   }
@@ -214,6 +218,7 @@ export function plannedHoursBySubject(
   for (const date of listDates(from, to)) {
     const day = resolveDay(calendar, timetable, date);
     for (const period of day.periods) {
+      if (period.unmapped) continue;
       const subject = period.subject.trim();
       if (!subject) continue;
       hours[subject] = (hours[subject] ?? 0) + 1;

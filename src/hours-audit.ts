@@ -1,5 +1,5 @@
 import type { TFile } from "obsidian";
-import type { CurriculumLesson, HoursAuditRow, HoursStandard, HoursStandardEntry } from "./types";
+import type { HoursAuditRow, HoursStandard, HoursStandardEntry } from "./types";
 import { sectionTableRows } from "./academic-calendar";
 import { yamlString } from "./utils";
 
@@ -61,17 +61,6 @@ export function hoursStandardMarkdown(
     "| 창체(진로) |  |",
     ""
   ].join("\n");
-}
-
-export function taughtHoursBySubject(lessons: CurriculumLesson[]): Record<string, number> {
-  const hours: Record<string, number> = {};
-  for (const lesson of lessons) {
-    if (lesson.status !== "completed") continue;
-    const subject = lesson.subject.trim();
-    if (!subject) continue;
-    hours[subject] = (hours[subject] ?? 0) + (Number.isFinite(lesson.hours) ? lesson.hours : 0);
-  }
-  return hours;
 }
 
 export function buildHoursAudit(

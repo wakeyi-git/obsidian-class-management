@@ -477,6 +477,8 @@ export interface ResolvedPeriod {
   period: number;
   subject: string;
   source: "base" | "override" | "event";
+  /** 과목이 지정되지 않은 행사 교시 — 표시용 행사명이며 교과 시수로 집계하지 않는다. */
+  unmapped?: boolean;
 }
 
 export interface ResolvedDay {

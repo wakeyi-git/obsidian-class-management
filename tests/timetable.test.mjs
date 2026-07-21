@@ -180,6 +180,32 @@ test("시간표 변경이 행사보다 우선한다", () => {
   assert.equal(friday.periods[1]?.source, "event");
 });
 
+test("과목 없는 행사 교시는 표시되지만 시수로 집계되지 않는다", () => {
+  const eventCalendar = parseAcademicCalendar(calendarFile, {
+    schoolYear: "2026",
+    semester1Start: "2026-03-02",
+    semester1End: "2026-07-17",
+    semester2Start: "2026-08-17",
+    semester2End: "2027-01-08",
+    weekdayPeriods: [5, 6, 5, 6, 5]
+  }, [
+    "## 행사",
+    "| 날짜 | 유형 | 명칭 | 교시 | 과목 | 비고 |",
+    "| --- | --- | --- | --- | --- | --- |",
+    "| 2026-05-04 | 전일행사 | 여름놀이체험학습 |  |  |  |"
+  ].join("\n"));
+  const monday = resolveDay(eventCalendar, timetable, "2026-05-04");
+  assert.equal(monday.periods[0]?.subject, "여름놀이체험학습");
+  assert.equal(monday.periods[0]?.unmapped, true);
+
+  const planned = plannedHoursBySubject(eventCalendar, timetable, "2026-05-04", "2026-05-04");
+  assert.equal(planned["여름놀이체험학습"], undefined);
+  assert.deepEqual(
+    subjectSlots(eventCalendar, timetable, "2026-05-04", "2026-05-04", "여름놀이체험학습"),
+    []
+  );
+});
+
 test("전일행사 날에도 변경으로 교과를 배정할 수 있다", () => {
   const eventCalendar = parseAcademicCalendar(calendarFile, {
     schoolYear: "2026",

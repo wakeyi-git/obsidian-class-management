@@ -9,7 +9,7 @@ import {
 } from "./academic-calendar";
 import { isRemovedSubject, plannedHoursBySubject, resolveWeek, subjectSlots } from "./timetable";
 import { assignProgress, slotContentMap } from "./progress";
-import { buildHoursAudit, taughtHoursBySubject } from "./hours-audit";
+import { buildHoursAudit } from "./hours-audit";
 import { addDays } from "./academic-calendar";
 import { localDate } from "./utils";
 import type ClassManagementPlugin from "./main";
@@ -380,6 +380,8 @@ export class CurriculumOpsView extends ItemView {
     }
 
     const planned: Record<string, number> = {};
+    const elapsed: Record<string, number> = {};
+    const today = localDate();
     const missingSemesters: string[] = [];
     for (const semester of ["1학기", "2학기"]) {
       const range = semesterRange(calendar, semester);
@@ -396,10 +398,20 @@ export class CurriculumOpsView extends ItemView {
       for (const [subject, count] of Object.entries(hours)) {
         planned[subject] = (planned[subject] ?? 0) + count;
       }
+      if (today >= range.from) {
+        const elapsedTo = today < range.to ? today : range.to;
+        const done = plannedHoursBySubject(calendar, semesterTimetable, range.from, elapsedTo);
+        for (const [subject, count] of Object.entries(done)) {
+          elapsed[subject] = (elapsed[subject] ?? 0) + count;
+        }
+      }
     }
 
-    const taught = taughtHoursBySubject(this.plugin.repository.getCurriculumLessons());
-    const rows = buildHoursAudit(standard, planned, taught);
+    section.createEl("p", {
+      cls: "class-management-ops-hint",
+      text: "실행은 오늘까지 시간표 기준으로 운영된 시수입니다. 시간표 변경·행사·교시 삭제가 반영됩니다."
+    });
+    const rows = buildHoursAudit(standard, planned, elapsed);
     if (missingSemesters.length > 0) {
       section.createEl("p", {
         cls: "class-management-ops-hint",
@@ -409,7 +421,7 @@ export class CurriculumOpsView extends ItemView {
 
     const table = section.createEl("table", { cls: "class-management-ops-audit-table" });
     const head = table.createEl("thead").createEl("tr");
-    for (const label of ["교과·영역", "기준", "편성", "실행", "증감", "상태"]) {
+    for (const label of ["교과·영역", "기준", "편성", "실행(오늘까지)", "증감", "상태"]) {
       head.createEl("th", { text: label });
     }
     const body = table.createEl("tbody");
