@@ -2004,3 +2004,65 @@
 .suggestion-item.class-management-pin-elsewhere {
   color: var(--text-accent);
 }
+
+/* ===== 왼쪽 학급 메뉴 (내비게이터) ===== */
+
+.class-management-nav-view {
+  padding: 8px;
+}
+
+.class-management-nav-section {
+  margin-bottom: 14px;
+}
+
+.class-management-nav-section h4 {
+  margin: 0 0 4px;
+  padding: 0 4px;
+  font-size: 0.78em;
+  text-transform: none;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.class-management-nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 8px;
+  margin: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 6px;
+  font-size: 0.92em;
+  color: var(--text-normal);
+  cursor: pointer;
+}
+
+.class-management-nav-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.class-management-nav-item.is-active {
+  background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+.class-management-nav-item.is-action::before {
+  content: "▸ ";
+  color: var(--text-faint);
+}
+
+.class-management-nav-hint {
+  padding: 0 6px;
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.class-management-actions-heading {
+  margin: 10px 0 2px;
+  font-size: 0.78em;
+  color: var(--text-muted);
+  width: 100%;
+}
