@@ -82,10 +82,13 @@ export class LessonInspectorView extends ItemView {
     if (events.length > 0) {
       const section = this.section(container, "calendar", "이날 행사");
       for (const event of events) {
-        section.createEl("p", {
-          cls: "class-management-today-hint",
-          text: `${event.type} · ${event.name}${event.periods.length ? ` (${event.periods.join(",")}교시)` : ""}`
+        const item = section.createDiv({ cls: "class-management-today-item" });
+        item.createSpan({
+          text: `${event.type} · ${event.name}${event.periods.length ? ` (${event.periods.join(",")}교시)` : ""}`,
+          cls: "class-management-nav-label"
         });
+        item.setAttribute("aria-label", "행사 노트 열기");
+        item.addEventListener("click", () => void this.plugin.openEventNote(event));
       }
     }
 
@@ -162,6 +165,13 @@ export class LessonInspectorView extends ItemView {
         }).open();
       });
     });
+    if (subject) {
+      const promote = actions.createEl("button", { text: "수업일지 만들기" });
+      promote.addEventListener(
+        "click",
+        () => void this.plugin.promoteProgressLesson(date, period)
+      );
+    }
     const table = tables.find((item) => item.subject === subject);
     if (table) {
       const open = actions.createEl("button", { text: "진도표 열기" });

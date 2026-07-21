@@ -18,6 +18,7 @@ import { StudentInspectorView, STUDENT_INSPECTOR_VIEW_TYPE } from "./student-ins
 import { LessonInspectorView, LESSON_INSPECTOR_VIEW_TYPE } from "./lesson-inspector-view";
 import { ProgressImportModal } from "./progress-import-modal";
 import { ProgressPinModal } from "./progress-pin-modal";
+import { UnitSuggestModal } from "./unit-suggest-modal";
 import { addDays, mondayOf, semesterForDate, semesterRange } from "./academic-calendar";
 import { isRemovedSubject, resolveDay, subjectSlots } from "./timetable";
 import { assignProgress, buildAssignedSlotContents } from "./progress";
@@ -46,7 +47,7 @@ import {
 } from "./student-timeline-view";
 import { TaskModal } from "./task-modal";
 import { TaskView, TASK_VIEW_TYPE } from "./task-view";
-import type { BaseTimetable, ProgressTable } from "./types";
+import type { BaseTimetable, NewCurriculumLesson, ProgressTable, SchoolEvent } from "./types";
 import type {
   ActivityListFilters,
   ActivityColumn,
@@ -286,6 +287,11 @@ export default class ClassManagementPlugin extends Plugin {
       id: "assign-progress",
       name: "진도 자동 배정",
       callback: () => void this.runProgressAssignment()
+    });
+    this.addCommand({
+      id: "create-bases-views",
+      name: "일체화 Bases 보기 만들기",
+      callback: () => void this.createBasesViews()
     });
     this.addCommand({
       id: "generate-weekly-plan",
@@ -1084,15 +1090,111 @@ export default class ClassManagementPlugin extends Plugin {
     }, existing).open();
   }
 
-  openCurriculumLessonModal(unit: CurriculumUnit, existing?: CurriculumLesson): void {
+  openCurriculumLessonModal(
+    unit: CurriculumUnit,
+    existing?: CurriculumLesson,
+    options?: {
+      prefill?: Partial<NewCurriculumLesson>;
+      afterCreate?: (created: CurriculumLesson) => Promise<void>;
+    }
+  ): void {
     if (!this.canWriteActiveClass()) return;
     new CurriculumLessonModal(this.app, unit, async (lesson, current) => {
-      if (current) await this.repository.updateCurriculumLesson(current.file, lesson);
-      else await this.repository.createCurriculumLesson(lesson);
+      if (current) {
+        await this.repository.updateCurriculumLesson(current.file, lesson);
+      } else {
+        const created = await this.repository.createCurriculumLesson(lesson);
+        if (options?.afterCreate) await options.afterCreate(created);
+      }
       this.activityIndex.invalidate();
       new Notice(`${unit.unitName} ${lesson.sequence}차시 기록을 저장했습니다.`);
       await this.refreshViews();
-    }, existing).open();
+    }, existing, options?.prefill).open();
+  }
+
+  /** 진도표 차시를 수업일지 노트로 승격하고 진도표 비고에 위키링크를 남긴다. */
+  async promoteProgressLesson(date: string, period: number): Promise<void> {
+    try {
+      const calendar = await this.repository.getAcademicCalendar();
+      if (!calendar) {
+        new Notice("학사일정 노트가 필요합니다.");
+        return;
+      }
+      const semester = semesterForDate(calendar, date);
+      const timetable = semester ? await this.repository.getBaseTimetable(semester) : null;
+      if (!semester || !timetable) {
+        new Notice("해당 날짜 학기의 기초시간표가 필요합니다.");
+        return;
+      }
+      const day = resolveDay(calendar, timetable, date);
+      const resolved = day.periods.find((item) => item.period === period);
+      const subject = resolved?.subject.trim() ?? "";
+      if (!subject) {
+        new Notice("이 교시에는 과목이 없습니다.");
+        return;
+      }
+      const tables = await this.repository.getProgressTables(semester);
+      const table = tables.find((item) => item.subject === subject);
+      const contents = buildAssignedSlotContents(
+        calendar,
+        { [semester]: timetable },
+        { [semester]: tables }
+      );
+      const row = contents.get(`${date}|${period}`);
+
+      const units = this.repository.getCurriculumUnits();
+      const candidates = units.filter((unit) => unit.subject === subject);
+      const pool = candidates.length > 0 ? candidates : units;
+      if (pool.length === 0) {
+        new Notice("통합 단원이 없습니다. 먼저 통합 단원을 설계해 주세요.");
+        this.openCurriculumUnitModal();
+        return;
+      }
+      new UnitSuggestModal(this.app, pool, (unit) => {
+        this.openCurriculumLessonModal(unit, undefined, {
+          prefill: {
+            date,
+            period: `${period}교시`,
+            hours: row?.hours ?? 1,
+            objective: row?.topic ?? "",
+            activities: row ? [row.unit, row.topic].filter(Boolean).join(" · ") : ""
+          },
+          afterCreate: async (created) => {
+            if (table && row) {
+              await this.repository.updateProgressRowNote(
+                table,
+                row.order,
+                `[[${created.file.path.replace(/\.md$/i, "")}|수업일지]]`
+              );
+            }
+          }
+        });
+      }, `${date} ${period}교시(${subject}) 차시를 연결할 단원 선택`).open();
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "수업일지 승격에 실패했습니다.");
+    }
+  }
+
+  async openEventNote(event: SchoolEvent): Promise<void> {
+    try {
+      const file = await this.repository.ensureEventNote(event);
+      await this.openFile(file);
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "행사 노트를 열지 못했습니다.");
+    }
+  }
+
+  async createBasesViews(): Promise<void> {
+    try {
+      const created = await this.repository.ensureBasesViews();
+      new Notice(
+        created.length > 0
+          ? `Bases 보기 ${created.length}개를 만들었습니다: ${created.join(", ")}`
+          : "Bases 보기가 이미 모두 있습니다."
+      );
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "Bases 보기 생성에 실패했습니다.");
+    }
   }
 
   openCurriculumEvidenceFlow(unit: CurriculumUnit, lesson?: CurriculumLesson): void {
@@ -1273,9 +1375,12 @@ export default class ClassManagementPlugin extends Plugin {
       this.app,
       students,
       existing,
-      async (date, title, marks, existingFile) => {
-        await this.repository.saveAssignment(date, title, marks, existingFile);
-        new Notice(`${title} 과제 체크를 저장했습니다.`);
+      this.repository.getCurriculumUnits(),
+      async (date, title, marks, unitLink, existingFile) => {
+        await this.repository.saveAssignment(date, title, marks, unitLink, existingFile);
+        new Notice(
+          `${title} 과제 체크를 저장했습니다.${unitLink ? ` (단원 연계: ${unitLink.title})` : ""}`
+        );
         await this.refreshDashboard();
       },
       initialDate

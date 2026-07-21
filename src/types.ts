@@ -112,6 +112,15 @@ export interface AssignmentSummary {
   file: TFile;
   title: string;
   date: string;
+  unitId?: string;
+  unitTitle?: string;
+  unitPath?: string;
+}
+
+export interface CurriculumUnitLink {
+  id: string;
+  title: string;
+  path: string;
 }
 
 export interface AssignmentSheet extends AssignmentSummary {

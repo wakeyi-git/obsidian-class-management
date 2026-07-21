@@ -330,6 +330,7 @@ export function curriculumUnitMarkdown(
     `conceptInquiryScore: ${unit.conceptInquiryEnabled ? auditConceptInquiryDesign(unit).score : 0}`,
     "tags:",
     "  - class-management/curriculum",
+    "  - class-management/curriculum-unit",
     "---",
     "",
     `# ${unit.subject} · ${unit.unitName}`,

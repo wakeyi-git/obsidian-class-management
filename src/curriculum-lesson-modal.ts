@@ -22,10 +22,13 @@ export class CurriculumLessonModal extends Modal {
     app: App,
     private readonly unit: CurriculumUnit,
     private readonly onSave: (lesson: NewCurriculumLesson, existing?: CurriculumLesson) => Promise<void>,
-    private readonly existing?: CurriculumLesson
+    private readonly existing?: CurriculumLesson,
+    prefill?: Partial<NewCurriculumLesson>
   ) {
     super(app);
-    this.draft = existing ? lessonDraft(existing) : emptyCurriculumLesson(unit);
+    this.draft = existing
+      ? lessonDraft(existing)
+      : { ...emptyCurriculumLesson(unit), ...prefill };
     if (!this.draft.date) this.draft.date = localDate();
   }
 

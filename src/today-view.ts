@@ -6,7 +6,7 @@ import { collectSubjectOptions } from "./subject-options";
 import { TimetableCellModal } from "./timetable-cell-modal";
 import { localDate } from "./utils";
 import type ClassManagementPlugin from "./main";
-import type { AcademicCalendar, ProgressRow } from "./types";
+import type { AcademicCalendar, ProgressRow, SchoolEvent } from "./types";
 
 export const TODAY_VIEW_TYPE = "class-management-today";
 
@@ -246,9 +246,13 @@ export class TodayView extends ItemView {
     calendar: AcademicCalendar,
     today: string
   ): void {
-    const upcoming = [
-      ...calendar.events.map((event) => ({ date: event.date, name: event.name })),
-      ...calendar.closedDays.map((day) => ({ date: day.date, name: day.name || day.category }))
+    const upcoming: Array<{ date: string; name: string; event: SchoolEvent | null }> = [
+      ...calendar.events.map((event) => ({ date: event.date, name: event.name, event })),
+      ...calendar.closedDays.map((day) => ({
+        date: day.date,
+        name: day.name || day.category,
+        event: null
+      }))
     ]
       .filter((item) => item.date >= today && this.daysBetween(today, item.date) <= 14)
       .sort((a, b) => a.date.localeCompare(b.date))
@@ -258,12 +262,19 @@ export class TodayView extends ItemView {
     const section = this.section(container, "calendar", "다가오는 일정");
     for (const item of upcoming) {
       const days = this.daysBetween(today, item.date);
-      const row = section.createDiv({ cls: "class-management-today-item" });
+      const row = section.createDiv({
+        cls: `class-management-today-item${item.event ? "" : " is-static"}`
+      });
       row.createSpan({
         text: days === 0 ? "오늘" : `D-${days}`,
         cls: "class-management-today-badge"
       });
       row.createSpan({ text: `${item.name} (${item.date.slice(5)})` });
+      const event = item.event;
+      if (event) {
+        row.setAttribute("aria-label", "행사 노트 열기");
+        row.addEventListener("click", () => void this.plugin.openEventNote(event));
+      }
     }
   }
 

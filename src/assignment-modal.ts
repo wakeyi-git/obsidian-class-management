@@ -5,6 +5,8 @@ import type {
   AssignmentSheet,
   AssignmentStatus,
   AssignmentSummary,
+  CurriculumUnit,
+  CurriculumUnitLink,
   StudentEntry
 } from "./types";
 import { localDate } from "./utils";
@@ -53,6 +55,7 @@ export class AssignmentPickerModal extends SuggestModal<AssignmentChoice> {
 export class AssignmentModal extends Modal {
   private date = localDate();
   private assignmentTitle = "";
+  private unitId = "";
   private readonly statuses = new Map<string, AssignmentStatus>();
   private readonly notes = new Map<string, string>();
   private rosterEl?: HTMLElement;
@@ -64,10 +67,12 @@ export class AssignmentModal extends Modal {
     app: App,
     private readonly students: StudentEntry[],
     private readonly existing: AssignmentSheet | undefined,
+    private readonly units: CurriculumUnit[],
     private readonly onSave: (
       date: string,
       title: string,
       marks: AssignmentMark[],
+      unitLink: CurriculumUnitLink | null,
       existingFile?: TFile
     ) => Promise<void>,
     initialDate = localDate()
@@ -75,6 +80,7 @@ export class AssignmentModal extends Modal {
     super(app);
 
     this.date = initialDate;
+    this.unitId = existing?.unitId ?? "";
 
     if (existing) {
       this.date = existing.date;
@@ -111,6 +117,22 @@ export class AssignmentModal extends Modal {
         });
         window.setTimeout(() => text.inputEl.focus(), 0);
       });
+    }
+
+    if (this.units.length > 0) {
+      new Setting(this.contentEl)
+        .setName("연계 단원 (평가)")
+        .setDesc("이 과제를 통합 단원의 평가 증거로 연결합니다.")
+        .addDropdown((dropdown) => {
+          dropdown.addOption("", "연결 없음");
+          for (const unit of this.units) {
+            dropdown.addOption(unit.id, `${unit.subject} · ${unit.unitName}`);
+          }
+          if (this.unitId && this.units.some((unit) => unit.id === this.unitId)) {
+            dropdown.setValue(this.unitId);
+          }
+          dropdown.onChange((value) => (this.unitId = value));
+        });
     }
 
     const toolbar = this.contentEl.createDiv({ cls: "class-management-assignment-toolbar" });
@@ -222,10 +244,12 @@ export class AssignmentModal extends Modal {
     });
 
     try {
+      const unit = this.units.find((item) => item.id === this.unitId);
       await this.onSave(
         this.date,
         this.assignmentTitle.trim(),
         marks,
+        unit ? { id: unit.id, title: unit.unitName, path: unit.file.path } : null,
         this.existing?.file
       );
       this.close();
