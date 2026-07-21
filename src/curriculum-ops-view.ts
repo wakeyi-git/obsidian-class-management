@@ -7,7 +7,7 @@ import {
   semesterRange,
   weekdayLabel
 } from "./academic-calendar";
-import { plannedHoursBySubject, resolveWeek, subjectSlots } from "./timetable";
+import { isRemovedSubject, plannedHoursBySubject, resolveWeek, subjectSlots } from "./timetable";
 import { assignProgress, slotContentMap } from "./progress";
 import { buildHoursAudit, taughtHoursBySubject } from "./hours-audit";
 import { addDays } from "./academic-calendar";
@@ -223,17 +223,39 @@ export class CurriculumOpsView extends ItemView {
         const resolved = day.periods.find((item) => item.period === period);
         if (!resolved) {
           if (editable) {
-            cell.addClass("is-empty");
-            cell.createEl("span", { text: "＋", cls: "class-management-ops-add" });
-            this.attachCellEditor(cell, {
-              date: day.date,
-              period,
-              currentSubject: "",
-              hasOverride: false,
-              isEvent: false,
-              subjects,
-              label: `${day.date} ${period}교시 수업 추가`
-            });
+            const removal = timetable?.overrides.find(
+              (item) =>
+                item.date === day.date &&
+                item.period === period &&
+                isRemovedSubject(item.subject)
+            );
+            if (removal) {
+              cell.addClass("is-removed");
+              cell.createEl("span", { text: "수업 없음", cls: "class-management-ops-removed" });
+              this.attachCellEditor(cell, {
+                date: day.date,
+                period,
+                currentSubject: "",
+                hasOverride: true,
+                isEvent: false,
+                isRemoved: true,
+                subjects,
+                label: `${day.date} ${period}교시 삭제됨 · 되돌리기`
+              });
+            } else {
+              cell.addClass("is-empty");
+              cell.createEl("span", { text: "＋", cls: "class-management-ops-add" });
+              this.attachCellEditor(cell, {
+                date: day.date,
+                period,
+                currentSubject: "",
+                hasOverride: false,
+                isEvent: false,
+                isRemoved: false,
+                subjects,
+                label: `${day.date} ${period}교시 수업 추가`
+              });
+            }
           }
           continue;
         }
@@ -254,6 +276,7 @@ export class CurriculumOpsView extends ItemView {
             currentSubject: resolved.subject,
             hasOverride: resolved.source === "override",
             isEvent: resolved.source === "event",
+            isRemoved: false,
             subjects,
             label: `${day.date} ${period}교시 ${resolved.subject || "빈 교시"} 과목 변경`
           });
@@ -270,6 +293,7 @@ export class CurriculumOpsView extends ItemView {
       currentSubject: string;
       hasOverride: boolean;
       isEvent: boolean;
+      isRemoved: boolean;
       subjects: string[];
       label: string;
     }
@@ -285,6 +309,7 @@ export class CurriculumOpsView extends ItemView {
         currentSubject: options.currentSubject,
         hasOverride: options.hasOverride,
         isEvent: options.isEvent,
+        isRemoved: options.isRemoved,
         subjects: options.subjects
       }).open();
     };

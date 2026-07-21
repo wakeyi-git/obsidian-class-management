@@ -14,7 +14,7 @@ import { CurriculumView, CURRICULUM_VIEW_TYPE } from "./curriculum-view";
 import { CurriculumOpsView, CURRICULUM_OPS_VIEW_TYPE } from "./curriculum-ops-view";
 import { ProgressImportModal } from "./progress-import-modal";
 import { mondayOf, semesterRange } from "./academic-calendar";
-import { resolveWeek, subjectSlots } from "./timetable";
+import { isRemovedSubject, resolveWeek, subjectSlots } from "./timetable";
 import { assignProgress, slotContentMap } from "./progress";
 import { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } from "./weekly-plan";
 import { localDate } from "./utils";
@@ -739,7 +739,11 @@ export default class ClassManagementPlugin extends Plugin {
   async saveTimetableOverride(override: TimetableOverride): Promise<void> {
     const file = await this.repository.ensureBaseTimetableNote(this.settings.semester);
     await this.repository.upsertTimetableOverride(file, override);
-    new Notice(`${override.date} ${override.period}교시 → ${override.subject}`);
+    new Notice(
+      isRemovedSubject(override.subject)
+        ? `${override.date} ${override.period}교시를 삭제했습니다.`
+        : `${override.date} ${override.period}교시 → ${override.subject}`
+    );
     await this.refreshViews();
   }
 

@@ -208,6 +208,37 @@ test("전일행사 날에도 변경으로 교과를 배정할 수 있다", () =>
   assert.equal(monday.periods[4]?.source, "override");
 });
 
+test("삭제 표식은 그날 해당 교시를 없앤다", () => {
+  const removed = upsertTimetableOverrideContent(timetableContent, {
+    date: "2026-05-04",
+    period: 5,
+    subject: "－",
+    reason: "4교시 수업"
+  });
+  const parsed = parseBaseTimetable(timetableFile, { schoolYear: "2026", semester: "1학기" }, removed);
+  const monday = resolveDay(calendar, parsed, "2026-05-04");
+  assert.equal(monday.periods.length, 4);
+  assert.equal(monday.periods.at(-1)?.period, 4);
+  assert.deepEqual(subjectSlots(calendar, parsed, "2026-05-04", "2026-05-04", "체육"), []);
+  assert.deepEqual(
+    subjectSlots(calendar, parsed, "2026-05-04", "2026-05-04", "과학"),
+    [{ date: "2026-05-04", period: 4 }]
+  );
+
+  const restored = removeTimetableOverrideContent(removed, "2026-05-04", 5);
+  const parsedRestored = parseBaseTimetable(timetableFile, { schoolYear: "2026", semester: "1학기" }, restored);
+  assert.equal(resolveDay(calendar, parsedRestored, "2026-05-04").periods.length, 5);
+
+  const reassigned = upsertTimetableOverrideContent(removed, {
+    date: "2026-05-04",
+    period: 5,
+    subject: "국어",
+    reason: ""
+  });
+  const parsedReassigned = parseBaseTimetable(timetableFile, { schoolYear: "2026", semester: "1학기" }, reassigned);
+  assert.equal(resolveDay(calendar, parsedReassigned, "2026-05-04").periods[4]?.subject, "국어");
+});
+
 test("행사 교시가 기준을 넘으면 7·8교시도 생긴다", () => {
   const eventCalendar = parseAcademicCalendar(calendarFile, {
     schoolYear: "2026",

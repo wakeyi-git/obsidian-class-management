@@ -1,4 +1,5 @@
 import { Modal, Notice, Setting } from "obsidian";
+import { REMOVED_PERIOD_SUBJECT } from "./timetable";
 import type ClassManagementPlugin from "./main";
 
 export interface TimetableCellContext {
@@ -7,6 +8,7 @@ export interface TimetableCellContext {
   currentSubject: string;
   hasOverride: boolean;
   isEvent: boolean;
+  isRemoved: boolean;
   subjects: string[];
 }
 
@@ -36,6 +38,12 @@ export class TimetableCellModal extends Modal {
         text: `이 교시는 행사(${this.context.currentSubject})로 배정되어 있습니다. 저장하면 이 날짜·교시에는 입력한 과목이 행사보다 우선 적용되고, 변경을 제거하면 행사 배정으로 돌아갑니다.`
       });
     }
+    if (this.context.isRemoved) {
+      this.contentEl.createEl("p", {
+        cls: "setting-item-description",
+        text: "이 교시는 삭제되어 운영하지 않는 상태입니다. 변경 제거를 누르면 원래 시간표로 되돌아가고, 과목을 골라 저장하면 다시 수업이 배정됩니다."
+      });
+    }
     this.contentEl.createEl("p", {
       cls: "setting-item-description",
       text: "기준 교시 밖(예: 5교시 요일의 6교시, 체험학습 7·8교시)에 저장하면 그날 교시가 추가되고, 변경을 제거하면 다시 사라집니다."
@@ -63,6 +71,15 @@ export class TimetableCellModal extends Modal {
       );
 
     const buttons = new Setting(this.contentEl);
+    if (!this.context.isRemoved) {
+      buttons.addButton((button) =>
+        button
+          .setButtonText("이 교시 삭제")
+          .setWarning()
+          .setTooltip("이 날짜만 해당 교시를 운영하지 않습니다")
+          .onClick(() => void this.removePeriod())
+      );
+    }
     if (this.context.hasOverride) {
       buttons.addButton((button) =>
         button.setButtonText("변경 제거").setWarning().onClick(() => void this.remove())
@@ -71,6 +88,24 @@ export class TimetableCellModal extends Modal {
     buttons.addButton((button) =>
       button.setButtonText("저장").setCta().onClick(() => void this.save())
     );
+  }
+
+  private async removePeriod(): Promise<void> {
+    if (this.saving) return;
+    this.saving = true;
+    try {
+      await this.plugin.saveTimetableOverride({
+        date: this.context.date,
+        period: this.context.period,
+        subject: REMOVED_PERIOD_SUBJECT,
+        reason: this.reason.trim() || "교시 삭제"
+      });
+      this.close();
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "교시 삭제에 실패했습니다.");
+    } finally {
+      this.saving = false;
+    }
   }
 
   private async save(): Promise<void> {

@@ -19,6 +19,14 @@ import { escapeTableCell, splitMarkdownTableRow, unescapeTableCell, yamlString }
 
 const WEEKDAY_HEADERS = ["월", "화", "수", "목", "금"] as const;
 
+// 시간표 변경 표의 과목 칸에 이 표식을 적으면 그날 해당 교시를 운영하지 않는다.
+export const REMOVED_PERIOD_SUBJECT = "－";
+
+export function isRemovedSubject(value: string): boolean {
+  const trimmed = value.trim();
+  return trimmed === "－" || trimmed === "-" || trimmed === "삭제";
+}
+
 export function parseBaseTimetable(
   file: TFile,
   frontmatter: Record<string, unknown>,
@@ -112,7 +120,9 @@ export function resolveDay(
     );
     const periodEvent = periodEvents.find((event) => event.periods.includes(period));
     let resolved: ResolvedPeriod;
-    if (override) {
+    if (override && isRemovedSubject(override.subject)) {
+      continue;
+    } else if (override) {
       resolved = { period, subject: override.subject, source: "override" };
     } else if (allDayEvent) {
       resolved = {
@@ -150,6 +160,10 @@ export function resolveDay(
   }
   for (const override of timetable?.overrides ?? []) {
     if (override.date !== date || override.period <= periodCount) continue;
+    if (isRemovedSubject(override.subject)) {
+      extras.delete(override.period);
+      continue;
+    }
     extras.set(override.period, {
       period: override.period,
       subject: override.subject,
