@@ -13,9 +13,9 @@ import { CurriculumUnitModal } from "./curriculum-unit-modal";
 import { CurriculumView, CURRICULUM_VIEW_TYPE } from "./curriculum-view";
 import { CurriculumOpsView, CURRICULUM_OPS_VIEW_TYPE } from "./curriculum-ops-view";
 import { ProgressImportModal } from "./progress-import-modal";
-import { mondayOf, semesterRange } from "./academic-calendar";
-import { isRemovedSubject, resolveWeek, subjectSlots } from "./timetable";
-import { assignProgress, slotContentMap } from "./progress";
+import { addDays, mondayOf, semesterForDate, semesterRange } from "./academic-calendar";
+import { isRemovedSubject, resolveDay, subjectSlots } from "./timetable";
+import { assignProgress, buildAssignedSlotContents } from "./progress";
 import { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } from "./weekly-plan";
 import { localDate } from "./utils";
 import {
@@ -41,6 +41,7 @@ import {
 } from "./student-timeline-view";
 import { TaskModal } from "./task-modal";
 import { TaskView, TASK_VIEW_TYPE } from "./task-view";
+import type { BaseTimetable, ProgressTable } from "./types";
 import type {
   ActivityListFilters,
   ActivityColumn,
@@ -736,21 +737,36 @@ export default class ClassManagementPlugin extends Plugin {
     new ProgressImportModal(this).open();
   }
 
+  private async timetableSemesterForDate(date: string): Promise<string | null> {
+    const calendar = await this.repository.getAcademicCalendar();
+    if (!calendar) return this.settings.semester;
+    const semester = semesterForDate(calendar, date);
+    if (!semester) {
+      new Notice(`${date}는 학기 기간 밖 날짜입니다. 학사일정 노트의 학기 범위를 확인하세요.`);
+      return null;
+    }
+    return semester;
+  }
+
   async saveTimetableOverride(override: TimetableOverride): Promise<void> {
-    const file = await this.repository.ensureBaseTimetableNote(this.settings.semester);
+    const semester = await this.timetableSemesterForDate(override.date);
+    if (!semester) return;
+    const file = await this.repository.ensureBaseTimetableNote(semester);
     await this.repository.upsertTimetableOverride(file, override);
     new Notice(
       isRemovedSubject(override.subject)
-        ? `${override.date} ${override.period}교시를 삭제했습니다.`
-        : `${override.date} ${override.period}교시 → ${override.subject}`
+        ? `${override.date} ${override.period}교시를 삭제했습니다. (${semester})`
+        : `${override.date} ${override.period}교시 → ${override.subject} (${semester})`
     );
     await this.refreshViews();
   }
 
   async removeTimetableOverrideAt(date: string, period: number): Promise<void> {
-    const file = await this.repository.ensureBaseTimetableNote(this.settings.semester);
+    const semester = await this.timetableSemesterForDate(date);
+    if (!semester) return;
+    const file = await this.repository.ensureBaseTimetableNote(semester);
     await this.repository.removeTimetableOverride(file, date, period);
-    new Notice(`${date} ${period}교시 변경을 제거했습니다.`);
+    new Notice(`${date} ${period}교시 변경을 제거했습니다. (${semester})`);
     await this.refreshViews();
   }
 
@@ -785,8 +801,8 @@ export default class ClassManagementPlugin extends Plugin {
       }
       new Notice(
         issues.length > 0
-          ? `진도 배정 완료. 확인할 항목 ${issues.length}건은 각 진도표의 배정 열을 확인하세요.`
-          : `${tables.length}개 진도표의 배정을 완료했습니다.`
+          ? `${this.settings.semester} 진도 배정 완료. 확인할 항목 ${issues.length}건은 각 진도표의 배정 열을 확인하세요.`
+          : `${this.settings.semester} 진도표 ${tables.length}개의 배정을 완료했습니다.`
       );
       await this.refreshViews();
     } catch (error) {
@@ -801,23 +817,28 @@ export default class ClassManagementPlugin extends Plugin {
         new Notice("학사일정 노트가 필요합니다. `학사일정 노트 열기`를 먼저 실행하세요.");
         return;
       }
-      const timetable = await this.repository.getBaseTimetable(this.settings.semester);
-      if (!timetable) {
+      const timetables: Record<string, BaseTimetable | null> = {
+        "1학기": await this.repository.getBaseTimetable("1학기"),
+        "2학기": await this.repository.getBaseTimetable("2학기")
+      };
+      if (!timetables["1학기"] && !timetables["2학기"]) {
         new Notice("기초시간표 노트가 필요합니다. `기초시간표 노트 열기`를 먼저 실행하세요.");
         return;
       }
       const monday = weekStart ?? mondayOf(localDate());
-      const days = resolveWeek(calendar, timetable, monday);
-      const tables = await this.repository.getProgressTables(this.settings.semester);
-      const range = semesterRange(calendar, this.settings.semester);
-      const contents = new Map<string, ProgressRow>();
-      if (range.from && range.to) {
-        for (const table of tables) {
-          const slots = subjectSlots(calendar, timetable, range.from, range.to, table.subject);
-          const assignment = assignProgress(table.rows, slots);
-          for (const [key, row] of slotContentMap(assignment)) contents.set(key, row);
-        }
-      }
+      const days = [0, 1, 2, 3, 4].map((offset) => {
+        const date = addDays(monday, offset);
+        const semester = semesterForDate(calendar, date);
+        return resolveDay(calendar, semester ? timetables[semester] ?? null : null, date);
+      });
+      const tablesBySemester: Record<string, ProgressTable[]> = {
+        "1학기": await this.repository.getProgressTables("1학기"),
+        "2학기": await this.repository.getProgressTables("2학기")
+      };
+      const contents = buildAssignedSlotContents(calendar, timetables, tablesBySemester);
+      const weekSemester =
+        days.map((day) => semesterForDate(calendar, day.date)).find(Boolean) ??
+        this.settings.semester;
       const weekEnd = days[days.length - 1]?.date ?? monday;
       const notices = this.repository
         .getNoticeSummaries()
@@ -829,7 +850,7 @@ export default class ClassManagementPlugin extends Plugin {
       const markdown = buildWeeklyPlanMarkdown({
         className: this.settings.className,
         schoolYear: this.settings.schoolYear,
-        semester: this.settings.semester,
+        semester: weekSemester,
         weekStart: monday,
         weekEnd,
         days: buildWeeklyPlanDays(days, (date, period) => contents.get(`${date}|${period}`)),

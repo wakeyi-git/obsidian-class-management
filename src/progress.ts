@@ -6,8 +6,10 @@ import type {
   ProgressTable,
   SubjectSlot
 } from "./types";
-import { sectionTableRows } from "./academic-calendar";
+import { sectionTableRows, semesterRange } from "./academic-calendar";
+import { subjectSlots } from "./timetable";
 import { escapeTableCell, yamlString } from "./utils";
+import type { AcademicCalendar, BaseTimetable } from "./types";
 
 export const PROGRESS_TABLE_HEADER =
   "| 순 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 준비물 | 고정 날짜 | 배정 | 비고 |";
@@ -256,6 +258,27 @@ export function slotContentMap(
     }
   }
   return map;
+}
+
+/** 두 학기의 진도표를 각 학기 시간표·기간에 배정해 날짜|교시 → 차시 맵으로 합친다. */
+export function buildAssignedSlotContents(
+  calendar: AcademicCalendar,
+  timetables: Record<string, BaseTimetable | null>,
+  tablesBySemester: Record<string, ProgressTable[]>
+): Map<string, ProgressRow> {
+  const contents = new Map<string, ProgressRow>();
+  for (const semester of Object.keys(timetables)) {
+    const timetable = timetables[semester];
+    if (!timetable) continue;
+    const range = semesterRange(calendar, semester);
+    if (!range.from || !range.to) continue;
+    for (const table of tablesBySemester[semester] ?? []) {
+      const slots = subjectSlots(calendar, timetable, range.from, range.to, table.subject);
+      const assignment = assignProgress(table.rows, slots);
+      for (const [key, row] of slotContentMap(assignment)) contents.set(key, row);
+    }
+  }
+  return contents;
 }
 
 function stringValue(value: unknown): string {

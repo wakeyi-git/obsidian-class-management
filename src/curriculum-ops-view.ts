@@ -4,11 +4,12 @@ import {
   availableHours,
   countClassDays,
   mondayOf,
+  semesterForDate,
   semesterRange,
   weekdayLabel
 } from "./academic-calendar";
-import { isRemovedSubject, plannedHoursBySubject, resolveWeek, subjectSlots } from "./timetable";
-import { assignProgress, slotContentMap } from "./progress";
+import { isRemovedSubject, plannedHoursBySubject, resolveDay } from "./timetable";
+import { buildAssignedSlotContents } from "./progress";
 import { buildHoursAudit } from "./hours-audit";
 import { addDays } from "./academic-calendar";
 import { localDate } from "./utils";
@@ -67,10 +68,18 @@ export class CurriculumOpsView extends ItemView {
 
     const calendar = await repository.getAcademicCalendar();
     const standard = await repository.getHoursStandard();
-    const timetable = await repository.getBaseTimetable(settings.semester);
-    const tables = await repository.getProgressTables(settings.semester);
+    const timetables: Record<string, BaseTimetable | null> = {
+      "1학기": await repository.getBaseTimetable("1학기"),
+      "2학기": await repository.getBaseTimetable("2학기")
+    };
+    const tablesBySemester: Record<string, ProgressTable[]> = {
+      "1학기": await repository.getProgressTables("1학기"),
+      "2학기": await repository.getProgressTables("2학기")
+    };
+    const currentTimetable = timetables[settings.semester] ?? null;
+    const currentTables = tablesBySemester[settings.semester] ?? [];
 
-    this.renderSetup(container, calendar, standard, timetable, tables);
+    this.renderSetup(container, calendar, standard, currentTimetable, currentTables);
     if (!calendar) {
       container.createEl("p", {
         cls: "class-management-ops-hint",
@@ -80,9 +89,9 @@ export class CurriculumOpsView extends ItemView {
     }
 
     this.renderCalendarSummary(container, calendar);
-    await this.renderWeek(container, calendar, timetable, tables, standard);
-    await this.renderHoursAudit(container, calendar, standard, timetable);
-    this.renderActions(container, timetable, tables);
+    this.renderWeek(container, calendar, timetables, tablesBySemester, standard);
+    this.renderHoursAudit(container, calendar, standard, timetables);
+    this.renderActions(container, currentTimetable, currentTables);
   }
 
   private renderSetup(
@@ -146,13 +155,13 @@ export class CurriculumOpsView extends ItemView {
     }
   }
 
-  private async renderWeek(
+  private renderWeek(
     container: HTMLElement,
     calendar: AcademicCalendar,
-    timetable: BaseTimetable | null,
-    tables: ProgressTable[],
+    timetables: Record<string, BaseTimetable | null>,
+    tablesBySemester: Record<string, ProgressTable[]>,
     standard: HoursStandard | null
-  ): Promise<void> {
+  ): void {
     const section = container.createDiv({ cls: "class-management-ops-week" });
     const header = section.createDiv({ cls: "class-management-ops-week-header" });
     header.createEl("h3", { text: "주간 시간표" });
@@ -176,17 +185,26 @@ export class CurriculumOpsView extends ItemView {
       text: `${this.weekAnchor} ~ ${addDays(this.weekAnchor, 4)}`
     });
 
-    const days = resolveWeek(calendar, timetable, this.weekAnchor);
-    const contents = timetable
-      ? this.buildSlotContents(calendar, timetable, tables)
-      : new Map<string, ProgressRow>();
-    const editable = timetable !== null &&
-      timetable.semester === this.plugin.settings.semester;
-    const subjects = this.collectSubjects(tables, standard, timetable);
+    const dates = [0, 1, 2, 3, 4].map((offset) => addDays(this.weekAnchor, offset));
+    const days = dates.map((date) => {
+      const semester = semesterForDate(calendar, date);
+      return resolveDay(calendar, semester ? timetables[semester] ?? null : null, date);
+    });
+    const dayEditable = dates.map((date) => {
+      const semester = semesterForDate(calendar, date);
+      return semester !== "" && (timetables[semester] ?? null) !== null;
+    });
+    const editable = dayEditable.some(Boolean);
+    const contents = buildAssignedSlotContents(calendar, timetables, tablesBySemester);
+    const subjects = this.collectSubjects(
+      [...(tablesBySemester["1학기"] ?? []), ...(tablesBySemester["2학기"] ?? [])],
+      standard,
+      timetables[this.plugin.settings.semester] ?? null
+    );
     if (editable) {
       section.createEl("p", {
         cls: "class-management-ops-hint",
-        text: "칸을 클릭하면 그 날짜의 교시만 다른 과목으로 바꿀 수 있습니다. 빈 칸(＋)은 6~8교시처럼 기준 교시 밖의 수업 추가, 행사 교시 클릭은 그 교시만 교과·창체로 재배정합니다. 행사 자체(명칭·범위)는 학사일정 노트에서 수정합니다."
+        text: "칸을 클릭하면 그 날짜의 교시만 다른 과목으로 바꿀 수 있으며, 변경은 그 날짜가 속한 학기의 기초시간표 노트에 기록됩니다. 빈 칸(＋)은 6~8교시처럼 기준 교시 밖의 수업 추가, 행사 교시 클릭은 그 교시만 교과·창체로 재배정합니다."
       });
     }
 
@@ -216,16 +234,19 @@ export class CurriculumOpsView extends ItemView {
     for (let period = 1; period <= maxPeriods; period += 1) {
       const row = body.createEl("tr");
       row.createEl("td", { text: String(period) });
-      for (const day of days) {
+      days.forEach((day, dayIndex) => {
         const cell = row.createEl("td");
         if (!day.isClassDay) {
           cell.addClass("is-closed");
-          continue;
+          return;
         }
+        const daySemester = semesterForDate(calendar, day.date);
+        const dayTimetable = daySemester ? timetables[daySemester] ?? null : null;
+        const cellEditable = dayEditable[dayIndex] ?? false;
         const resolved = day.periods.find((item) => item.period === period);
         if (!resolved) {
-          if (editable) {
-            const removal = timetable?.overrides.find(
+          if (cellEditable) {
+            const removal = dayTimetable?.overrides.find(
               (item) =>
                 item.date === day.date &&
                 item.period === period &&
@@ -259,7 +280,7 @@ export class CurriculumOpsView extends ItemView {
               });
             }
           }
-          continue;
+          return;
         }
         if (resolved.source === "event") cell.addClass("is-event");
         if (resolved.source === "override") cell.addClass("is-override");
@@ -271,7 +292,7 @@ export class CurriculumOpsView extends ItemView {
             cls: "class-management-ops-topic"
           });
         }
-        if (editable) {
+        if (cellEditable) {
           this.attachCellEditor(cell, {
             date: day.date,
             period,
@@ -283,7 +304,7 @@ export class CurriculumOpsView extends ItemView {
             label: `${day.date} ${period}교시 ${resolved.subject || "빈 교시"} 과목 변경`
           });
         }
-      }
+      });
     }
   }
 
@@ -347,31 +368,15 @@ export class CurriculumOpsView extends ItemView {
     return subjects;
   }
 
-  private buildSlotContents(
-    calendar: AcademicCalendar,
-    timetable: BaseTimetable,
-    tables: ProgressTable[]
-  ): Map<string, ProgressRow> {
-    const range = semesterRange(calendar, this.plugin.settings.semester);
-    const merged = new Map<string, ProgressRow>();
-    if (!range.from || !range.to) return merged;
-    for (const table of tables) {
-      const slots = subjectSlots(calendar, timetable, range.from, range.to, table.subject);
-      const assignment = assignProgress(table.rows, slots);
-      for (const [key, row] of slotContentMap(assignment)) merged.set(key, row);
-    }
-    return merged;
-  }
-
-  private async renderHoursAudit(
+  private renderHoursAudit(
     container: HTMLElement,
     calendar: AcademicCalendar,
-    standard: Parameters<typeof buildHoursAudit>[0],
-    timetable: BaseTimetable | null
-  ): Promise<void> {
+    standard: HoursStandard | null,
+    timetables: Record<string, BaseTimetable | null>
+  ): void {
     const section = container.createDiv({ cls: "class-management-ops-audit" });
     section.createEl("h3", { text: "시수 점검 (기준 · 편성 · 실행)" });
-    if (!timetable) {
+    if (!timetables["1학기"] && !timetables["2학기"]) {
       section.createEl("p", {
         cls: "class-management-ops-hint",
         text: "기초시간표를 만들면 편성 시수를 집계합니다."
@@ -386,10 +391,7 @@ export class CurriculumOpsView extends ItemView {
     for (const semester of ["1학기", "2학기"]) {
       const range = semesterRange(calendar, semester);
       if (!range.from || !range.to) continue;
-      const semesterTimetable =
-        semester === this.plugin.settings.semester
-          ? timetable
-          : await this.plugin.repository.getBaseTimetable(semester);
+      const semesterTimetable = timetables[semester] ?? null;
       if (!semesterTimetable) {
         missingSemesters.push(semester);
         continue;

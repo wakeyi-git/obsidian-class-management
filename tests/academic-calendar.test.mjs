@@ -13,6 +13,7 @@ const {
   parsePeriodsCell,
   parseWeekdayPeriods,
   periodCountFor,
+  semesterForDate,
   semesterRange
 } = await loadTypeScriptModule("../src/academic-calendar.ts");
 
@@ -77,6 +78,13 @@ test("수업일수와 수업가능시수를 계산한다", () => {
 test("학기 범위를 반환한다", () => {
   assert.deepEqual(semesterRange(calendar, "1학기"), { from: "2026-03-02", to: "2026-07-17" });
   assert.deepEqual(semesterRange(calendar, "2학기"), { from: "2026-08-17", to: "2027-01-08" });
+});
+
+test("날짜가 속한 학기를 판별한다", () => {
+  assert.equal(semesterForDate(calendar, "2026-05-11"), "1학기");
+  assert.equal(semesterForDate(calendar, "2026-09-01"), "2학기");
+  assert.equal(semesterForDate(calendar, "2026-08-01"), "");
+  assert.equal(semesterForDate(calendar, "2027-02-10"), "");
 });
 
 test("교시 표기와 요일 교시 배열을 파싱한다", () => {

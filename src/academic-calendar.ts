@@ -98,6 +98,22 @@ export function semesterRange(
     : { from: calendar.semester1Start, to: calendar.semester1End };
 }
 
+export function semesterForDate(calendar: AcademicCalendar, date: string): "1학기" | "2학기" | "" {
+  if (
+    calendar.semester1Start && calendar.semester1End &&
+    date >= calendar.semester1Start && date <= calendar.semester1End
+  ) {
+    return "1학기";
+  }
+  if (
+    calendar.semester2Start && calendar.semester2End &&
+    date >= calendar.semester2Start && date <= calendar.semester2End
+  ) {
+    return "2학기";
+  }
+  return "";
+}
+
 export function parseAcademicCalendar(
   file: TFile,
   frontmatter: Record<string, unknown>,
