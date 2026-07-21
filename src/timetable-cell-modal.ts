@@ -55,7 +55,12 @@ export class TimetableCellModal extends Modal {
         options.unshift(this.context.currentSubject);
       }
       for (const subject of options) dropdown.addOption(subject, subject);
-      if (this.subject && options.includes(this.subject)) dropdown.setValue(this.subject);
+      // 드롭다운에 보이는 값과 내부 상태를 항상 일치시킨다.
+      // (빈 칸에서 첫 항목을 그대로 두고 저장해도 바로 등록되도록)
+      if (!this.subject || !options.includes(this.subject)) {
+        this.subject = options[0] ?? "";
+      }
+      if (this.subject) dropdown.setValue(this.subject);
       dropdown.onChange((value) => (this.subject = value));
     });
 

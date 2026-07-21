@@ -17,6 +17,7 @@ import type {
   AcademicCalendar,
   BaseTimetable,
   HoursAuditRow,
+  HoursStandard,
   ProgressRow,
   ProgressTable
 } from "./types";
@@ -79,7 +80,7 @@ export class CurriculumOpsView extends ItemView {
     }
 
     this.renderCalendarSummary(container, calendar);
-    await this.renderWeek(container, calendar, timetable, tables);
+    await this.renderWeek(container, calendar, timetable, tables, standard);
     await this.renderHoursAudit(container, calendar, standard, timetable);
     this.renderActions(container, timetable, tables);
   }
@@ -149,7 +150,8 @@ export class CurriculumOpsView extends ItemView {
     container: HTMLElement,
     calendar: AcademicCalendar,
     timetable: BaseTimetable | null,
-    tables: ProgressTable[]
+    tables: ProgressTable[],
+    standard: HoursStandard | null
   ): Promise<void> {
     const section = container.createDiv({ cls: "class-management-ops-week" });
     const header = section.createDiv({ cls: "class-management-ops-week-header" });
@@ -180,7 +182,7 @@ export class CurriculumOpsView extends ItemView {
       : new Map<string, ProgressRow>();
     const editable = timetable !== null &&
       timetable.semester === this.plugin.settings.semester;
-    const subjects = this.collectSubjects(tables);
+    const subjects = this.collectSubjects(tables, standard, timetable);
     if (editable) {
       section.createEl("p", {
         cls: "class-management-ops-hint",
@@ -322,15 +324,26 @@ export class CurriculumOpsView extends ItemView {
     });
   }
 
-  private collectSubjects(tables: ProgressTable[]): string[] {
+  private collectSubjects(
+    tables: ProgressTable[],
+    standard: HoursStandard | null,
+    timetable: BaseTimetable | null
+  ): string[] {
     const subjects: string[] = [];
     const push = (subject: string): void => {
       const trimmed = subject.trim();
-      if (trimmed && !subjects.includes(trimmed)) subjects.push(trimmed);
+      if (!trimmed || isRemovedSubject(trimmed)) return;
+      if (!subjects.includes(trimmed)) subjects.push(trimmed);
     };
-    for (const subject of this.plugin.settings.schoolSubjects) push(subject);
+    // 기준 시수 노트가 있으면 그 목록이 학급의 교과 목록이다.
+    // (학교자율시간의 실제 과목명 등 학교 편성을 그대로 따른다)
+    for (const entry of standard?.entries ?? []) push(entry.subject);
+    for (const row of timetable?.grid ?? []) for (const cell of row) push(cell);
     for (const table of tables) push(table.subject);
     for (const area of ["창체(자율)", "창체(동아리)", "창체(진로)"]) push(area);
+    if (subjects.length === 0) {
+      for (const subject of this.plugin.settings.schoolSubjects) push(subject);
+    }
     return subjects;
   }
 
