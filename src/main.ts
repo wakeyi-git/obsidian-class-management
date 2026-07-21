@@ -738,6 +738,44 @@ export default class ClassManagementPlugin extends Plugin {
     new ProgressImportModal(this).open();
   }
 
+  private async resolveSlotSubject(
+    semester: string,
+    date: string,
+    period: number
+  ): Promise<string> {
+    const calendar = await this.repository.getAcademicCalendar();
+    if (!calendar) return "";
+    const timetable = await this.repository.getBaseTimetable(semester);
+    const day = resolveDay(calendar, timetable, date);
+    const slot = day.periods.find((item) => item.period === period);
+    return slot && !slot.unmapped ? slot.subject.trim() : "";
+  }
+
+  /** 주간 시간표 수정에 영향받은 과목들의 진도 배정을 다시 계산해 진도표에 기록한다. */
+  private async reassignProgressSubjects(semester: string, subjects: string[]): Promise<number> {
+    const unique = [...new Set(subjects.map((s) => s.trim()).filter(Boolean))].filter(
+      (subject) => !isRemovedSubject(subject)
+    );
+    if (unique.length === 0) return 0;
+    const calendar = await this.repository.getAcademicCalendar();
+    if (!calendar) return 0;
+    const range = semesterRange(calendar, semester);
+    if (!range.from || !range.to) return 0;
+    const timetable = await this.repository.getBaseTimetable(semester);
+    if (!timetable) return 0;
+    const tables = await this.repository.getProgressTables(semester);
+    let issues = 0;
+    for (const subject of unique) {
+      const table = tables.find((item) => item.subject === subject);
+      if (!table) continue;
+      const slots = subjectSlots(calendar, timetable, range.from, range.to, subject);
+      const assignment = assignProgress(table.rows, slots);
+      await this.repository.writeProgressAssignments(table, assignment);
+      issues += assignment.issues.length;
+    }
+    return issues;
+  }
+
   private async timetableSemesterForDate(date: string): Promise<string | null> {
     const calendar = await this.repository.getAcademicCalendar();
     if (!calendar) return this.settings.semester;
@@ -812,12 +850,16 @@ export default class ClassManagementPlugin extends Plugin {
   async saveTimetableOverride(override: TimetableOverride): Promise<void> {
     const semester = await this.timetableSemesterForDate(override.date);
     if (!semester) return;
+    const before = await this.resolveSlotSubject(semester, override.date, override.period);
     const file = await this.repository.ensureBaseTimetableNote(semester);
     await this.repository.upsertTimetableOverride(file, override);
+    const after = await this.resolveSlotSubject(semester, override.date, override.period);
+    const issues = await this.reassignProgressSubjects(semester, [before, after]);
+    const reassignNote = issues > 0 ? ` · 진도 재배정(확인 ${issues}건)` : " · 진도 재배정";
     new Notice(
       isRemovedSubject(override.subject)
-        ? `${override.date} ${override.period}교시를 삭제했습니다. (${semester})`
-        : `${override.date} ${override.period}교시 → ${override.subject} (${semester})`
+        ? `${override.date} ${override.period}교시를 삭제했습니다. (${semester})${reassignNote}`
+        : `${override.date} ${override.period}교시 → ${override.subject} (${semester})${reassignNote}`
     );
     await this.refreshViews();
   }
@@ -825,9 +867,13 @@ export default class ClassManagementPlugin extends Plugin {
   async removeTimetableOverrideAt(date: string, period: number): Promise<void> {
     const semester = await this.timetableSemesterForDate(date);
     if (!semester) return;
+    const before = await this.resolveSlotSubject(semester, date, period);
     const file = await this.repository.ensureBaseTimetableNote(semester);
     await this.repository.removeTimetableOverride(file, date, period);
-    new Notice(`${date} ${period}교시 변경을 제거했습니다. (${semester})`);
+    const after = await this.resolveSlotSubject(semester, date, period);
+    const issues = await this.reassignProgressSubjects(semester, [before, after]);
+    const reassignNote = issues > 0 ? ` · 진도 재배정(확인 ${issues}건)` : " · 진도 재배정";
+    new Notice(`${date} ${period}교시 변경을 제거했습니다. (${semester})${reassignNote}`);
     await this.refreshViews();
   }
 
