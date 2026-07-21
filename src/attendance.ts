@@ -1,4 +1,5 @@
 import type { AttendanceMark, AttendanceStatus } from "./types";
+import { escapeTableCell, splitMarkdownTableRow, studentNameFromCell, unescapeTableCell } from "./utils";
 
 export const ATTENDANCE_STATUSES: readonly AttendanceStatus[] = [
   "출석",
@@ -82,50 +83,3 @@ function parseAttendanceTableRow(line: string): AttendanceMark | null {
     : { studentNumber, studentName, status };
 }
 
-function splitMarkdownTableRow(line: string): string[] {
-  const trimmed = line.trim();
-  if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) return [];
-
-  const body = trimmed.slice(1, -1);
-  const cells: string[] = [];
-  let current = "";
-
-  for (let index = 0; index < body.length; index += 1) {
-    const character = body[index];
-    if (character === "|" && body[index - 1] !== "\\") {
-      cells.push(current.trim());
-      current = "";
-    } else {
-      current += character;
-    }
-  }
-  cells.push(current.trim());
-  return cells;
-}
-
-function studentNameFromCell(cell: string, studentNumber: string): string {
-  const trimmed = cell.trim();
-  let label = trimmed;
-
-  if (trimmed.startsWith("[[") && trimmed.endsWith("]]")) {
-    const linkBody = trimmed.slice(2, -2);
-    const aliasIndex = linkBody.indexOf("\\|");
-    label = aliasIndex >= 0
-      ? linkBody.slice(aliasIndex + 2)
-      : (linkBody.split("/").pop() ?? "");
-  }
-
-  label = unescapeTableCell(label).trim();
-  const expectedPrefix = `${studentNumber}번 `;
-  if (label.startsWith(expectedPrefix)) return label.slice(expectedPrefix.length).trim();
-
-  return label.replace(/^0*\d+\s+/, "").trim();
-}
-
-function unescapeTableCell(value: string): string {
-  return value.replace(/\\\|/g, "|");
-}
-
-function escapeTableCell(value: string): string {
-  return value.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
-}

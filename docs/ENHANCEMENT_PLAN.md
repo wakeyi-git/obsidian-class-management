@@ -49,12 +49,12 @@
 
 기능 추가 전에 부채를 정리해 이후 바이브코딩 반복 속도를 지키는 단계.
 
-- [ ] 표 처리 헬퍼(`splitMarkdownTableRow`/`escapeTableCell`/`unescapeTableCell`/`studentNameFromCell`)를 공용 모듈로 추출 (attendance·assignment·notice 3중복 제거)
-- [ ] `safeFileSegment` 규칙 단일화 (`#^[]` 포함 넓은 규칙으로 통일) 및 `joinVaultPath`/`yamlString`/`localDate`/`booleanValue`/`csvCell` 사본 제거
-- [ ] `RecordEntry.content` 읽기 경로 정리 (항상 채우거나 타입에서 제거)
-- [ ] `schemaVersion` 실동작화(버전 기반 마이그레이션 골격) 또는 필드 정리, `schoolLevel` 유지 여부 결정
-- [ ] `tests/csv.test.mjs`를 도메인별 파일로 분리 (`node --test` 러너 검토)
-- [ ] (선택) eslint + prettier 도입
+- [x] 표 처리 헬퍼를 `utils.ts`로 추출 (attendance·assignment·notice 3중복 제거) — 2026-07-21
+- [x] `safeFileSegment` 넓은 규칙(`#^[]` 포함)으로 단일화, `joinVaultPath`/`yamlString`/`localDate`/`booleanValue`/`csvCell`/`addOption` 사본 제거. 핵심: utils.ts에서 obsidian `normalizePath` 값 import를 순수 구현으로 대체해 테스트 대상 모듈이 utils를 공유할 수 있게 함 (obsidian은 `import type`만 허용되는 제약)
+- [x] `RecordEntry.content`를 타입에서 제거 (읽는 곳 없음, 본문은 ActivityIndex가 직접 읽음. 생성 입력 `NewRecord.content`는 유지)
+- [x] `schemaVersion` 매직 넘버를 `SETTINGS_SCHEMA_VERSION` 상수로 통일하고 운용 정책 주석 추가 (정규화는 멱등이라 항상 실행, 비호환 변경 시에만 버전 분기). `schoolLevel`은 초등 전용 표식으로 유지 결정
+- [x] 테스트를 도메인별 15개 파일로 분리, `node --test` 러너 전환, 공용 픽스처 `tests/helpers.mjs` 추출 — 56개 명명 테스트
+- [ ] (선택) eslint + prettier 도입 — 보류 (strict tsc가 대부분 커버, 필요해지면 도입)
 - 완료 기준: `npm run check` 통과 + 볼트 수동 스모크 테스트 (docs/TESTING.md 체크리스트)
 
 ### 2단계 — 실사용 검증 루프 (2학기, 9~12월)

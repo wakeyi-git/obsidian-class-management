@@ -66,7 +66,6 @@ export interface RecordEntry {
   studentNumber: string;
   recordType: string;
   date: string;
-  content: string;
   schoolRecordEvidence?: SchoolRecordEvidence;
 }
 

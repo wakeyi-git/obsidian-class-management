@@ -2,6 +2,7 @@ import { App, TFile, TFolder } from "obsidian";
 import type { ClassRepository } from "./class-repository";
 import { isLegacyAttendanceContent, isWikiLinkStudentPath } from "./migration";
 import type { ClassManagementSettings } from "./types";
+import { joinVaultPath } from "./utils";
 
 export interface MigrationPreview {
   legacyAttendance: TFile[];
@@ -19,7 +20,7 @@ export async function createManagedBackup(
   settings: ClassManagementSettings
 ): Promise<MaintenanceResult> {
   const stamp = backupStamp(new Date());
-  const backupPath = joinPath(repository.backupsFolderPath, stamp);
+  const backupPath = joinVaultPath(repository.backupsFolderPath, stamp);
   await ensureFolder(app, backupPath);
   const prefix = `${repository.baseFolderPath}/`;
   const backupPrefix = `${repository.backupsFolderPath}/`;
@@ -29,13 +30,13 @@ export async function createManagedBackup(
   let processed = 0;
   for (const file of files) {
     const relative = file.path.slice(prefix.length);
-    const target = joinPath(backupPath, relative);
+    const target = joinVaultPath(backupPath, relative);
     await ensureFolder(app, target.split("/").slice(0, -1).join("/"));
     const data = await app.vault.readBinary(file);
     await app.vault.createBinary(target, data);
     processed += 1;
   }
-  const manifestPath = joinPath(backupPath, "백업 정보.md");
+  const manifestPath = joinVaultPath(backupPath, "백업 정보.md");
   await app.vault.create(manifestPath, [
     "---",
     "class-management: backup",
@@ -73,7 +74,7 @@ export async function restoreMissingFromBackup(
   let restored = 0;
   for (const file of files) {
     const relative = file.path.slice(backupPrefix.length);
-    const target = joinPath(repository.baseFolderPath, relative);
+    const target = joinVaultPath(repository.baseFolderPath, relative);
     if (app.vault.getAbstractFileByPath(target)) continue;
     await ensureFolder(app, target.split("/").slice(0, -1).join("/"));
     await app.vault.createBinary(target, await app.vault.readBinary(file));
@@ -142,13 +143,9 @@ async function ensureFolder(app: App, path: string): Promise<void> {
   const parts = path.split("/").filter(Boolean);
   let current = "";
   for (const part of parts) {
-    current = joinPath(current, part);
+    current = joinVaultPath(current, part);
     if (!app.vault.getAbstractFileByPath(current)) await app.vault.createFolder(current);
   }
-}
-
-function joinPath(...parts: string[]): string {
-  return parts.join("/").replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^\/|\/$/g, "");
 }
 
 function backupStamp(date: Date): string {

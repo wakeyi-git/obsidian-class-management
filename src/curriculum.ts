@@ -1,4 +1,5 @@
 import type { TFile } from "obsidian";
+import { booleanValue, yamlString } from "./utils";
 import type {
   ClassManagementSettings,
   ConceptInquiryPhase,
@@ -649,14 +650,6 @@ function conceptPhase(value: unknown): "" | ConceptInquiryPhase {
   return phase in CONCEPT_INQUIRY_PHASE_LABELS ? phase as ConceptInquiryPhase : "";
 }
 
-function booleanValue(value: unknown, fallback: boolean): boolean {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "string") {
-    if (value.toLowerCase() === "true") return true;
-    if (value.toLowerCase() === "false") return false;
-  }
-  return fallback;
-}
 
 function questionCount(value: string): number {
   return value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).length;
@@ -683,6 +676,3 @@ function stripWikiLink(value: string): string {
   return value.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0] ?? value;
 }
 
-function yamlString(value: string): string {
-  return JSON.stringify(value);
-}

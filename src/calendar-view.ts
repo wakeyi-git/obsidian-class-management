@@ -1,4 +1,5 @@
 import { ItemView, Modal, Setting, WorkspaceLeaf } from "obsidian";
+import { addOption } from "./dom";
 import { ACTIVITY_KIND_LABELS } from "./activity";
 import {
   buildCalendarEvents,
@@ -279,7 +280,3 @@ class CalendarDateActionModal extends Modal {
   }
 }
 
-function addOption(select: HTMLSelectElement, value: string, text: string): void {
-  const option = select.createEl("option", { text });
-  option.value = value;
-}

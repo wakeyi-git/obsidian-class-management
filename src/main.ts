@@ -49,6 +49,9 @@ import type {
 
 const DEFAULT_CLASS_ID = "default-class";
 const DEFAULT_SCHOOL_YEAR = String(new Date().getFullYear());
+// 저장된 설정의 스키마 표식. loadSettings의 정규화는 멱등이므로 버전과 무관하게
+// 항상 실행하며, 저장 형식이 비호환으로 바뀔 때에만 이 값을 올리고 분기를 추가한다.
+const SETTINGS_SCHEMA_VERSION = 12;
 const DEFAULT_SETTINGS: ClassManagementSettings = {
   className: "우리 반",
   schoolYear: DEFAULT_SCHOOL_YEAR,
@@ -71,7 +74,7 @@ const DEFAULT_SETTINGS: ClassManagementSettings = {
   exportsFolder: "내보내기",
   retentionYears: 5,
   backupsFolder: "백업",
-  schemaVersion: 12,
+  schemaVersion: SETTINGS_SCHEMA_VERSION,
   aiOutputFolder: "AI 결과",
   aiCollaborationEnabled: false,
   aiAnonymizeStudents: true,
@@ -293,7 +296,7 @@ export default class ClassManagementPlugin extends Plugin {
       },
       savedActivityViews: loaded?.savedActivityViews ?? []
     };
-    this.settings.schemaVersion = 12;
+    this.settings.schemaVersion = SETTINGS_SCHEMA_VERSION;
     if (!loaded?.classProfiles?.length) {
       this.settings.classProfiles = [{
         id: DEFAULT_CLASS_ID,

@@ -1,5 +1,6 @@
 import { ACTIVITY_KIND_LABELS } from "./activity";
 import type { ActivityEntry, ActivityKind, ReportOptions, StudentEntry } from "./types";
+import { csvCell, escapeTableCell, localDate, yamlString } from "./utils";
 
 export interface ActivityAnalytics {
   total: number;
@@ -146,7 +147,7 @@ function buildStudentRows(activities: ActivityEntry[], students: StudentEntry[])
     .map((student) => {
       const selected = activities.filter((activity) => activity.studentNumber === student.number);
       if (selected.length === 0) return "";
-      return `| [[${withoutExtension(student.file.path)}\|${escapeCell(`${student.number}번 ${student.name}`)}]] | ${count(selected, "record")} | ${selected.filter((item) => item.kind === "attendance" && item.status !== "출석").length} | ${selected.filter((item) => item.kind === "assignment" && item.status !== "제출").length} | ${selected.filter((item) => item.kind === "notice" && item.status !== "회신 완료").length} |`;
+      return `| [[${withoutExtension(student.file.path)}\|${escapeTableCell(`${student.number}번 ${student.name}`)}]] | ${count(selected, "record")} | ${selected.filter((item) => item.kind === "attendance" && item.status !== "출석").length} | ${selected.filter((item) => item.kind === "assignment" && item.status !== "제출").length} | ${selected.filter((item) => item.kind === "notice" && item.status !== "회신 완료").length} |`;
     })
     .filter(Boolean);
 }
@@ -157,7 +158,7 @@ function evidenceBullet(activity: ActivityEntry): string {
     : "";
   const description = [activity.status, activity.detail || activity.title]
     .filter(Boolean).join(" · ");
-  return `- ${activity.date} · ${student}${ACTIVITY_KIND_LABELS[activity.kind]} · ${escapeCell(description)} ([[${withoutExtension(activity.file.path)}|원본]])`;
+  return `- ${activity.date} · ${student}${ACTIVITY_KIND_LABELS[activity.kind]} · ${escapeTableCell(description)} ([[${withoutExtension(activity.file.path)}|원본]])`;
 }
 
 function isException(activity: ActivityEntry): boolean {
@@ -197,21 +198,3 @@ function withoutExtension(path: string): string {
   return path.replace(/\.md$/i, "");
 }
 
-function escapeCell(value: string): string {
-  return value.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
-}
-
-function csvCell(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
-}
-
-function localDate(date = new Date()): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function yamlString(value: string): string {
-  return JSON.stringify(value);
-}

@@ -1,4 +1,5 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
+import { addOption } from "./dom";
 import { ACTIVITY_KIND_LABELS, filterActivities } from "./activity";
 import type ClassManagementPlugin from "./main";
 import type { ActivityEntry, ActivityKind, StudentEntry } from "./types";
@@ -171,7 +172,3 @@ export class StudentTimelineView extends ItemView {
   }
 }
 
-function addOption(select: HTMLSelectElement, value: string, text: string): void {
-  const option = select.createEl("option", { text });
-  option.value = value;
-}

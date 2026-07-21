@@ -1,3 +1,4 @@
+import { booleanValue } from "./utils";
 import type {
   ClassManagementSettings,
   RecordEntry,
@@ -464,12 +465,6 @@ function warning(code: string, message: string): EvidenceValidationIssue {
   return { severity: "warning", code, message };
 }
 
-function booleanValue(value: unknown, fallback: boolean): boolean {
-  if (typeof value === "boolean") return value;
-  if (String(value).toLowerCase() === "true") return true;
-  if (String(value).toLowerCase() === "false") return false;
-  return fallback;
-}
 
 function detectLegacySubject(text: string): string {
   return ["국어", "수학", "사회", "과학", "영어", "도덕", "실과", "체육", "음악", "미술"]

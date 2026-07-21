@@ -1,4 +1,5 @@
 import { App, ItemView, Modal, Notice, Setting, WorkspaceLeaf } from "obsidian";
+import { addOption } from "./dom";
 import {
   ACTIVITY_KIND_LABELS,
   EMPTY_ACTIVITY_FILTERS,
@@ -497,10 +498,6 @@ function filterLabel(container: HTMLElement, text: string): HTMLLabelElement {
   return label;
 }
 
-function addOption(select: HTMLSelectElement, value: string, text: string): void {
-  const option = select.createEl("option", { text });
-  option.value = value;
-}
 
 function appendHighlightedText(
   container: HTMLElement,

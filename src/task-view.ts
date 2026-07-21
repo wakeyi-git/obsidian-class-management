@@ -1,4 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
+import { addOption } from "./dom";
 import type ClassManagementPlugin from "./main";
 import { taskRecurrenceLabel } from "./task";
 import type { NoticeSheet, TaskEntry, TaskStatus } from "./types";
@@ -168,10 +169,6 @@ function unique(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b, "ko"));
 }
 
-function addOption(select: HTMLSelectElement, value: string, label: string): void {
-  const option = select.createEl("option", { text: label });
-  option.value = value;
-}
 
 function addDays(date: string, days: number): string {
   const value = new Date(`${date}T00:00:00`);

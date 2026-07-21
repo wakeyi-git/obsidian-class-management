@@ -260,7 +260,6 @@ export class ClassRepository {
       studentNumber: student.number,
       recordType: input.recordType,
       date: input.date,
-      content: body,
       schoolRecordEvidence: input.schoolRecordEvidence
     };
   }
@@ -975,7 +974,6 @@ export class ClassRepository {
           studentNumber: String(frontmatter.studentNumber ?? ""),
           recordType: String(frontmatter.recordType ?? "기타"),
           date: String(frontmatter.date ?? ""),
-          content: "",
           schoolRecordEvidence: parseSchoolRecordEvidence(frontmatter as Record<string, unknown>)
         };
       })

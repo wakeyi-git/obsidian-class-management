@@ -3,6 +3,7 @@ import type { ClassRepository } from "./class-repository";
 import type { ActivityEntry, ClassProfile, CurriculumUnit, StudentEntry } from "./types";
 import { validateSchoolRecordEvidence } from "./school-record-evidence";
 import { auditConceptInquiryDesign, auditCurriculumAlignment } from "./curriculum";
+import { csvCell, escapeTableCell } from "./utils";
 
 export type DiagnosticLevel = "error" | "warning" | "info";
 
@@ -206,7 +207,7 @@ export function buildDiagnosticMarkdown(
     "| 수준 | 코드 | 내용 | 원본 |",
     "| --- | --- | --- | --- |",
     ...issues.map((issue) =>
-      `| ${levelLabel(issue.level)} | ${escapeCell(issue.code)} | ${escapeCell(issue.message)} | ${escapeCell(issue.source ?? "")} |`
+      `| ${levelLabel(issue.level)} | ${escapeTableCell(issue.code)} | ${escapeTableCell(issue.message)} | ${escapeTableCell(issue.source ?? "")} |`
     ),
     ""
   ].join("\n");
@@ -216,10 +217,3 @@ function levelLabel(level: DiagnosticLevel): string {
   return level === "error" ? "오류" : level === "warning" ? "경고" : "정보";
 }
 
-function escapeCell(value: string): string {
-  return value.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
-}
-
-function csvCell(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
-}

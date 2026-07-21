@@ -1,4 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
+import { addOption } from "./dom";
 import { createAiDraft } from "./ai-collaboration";
 import type ClassManagementPlugin from "./main";
 import {
@@ -394,10 +395,6 @@ function filter(container: HTMLElement, label: string): HTMLLabelElement {
   return element;
 }
 
-function addOption(select: HTMLSelectElement, value: string, text: string): void {
-  const option = select.createEl("option", { text });
-  option.value = value;
-}
 
 function formatDate(date: Date): string {
   const year = date.getFullYear();

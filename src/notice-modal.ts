@@ -1,4 +1,5 @@
 import { App, ButtonComponent, Modal, Notice, Setting, SuggestModal, TFile } from "obsidian";
+import { addOption } from "./dom";
 import { NOTICE_STATUSES } from "./notice";
 import type {
   NoticeMark,
@@ -226,7 +227,3 @@ export class NoticeModal extends Modal {
   }
 }
 
-function addOption(select: HTMLSelectElement, value: string, text: string): void {
-  const option = select.createEl("option", { text });
-  option.value = value;
-}

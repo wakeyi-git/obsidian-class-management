@@ -1,5 +1,6 @@
 import type { App, TFile } from "obsidian";
 import { ACTIVITY_KIND_LABELS } from "./activity";
+import { joinVaultPath, localDate, safeFileSegment, yamlString } from "./utils";
 import {
   classifySchoolRecordReferences,
   SCHOOL_RECORD_AREAS,
@@ -465,21 +466,3 @@ function sanitizeInline(value: string): string {
   return value.replace(/\r?\n/g, " ").replace(/\|/g, "\\|").trim();
 }
 
-function joinVaultPath(...parts: string[]): string {
-  return parts.join("/").replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^\/|\/$/g, "");
-}
-
-function safeFileSegment(value: string): string {
-  return value.replace(/[\\/:*?"<>|#^[\]]/g, "-").replace(/\s+/g, " ").trim();
-}
-
-function localDate(date = new Date()): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function yamlString(value: string): string {
-  return JSON.stringify(value);
-}
