@@ -165,6 +165,49 @@ test("기준 교시를 넘는 변경·행사는 그날 교시를 확장한다", 
   assert.equal(resolveDay(calendar, parsedReverted, "2026-05-04").periods.length, 5);
 });
 
+test("시간표 변경이 행사보다 우선한다", () => {
+  const withOverride = upsertTimetableOverrideContent(timetableContent, {
+    date: "2026-05-08",
+    period: 1,
+    subject: "창체(자율)",
+    reason: "체육대회 중 자치활동"
+  });
+  const parsed = parseBaseTimetable(timetableFile, { schoolYear: "2026", semester: "1학기" }, withOverride);
+  const friday = resolveDay(calendar, parsed, "2026-05-08");
+  assert.equal(friday.periods[0]?.subject, "창체(자율)");
+  assert.equal(friday.periods[0]?.source, "override");
+  assert.equal(friday.periods[1]?.subject, "창체(자율)");
+  assert.equal(friday.periods[1]?.source, "event");
+});
+
+test("전일행사 날에도 변경으로 교과를 배정할 수 있다", () => {
+  const eventCalendar = parseAcademicCalendar(calendarFile, {
+    schoolYear: "2026",
+    semester1Start: "2026-03-02",
+    semester1End: "2026-07-17",
+    semester2Start: "2026-08-17",
+    semester2End: "2027-01-08",
+    weekdayPeriods: [5, 6, 5, 6, 5]
+  }, [
+    "## 행사",
+    "| 날짜 | 유형 | 명칭 | 교시 | 과목 | 비고 |",
+    "| --- | --- | --- | --- | --- | --- |",
+    "| 2026-05-04 | 전일행사 | 현장체험학습 |  | 창체(자율) |  |"
+  ].join("\n"));
+  const withOverride = upsertTimetableOverrideContent(timetableContent, {
+    date: "2026-05-04",
+    period: 5,
+    subject: "국어",
+    reason: "체험학습 후 정리 수업"
+  });
+  const parsed = parseBaseTimetable(timetableFile, { schoolYear: "2026", semester: "1학기" }, withOverride);
+  const monday = resolveDay(eventCalendar, parsed, "2026-05-04");
+  assert.equal(monday.periods[0]?.subject, "창체(자율)");
+  assert.equal(monday.periods[0]?.source, "event");
+  assert.equal(monday.periods[4]?.subject, "국어");
+  assert.equal(monday.periods[4]?.source, "override");
+});
+
 test("행사 교시가 기준을 넘으면 7·8교시도 생긴다", () => {
   const eventCalendar = parseAcademicCalendar(calendarFile, {
     schoolYear: "2026",

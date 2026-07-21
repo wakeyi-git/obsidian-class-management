@@ -104,13 +104,17 @@ export function resolveDay(
   const allDayEvent = events.find((event) => event.type === "전일행사");
   const periodEvents = events.filter((event) => event.type === "행사");
 
+  // 우선순위: 시간표 변경(오버라이드) > 행사 > 기초시간표.
+  // 행사 날에도 교사가 특정 교시를 교과·창체로 배정할 수 있어야 한다.
   for (let period = 1; period <= periodCount; period += 1) {
     const override = timetable?.overrides.find(
       (item) => item.date === date && item.period === period
     );
     const periodEvent = periodEvents.find((event) => event.periods.includes(period));
     let resolved: ResolvedPeriod;
-    if (allDayEvent) {
+    if (override) {
+      resolved = { period, subject: override.subject, source: "override" };
+    } else if (allDayEvent) {
       resolved = {
         period,
         subject: allDayEvent.subject || allDayEvent.name,
@@ -122,8 +126,6 @@ export function resolveDay(
         subject: periodEvent.subject || periodEvent.name,
         source: "event"
       };
-    } else if (override) {
-      resolved = { period, subject: override.subject, source: "override" };
     } else {
       const base = timetable?.grid[period - 1]?.[weekday] ?? "";
       resolved = { period, subject: base, source: "base" };
@@ -133,16 +135,8 @@ export function resolveDay(
 
   // 기준 교시를 넘는 교시에 기록된 변경·행사는 그날의 교시를 확장한다
   // (예: 5교시 요일의 6교시 수업, 체험학습을 위한 7·8교시 운영).
+  const extras = new Map<number, ResolvedPeriod>();
   if (!allDayEvent) {
-    const extras = new Map<number, ResolvedPeriod>();
-    for (const override of timetable?.overrides ?? []) {
-      if (override.date !== date || override.period <= periodCount) continue;
-      extras.set(override.period, {
-        period: override.period,
-        subject: override.subject,
-        source: "override"
-      });
-    }
     for (const event of periodEvents) {
       for (const period of event.periods) {
         if (period <= periodCount) continue;
@@ -153,10 +147,18 @@ export function resolveDay(
         });
       }
     }
-    for (const period of [...extras.keys()].sort((a, b) => a - b)) {
-      const resolved = extras.get(period);
-      if (resolved) day.periods.push(resolved);
-    }
+  }
+  for (const override of timetable?.overrides ?? []) {
+    if (override.date !== date || override.period <= periodCount) continue;
+    extras.set(override.period, {
+      period: override.period,
+      subject: override.subject,
+      source: "override"
+    });
+  }
+  for (const period of [...extras.keys()].sort((a, b) => a - b)) {
+    const resolved = extras.get(period);
+    if (resolved) day.periods.push(resolved);
   }
   return day;
 }

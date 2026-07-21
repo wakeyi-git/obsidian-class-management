@@ -1,4 +1,4 @@
-import { ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
+import { ItemView, TFile, WorkspaceLeaf } from "obsidian";
 import { TimetableCellModal } from "./timetable-cell-modal";
 import {
   availableHours,
@@ -184,7 +184,7 @@ export class CurriculumOpsView extends ItemView {
     if (editable) {
       section.createEl("p", {
         cls: "class-management-ops-hint",
-        text: "칸을 클릭하면 그 날짜의 교시만 다른 과목으로 바꿀 수 있습니다. 빈 칸(＋)을 클릭하면 6~8교시처럼 기준 교시 밖의 수업을 추가합니다. 행사 교시는 학사일정 노트에서 수정하세요."
+        text: "칸을 클릭하면 그 날짜의 교시만 다른 과목으로 바꿀 수 있습니다. 빈 칸(＋)은 6~8교시처럼 기준 교시 밖의 수업 추가, 행사 교시 클릭은 그 교시만 교과·창체로 재배정합니다. 행사 자체(명칭·범위)는 학사일정 노트에서 수정합니다."
       });
     }
 
@@ -279,15 +279,12 @@ export class CurriculumOpsView extends ItemView {
     cell.setAttribute("tabindex", "0");
     cell.setAttribute("aria-label", options.label);
     const openEditor = (): void => {
-      if (options.isEvent) {
-        new Notice("행사가 배정된 교시입니다. 학사일정 노트의 행사 표에서 수정하세요.");
-        return;
-      }
       new TimetableCellModal(this.plugin, {
         date: options.date,
         period: options.period,
         currentSubject: options.currentSubject,
         hasOverride: options.hasOverride,
+        isEvent: options.isEvent,
         subjects: options.subjects
       }).open();
     };
