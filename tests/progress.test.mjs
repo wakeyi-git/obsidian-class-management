@@ -110,18 +110,41 @@ test("부족·잉여 시수를 경고한다", () => {
   assert.ok(missingFixed.issues.some((issue) => /수업이 없습니다/.test(issue)));
 });
 
-test("고정 날짜의 교시 표기를 해석하고 되쓴다", () => {
-  const markdown = progressTableMarkdown("2026", "2학기", "사회", "우리 반", [
+test("고정 표식을 해석하고 되쓴다", () => {
+  const file = { path: "사회.md", basename: "사회", stat: { ctime: 1 } };
+  const frontmatter = { schoolYear: "2026", semester: "2학기", subject: "사회" };
+
+  // 배정이 비어 있으면 위치를 명시해 잃지 않는다
+  const unassigned = progressTableMarkdown("2026", "2학기", "사회", "우리 반", [
     { ...makeRow(1, "다문화 놀이 한마당", 2, "2026-10-15", 3), unit: "1. 사회 변화와 다양한 문화" }
   ]);
-  assert.match(markdown, /2026-10-15\(3\)/);
-  const parsed = parseProgressTable(
-    { path: "사회.md", basename: "사회", stat: { ctime: 1 } },
-    { schoolYear: "2026", semester: "2학기", subject: "사회" },
-    markdown
-  );
+  assert.match(unassigned, /📌 2026-10-15\(3\)/);
+  let parsed = parseProgressTable(file, frontmatter, unassigned);
   assert.equal(parsed.rows[0].fixedDate, "2026-10-15");
   assert.equal(parsed.rows[0].fixedPeriod, 3);
+
+  // 배정이 고정 위치를 담고 있으면 📌만 남는다
+  const assigned = progressTableMarkdown("2026", "2학기", "사회", "우리 반", [
+    {
+      ...makeRow(1, "다문화 놀이 한마당", 2, "2026-10-15", 3),
+      assigned: "2026-10-15(3), 2026-10-15(4)"
+    }
+  ]);
+  assert.match(assigned, /\| 📌 \| 2026-10-15\(3\), 2026-10-15\(4\) \|/);
+  parsed = parseProgressTable(file, frontmatter, assigned);
+  assert.equal(parsed.rows[0].fixedDate, "2026-10-15");
+  assert.equal(parsed.rows[0].fixedPeriod, 3);
+
+  // 이전 버전 표기(마커 없는 날짜)도 그대로 읽힌다
+  const legacy = [
+    "## 진도표",
+    "| 순 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 준비물 | 고정 날짜 | 배정 | 비고 |",
+    "| ---: | --- | --- | ---: | --- | --- | --- | --- | --- |",
+    "| 1 | 단원 | 차시 | 1 |  |  | 2026-11-09 |  |  |"
+  ].join("\n");
+  parsed = parseProgressTable(file, frontmatter, legacy);
+  assert.equal(parsed.rows[0].fixedDate, "2026-11-09");
+  assert.equal(parsed.rows[0].fixedPeriod, 0);
 });
 
 test("교시까지 고정한 차시는 정확한 자리를 먼저 차지한다", () => {
@@ -174,7 +197,10 @@ test("배정 결과 표기와 슬롯 맵을 만든다", () => {
     { date: "2026-08-17", period: 2 },
     { date: "2026-08-19", period: 3 }
   ]);
-  assert.equal(formatAssignedSlots(assignment.rows[0].slots), "08-17(2), 08-19(3)");
+  assert.equal(
+    formatAssignedSlots(assignment.rows[0].slots),
+    "2026-08-17(2), 2026-08-19(3)"
+  );
   const map = slotContentMap(assignment);
   assert.equal(map.get("2026-08-19|3")?.topic, "분수의 의미");
 });

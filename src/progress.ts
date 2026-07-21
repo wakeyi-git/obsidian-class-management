@@ -12,7 +12,7 @@ import { escapeTableCell, yamlString } from "./utils";
 import type { AcademicCalendar, BaseTimetable } from "./types";
 
 export const PROGRESS_TABLE_HEADER =
-  "| 순 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 준비물 | 고정 날짜 | 배정 | 비고 |";
+  "| 순 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 준비물 | 고정 | 배정 | 비고 |";
 export const PROGRESS_TABLE_SEPARATOR =
   "| ---: | --- | --- | ---: | --- | --- | --- | --- | --- |";
 
@@ -28,7 +28,8 @@ export function parseProgressTable(
       if (!topic && !unit) return null;
       const order = Number((cells[0] ?? "").trim());
       const hours = Number((cells[3] ?? "").trim());
-      const fixed = parseFixedCell((cells[6] ?? "").trim());
+      const assigned = (cells[7] ?? "").trim();
+      const fixed = parseFixedCell((cells[6] ?? "").trim(), assigned);
       return {
         order: Number.isFinite(order) && order > 0 ? Math.floor(order) : index + 1,
         unit,
@@ -38,7 +39,7 @@ export function parseProgressTable(
         materials: (cells[5] ?? "").trim(),
         fixedDate: fixed.date,
         fixedPeriod: fixed.period,
-        assigned: (cells[7] ?? "").trim(),
+        assigned,
         note: (cells[8] ?? "").trim()
       };
     })
@@ -54,20 +55,55 @@ export function parseProgressTable(
   };
 }
 
-/** `2026-10-15`, `2026-10-15(3)`, `2026-10-15 3교시` 표기를 해석한다. */
-export function parseFixedCell(value: string): { date: string; period: number } {
-  const match = value.match(/^(\d{4}-\d{2}-\d{2})(?:[\s(]+(\d{1,2})\s*\)?\s*교?시?)?\s*$/);
-  if (!match) return { date: "", period: 0 };
-  const period = Number(match[2] ?? "0");
-  return {
-    date: match[1] ?? "",
-    period: Number.isFinite(period) && period > 0 ? Math.floor(period) : 0
-  };
+const FIXED_MARKER = "📌";
+
+/**
+ * 고정 칸을 해석한다. 허용 표기:
+ * - `📌` (또는 `고정`) — 위치는 배정 칸의 첫 슬롯에서 가져온다
+ * - `📌 2026-10-15(3)` — 명시 위치 (배정이 아직 비어 있을 때)
+ * - `2026-10-15(3)`, `2026-10-15 3교시`, `2026-10-15` — 이전 버전 표기
+ */
+export function parseFixedCell(
+  value: string,
+  assigned: string
+): { date: string; period: number } {
+  const trimmed = value.trim();
+  if (!trimmed) return { date: "", period: 0 };
+  const withoutMarker = trimmed.replace(/^(?:📌|고정)\s*/u, "");
+  const hadMarker = withoutMarker !== trimmed;
+
+  const explicit = withoutMarker.match(
+    /^(\d{4}-\d{2}-\d{2})(?:[\s(]+(\d{1,2})\s*\)?\s*교?시?)?\s*$/
+  );
+  if (explicit) {
+    const period = Number(explicit[2] ?? "0");
+    return {
+      date: explicit[1] ?? "",
+      period: Number.isFinite(period) && period > 0 ? Math.floor(period) : 0
+    };
+  }
+  if (!hadMarker) return { date: "", period: 0 };
+
+  const firstSlot = assigned.match(/(\d{4}-\d{2}-\d{2})\((\d{1,2})\)/);
+  if (!firstSlot) return { date: "", period: 0 };
+  return { date: firstSlot[1] ?? "", period: Number(firstSlot[2] ?? "0") || 0 };
 }
 
 export function formatFixedCell(date: string, period: number): string {
   if (!date) return "";
   return period > 0 ? `${date}(${period})` : date;
+}
+
+/** 배정 칸이 고정 위치를 이미 담고 있으면 `📌`만, 아니면 위치를 함께 적는다. */
+export function serializeFixedCell(row: ProgressRow): string {
+  if (!row.fixedDate) return "";
+  const firstSlot = row.assigned.match(/(\d{4}-\d{2}-\d{2})\((\d{1,2})\)/);
+  const matchesAssigned =
+    firstSlot !== null &&
+    firstSlot[1] === row.fixedDate &&
+    (row.fixedPeriod === 0 || Number(firstSlot[2]) === row.fixedPeriod);
+  if (matchesAssigned) return FIXED_MARKER;
+  return `${FIXED_MARKER} ${formatFixedCell(row.fixedDate, row.fixedPeriod)}`;
 }
 
 export function progressRowLine(row: ProgressRow): string {
@@ -85,7 +121,7 @@ export function progressRowLine(row: ProgressRow): string {
     "|",
     escapeTableCell(row.materials),
     "|",
-    formatFixedCell(row.fixedDate, row.fixedPeriod),
+    serializeFixedCell(row),
     "|",
     escapeTableCell(row.assigned),
     "|",
@@ -115,7 +151,7 @@ export function progressTableMarkdown(
     `# ${schoolYear} ${semester} ${subject} 진도표`,
     "",
     "행을 직접 추가·수정하거나 `진도표 차시 가져오기` 명령으로 붙여넣을 수 있습니다.",
-    "고정 날짜에 `2026-10-15`(날짜 고정) 또는 `2026-10-15(3)`(3교시까지 고정)을 적으면 그 차시가 항상 그 자리에 배정됩니다.",
+    "고정 칸의 `📌`는 그 차시가 배정 칸의 자리에 고정되어 있다는 뜻입니다. 주간 시간표의 칸 클릭 → '이 교시에 차시 고정'으로 관리하거나, 직접 `📌 2026-10-15(3)`처럼 적을 수도 있습니다.",
     "",
     "## 진도표",
     "",
@@ -293,9 +329,7 @@ export function assignProgress(rows: ProgressRow[], slots: SubjectSlot[]): Progr
 }
 
 export function formatAssignedSlots(slots: SubjectSlot[]): string {
-  return slots
-    .map((slot) => `${slot.date.slice(5)}(${slot.period})`)
-    .join(", ");
+  return slots.map((slot) => `${slot.date}(${slot.period})`).join(", ");
 }
 
 export function slotContentMap(
