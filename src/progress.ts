@@ -8,39 +8,72 @@ import type {
 } from "./types";
 import { sectionTableRows, semesterRange } from "./academic-calendar";
 import { subjectSlots } from "./timetable";
-import { escapeTableCell, yamlString } from "./utils";
+import { escapeTableCell, splitMarkdownTableRow, yamlString } from "./utils";
 import type { AcademicCalendar, BaseTimetable } from "./types";
 
 export const PROGRESS_TABLE_HEADER =
-  "| 순 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 준비물 | 고정 | 배정 | 비고 |";
+  "| 순 | 고정 | 배정 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 준비물 | 비고 |";
 export const PROGRESS_TABLE_SEPARATOR =
-  "| ---: | --- | --- | ---: | --- | --- | --- | --- | --- |";
+  "| ---: | --- | --- | --- | --- | ---: | --- | --- | --- |";
+
+type ProgressColumnIndex = {
+  fixed: number;
+  assigned: number;
+  unit: number;
+  topic: number;
+  hours: number;
+  standard: number;
+  materials: number;
+  note: number;
+};
+
+const NEW_COLUMN_INDEX: ProgressColumnIndex = {
+  fixed: 1, assigned: 2, unit: 3, topic: 4, hours: 5, standard: 6, materials: 7, note: 8
+};
+const LEGACY_COLUMN_INDEX: ProgressColumnIndex = {
+  unit: 1, topic: 2, hours: 3, standard: 4, materials: 5, fixed: 6, assigned: 7, note: 8
+};
+
+function progressColumnIndex(content: string): ProgressColumnIndex {
+  const lines = content.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^#{2,3}\s+진도표/.test(line.trim()));
+  if (start < 0) return NEW_COLUMN_INDEX;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = (lines[index] ?? "").trim();
+    if (/^#{1,6}\s/.test(line)) break;
+    const cells = splitMarkdownTableRow(line);
+    if (cells.length === 0) continue;
+    return (cells[1] ?? "").includes("고정") ? NEW_COLUMN_INDEX : LEGACY_COLUMN_INDEX;
+  }
+  return NEW_COLUMN_INDEX;
+}
 
 export function parseProgressTable(
   file: TFile,
   frontmatter: Record<string, unknown>,
   content: string
 ): ProgressTable {
+  const columns = progressColumnIndex(content);
   const rows = sectionTableRows(content, "진도표")
     .map((cells, index): ProgressRow | null => {
-      const topic = (cells[2] ?? "").trim();
-      const unit = (cells[1] ?? "").trim();
+      const topic = (cells[columns.topic] ?? "").trim();
+      const unit = (cells[columns.unit] ?? "").trim();
       if (!topic && !unit) return null;
       const order = Number((cells[0] ?? "").trim());
-      const hours = Number((cells[3] ?? "").trim());
-      const assigned = (cells[7] ?? "").trim();
-      const fixed = parseFixedCell((cells[6] ?? "").trim(), assigned);
+      const hours = Number((cells[columns.hours] ?? "").trim());
+      const assigned = (cells[columns.assigned] ?? "").trim();
+      const fixed = parseFixedCell((cells[columns.fixed] ?? "").trim(), assigned);
       return {
         order: Number.isFinite(order) && order > 0 ? Math.floor(order) : index + 1,
         unit,
         topic,
         hours: Number.isFinite(hours) && hours > 0 ? Math.floor(hours) : 1,
-        standard: (cells[4] ?? "").trim(),
-        materials: (cells[5] ?? "").trim(),
+        standard: (cells[columns.standard] ?? "").trim(),
+        materials: (cells[columns.materials] ?? "").trim(),
         fixedDate: fixed.date,
         fixedPeriod: fixed.period,
         assigned,
-        note: (cells[8] ?? "").trim()
+        note: (cells[columns.note] ?? "").trim()
       };
     })
     .filter((row): row is ProgressRow => row !== null)
@@ -111,6 +144,10 @@ export function progressRowLine(row: ProgressRow): string {
     "|",
     String(row.order),
     "|",
+    serializeFixedCell(row),
+    "|",
+    escapeTableCell(row.assigned),
+    "|",
     escapeTableCell(row.unit),
     "|",
     escapeTableCell(row.topic),
@@ -120,10 +157,6 @@ export function progressRowLine(row: ProgressRow): string {
     escapeTableCell(row.standard),
     "|",
     escapeTableCell(row.materials),
-    "|",
-    serializeFixedCell(row),
-    "|",
-    escapeTableCell(row.assigned),
     "|",
     escapeTableCell(row.note),
     "|"

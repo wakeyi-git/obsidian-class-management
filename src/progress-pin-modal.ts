@@ -21,15 +21,18 @@ export class ProgressPinModal extends FuzzySuggestModal<ProgressRow> {
   getItemText(row: ProgressRow): string {
     const pinnedHere =
       row.fixedDate === this.target.date && row.fixedPeriod === this.target.period;
-    const status = pinnedHere
-      ? " — 이 교시에 고정됨 (선택하면 해제)"
-      : row.fixedDate
-        ? ` — 고정 ${row.fixedDate}${row.fixedPeriod > 0 ? `(${row.fixedPeriod})` : ""}`
-        : row.assigned
-          ? ` — 배정 ${row.assigned}`
-          : "";
-    const pin = row.fixedDate ? "📌 " : "";
-    return `${pin}${row.order}. ${[row.unit, row.topic].filter(Boolean).join(" · ")}${status}`;
+    const place = row.fixedDate
+      ? `📌 ${row.fixedDate}${row.fixedPeriod > 0 ? `(${row.fixedPeriod})` : ""}`
+      : row.assigned;
+    const suffix = pinnedHere ? " (선택하면 해제)" : "";
+    return [
+      `${row.order}.`,
+      place,
+      [row.unit, row.topic].filter(Boolean).join(" · ")
+    ]
+      .filter(Boolean)
+      .join(" — ")
+      .concat(suffix);
   }
 
   renderSuggestion(match: FuzzyMatch<ProgressRow>, el: HTMLElement): void {
