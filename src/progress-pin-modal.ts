@@ -1,4 +1,4 @@
-import { FuzzySuggestModal, type App } from "obsidian";
+import { FuzzySuggestModal, type App, type FuzzyMatch } from "obsidian";
 import type { ProgressRow } from "./types";
 
 export class ProgressPinModal extends FuzzySuggestModal<ProgressRow> {
@@ -28,7 +28,18 @@ export class ProgressPinModal extends FuzzySuggestModal<ProgressRow> {
         : row.assigned
           ? ` — 배정 ${row.assigned}`
           : "";
-    return `${row.order}. ${[row.unit, row.topic].filter(Boolean).join(" · ")}${status}`;
+    const pin = row.fixedDate ? "📌 " : "";
+    return `${pin}${row.order}. ${[row.unit, row.topic].filter(Boolean).join(" · ")}${status}`;
+  }
+
+  renderSuggestion(match: FuzzyMatch<ProgressRow>, el: HTMLElement): void {
+    super.renderSuggestion(match, el);
+    const row = match.item;
+    if (row.fixedDate === this.target.date && row.fixedPeriod === this.target.period) {
+      el.addClass("class-management-pin-here");
+    } else if (row.fixedDate) {
+      el.addClass("class-management-pin-elsewhere");
+    }
   }
 
   onChooseItem(row: ProgressRow): void {

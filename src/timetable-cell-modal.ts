@@ -10,6 +10,7 @@ export interface TimetableCellContext {
   isEvent: boolean;
   isRemoved: boolean;
   subjects: string[];
+  pinnedRowLabel: string;
 }
 
 export class TimetableCellModal extends Modal {
@@ -42,6 +43,12 @@ export class TimetableCellModal extends Modal {
       this.contentEl.createEl("p", {
         cls: "setting-item-description",
         text: "이 교시는 삭제되어 운영하지 않는 상태입니다. 변경 제거를 누르면 원래 시간표로 되돌아가고, 과목을 골라 저장하면 다시 수업이 배정됩니다."
+      });
+    }
+    if (this.context.pinnedRowLabel) {
+      this.contentEl.createEl("p", {
+        cls: "class-management-pinned-note",
+        text: `📌 이 칸에 고정된 차시: ${this.context.pinnedRowLabel} — 아래 '이 교시에 차시 고정'에서 같은 차시를 선택하면 해제됩니다.`
       });
     }
     this.contentEl.createEl("p", {

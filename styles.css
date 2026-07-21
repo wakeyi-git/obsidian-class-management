@@ -1979,3 +1979,28 @@
   font-size: 0.8em;
   color: var(--text-faint);
 }
+
+/* 고정된 진도 강조 */
+
+.class-management-ops-topic.is-pinned {
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+.class-management-pinned-note {
+  color: var(--text-accent);
+  font-weight: 600;
+  padding: 6px 10px;
+  border-left: 3px solid var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
+  border-radius: 4px;
+}
+
+.suggestion-item.class-management-pin-here {
+  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  font-weight: 600;
+}
+
+.suggestion-item.class-management-pin-elsewhere {
+  color: var(--text-accent);
+}

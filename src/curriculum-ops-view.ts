@@ -286,11 +286,21 @@ export class CurriculumOpsView extends ItemView {
         if (resolved.source === "override") cell.addClass("is-override");
         cell.createEl("strong", { text: resolved.subject });
         const content = contents.get(`${day.date}|${period}`);
+        const pinnedHere = content !== undefined &&
+          content.fixedDate === day.date &&
+          (content.fixedPeriod === period || content.fixedPeriod === 0);
         if (content) {
-          cell.createEl("div", {
-            text: [content.unit, content.topic].filter(Boolean).join(" · "),
+          const topic = cell.createEl("div", {
+            text: `${pinnedHere ? "📌 " : ""}${[content.unit, content.topic].filter(Boolean).join(" · ")}`,
             cls: "class-management-ops-topic"
           });
+          if (pinnedHere) {
+            topic.addClass("is-pinned");
+            topic.setAttribute(
+              "title",
+              content.fixedPeriod > 0 ? "이 날짜·교시에 고정된 차시" : "이 날짜에 고정된 차시"
+            );
+          }
         }
         if (cellEditable) {
           this.attachCellEditor(cell, {
@@ -301,6 +311,9 @@ export class CurriculumOpsView extends ItemView {
             isEvent: resolved.source === "event",
             isRemoved: false,
             subjects,
+            pinnedRowLabel: pinnedHere && content
+              ? `${content.order}. ${content.topic}`
+              : "",
             label: `${day.date} ${period}교시 ${resolved.subject || "빈 교시"} 과목 변경`
           });
         }
@@ -318,6 +331,7 @@ export class CurriculumOpsView extends ItemView {
       isEvent: boolean;
       isRemoved: boolean;
       subjects: string[];
+      pinnedRowLabel?: string;
       label: string;
     }
   ): void {
@@ -333,7 +347,8 @@ export class CurriculumOpsView extends ItemView {
         hasOverride: options.hasOverride,
         isEvent: options.isEvent,
         isRemoved: options.isRemoved,
-        subjects: options.subjects
+        subjects: options.subjects,
+        pinnedRowLabel: options.pinnedRowLabel ?? ""
       }).open();
     };
     cell.addEventListener("click", openEditor);
