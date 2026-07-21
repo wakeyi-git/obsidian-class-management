@@ -130,7 +130,7 @@ test("고정 표식을 해석하고 되쓴다", () => {
       assigned: "2026-10-15(3), 2026-10-15(4)"
     }
   ]);
-  assert.match(assigned, /\| 📌 \| 2026-10-15\(3\), 2026-10-15\(4\) \|/);
+  assert.match(assigned, /\| 📌 \| 1 \| 2026-10-15\(3\), 2026-10-15\(4\) \|/);
   parsed = parseProgressTable(file, frontmatter, assigned);
   assert.equal(parsed.rows[0].fixedDate, "2026-10-15");
   assert.equal(parsed.rows[0].fixedPeriod, 3);

@@ -26,9 +26,8 @@ export class ProgressPinModal extends FuzzySuggestModal<ProgressRow> {
       : row.assigned;
     const suffix = pinnedHere ? " (선택하면 해제)" : "";
     return [
-      `${row.order}.`,
       place,
-      [row.unit, row.topic].filter(Boolean).join(" · ")
+      `${row.order}. ${[row.unit, row.topic].filter(Boolean).join(" · ")}`
     ]
       .filter(Boolean)
       .join(" — ")

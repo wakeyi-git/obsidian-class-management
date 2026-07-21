@@ -12,12 +12,13 @@ import { escapeTableCell, splitMarkdownTableRow, yamlString } from "./utils";
 import type { AcademicCalendar, BaseTimetable } from "./types";
 
 export const PROGRESS_TABLE_HEADER =
-  "| 순 | 고정 | 배정 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 준비물 | 비고 |";
+  "| 고정 | 순 | 배정 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 준비물 | 비고 |";
 export const PROGRESS_TABLE_SEPARATOR =
-  "| ---: | --- | --- | --- | --- | ---: | --- | --- | --- |";
+  "| --- | ---: | --- | --- | --- | ---: | --- | --- | --- |";
 
 type ProgressColumnIndex = {
   fixed: number;
+  order: number;
   assigned: number;
   unit: number;
   topic: number;
@@ -27,25 +28,30 @@ type ProgressColumnIndex = {
   note: number;
 };
 
-const NEW_COLUMN_INDEX: ProgressColumnIndex = {
-  fixed: 1, assigned: 2, unit: 3, topic: 4, hours: 5, standard: 6, materials: 7, note: 8
+const CURRENT_COLUMN_INDEX: ProgressColumnIndex = {
+  fixed: 0, order: 1, assigned: 2, unit: 3, topic: 4, hours: 5, standard: 6, materials: 7, note: 8
+};
+const V1_10_COLUMN_INDEX: ProgressColumnIndex = {
+  order: 0, fixed: 1, assigned: 2, unit: 3, topic: 4, hours: 5, standard: 6, materials: 7, note: 8
 };
 const LEGACY_COLUMN_INDEX: ProgressColumnIndex = {
-  unit: 1, topic: 2, hours: 3, standard: 4, materials: 5, fixed: 6, assigned: 7, note: 8
+  order: 0, unit: 1, topic: 2, hours: 3, standard: 4, materials: 5, fixed: 6, assigned: 7, note: 8
 };
 
 function progressColumnIndex(content: string): ProgressColumnIndex {
   const lines = content.split(/\r?\n/);
   const start = lines.findIndex((line) => /^#{2,3}\s+진도표/.test(line.trim()));
-  if (start < 0) return NEW_COLUMN_INDEX;
+  if (start < 0) return CURRENT_COLUMN_INDEX;
   for (let index = start + 1; index < lines.length; index += 1) {
     const line = (lines[index] ?? "").trim();
     if (/^#{1,6}\s/.test(line)) break;
     const cells = splitMarkdownTableRow(line);
     if (cells.length === 0) continue;
-    return (cells[1] ?? "").includes("고정") ? NEW_COLUMN_INDEX : LEGACY_COLUMN_INDEX;
+    if ((cells[0] ?? "").includes("고정")) return CURRENT_COLUMN_INDEX;
+    if ((cells[1] ?? "").includes("고정")) return V1_10_COLUMN_INDEX;
+    return LEGACY_COLUMN_INDEX;
   }
-  return NEW_COLUMN_INDEX;
+  return CURRENT_COLUMN_INDEX;
 }
 
 export function parseProgressTable(
@@ -59,7 +65,7 @@ export function parseProgressTable(
       const topic = (cells[columns.topic] ?? "").trim();
       const unit = (cells[columns.unit] ?? "").trim();
       if (!topic && !unit) return null;
-      const order = Number((cells[0] ?? "").trim());
+      const order = Number((cells[columns.order] ?? "").trim());
       const hours = Number((cells[columns.hours] ?? "").trim());
       const assigned = (cells[columns.assigned] ?? "").trim();
       const fixed = parseFixedCell((cells[columns.fixed] ?? "").trim(), assigned);
@@ -142,9 +148,9 @@ export function serializeFixedCell(row: ProgressRow): string {
 export function progressRowLine(row: ProgressRow): string {
   return [
     "|",
-    String(row.order),
-    "|",
     serializeFixedCell(row),
+    "|",
+    String(row.order),
     "|",
     escapeTableCell(row.assigned),
     "|",
