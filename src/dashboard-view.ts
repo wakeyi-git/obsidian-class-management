@@ -55,48 +55,6 @@ export class ClassDashboardView extends ItemView {
       text: `${this.plugin.settings.schoolYear} ${this.plugin.settings.semester} · ${this.plugin.settings.grade}학년 · 학생 기록과 학급 운영 업무를 한눈에 확인합니다.${this.plugin.activeClassProfile.archived ? " · 읽기 전용 보관" : ""}`
     });
 
-    const quickHeading = header.createEl("h5", {
-      text: "빠른 작업",
-      cls: "class-management-actions-heading"
-    });
-    quickHeading.setAttribute("aria-hidden", "true");
-    const quick = header.createDiv({ cls: "class-management-actions" });
-    const quickButtons: Array<[string, () => void, string?]> = [
-      ["빠른 기록", () => this.plugin.openRecordFlow(), "mod-cta"],
-      ["출결 체크", () => this.plugin.openAttendanceModal()],
-      ["과제 체크", () => this.plugin.openAssignmentFlow()],
-      ["할 일 수집", () => this.plugin.openTaskModal()],
-      ["가정통신문", () => this.plugin.openNoticeFlow()],
-      ["학생부 근거", () => this.plugin.openSchoolRecordEvidenceFlow()],
-      ["학생부 일괄", () => this.plugin.openSchoolRecordBatch()],
-      ["학생 추가", () => this.plugin.openStudentModal()]
-    ];
-    for (const [label, run, cls] of quickButtons) {
-      const button = quick.createEl("button", { text: label, cls });
-      button.addEventListener("click", run);
-    }
-
-    const viewHeading = header.createEl("h5", {
-      text: "뷰 열기",
-      cls: "class-management-actions-heading"
-    });
-    viewHeading.setAttribute("aria-hidden", "true");
-    const views = header.createDiv({ cls: "class-management-actions" });
-    const viewButtons: Array<[string, () => void]> = [
-      ["교육과정 운영", () => void this.plugin.openCurriculumOps()],
-      ["학급 캘린더", () => void this.plugin.openCalendar()],
-      ["통합 목록", () => void this.plugin.openActivityList()],
-      ["할 일", () => void this.plugin.openTasks()],
-      ["루틴", () => void this.plugin.openRoutines()],
-      ["교육과정 일체화", () => void this.plugin.openCurriculum()],
-      ["분석·보고서", () => void this.plugin.openReports()],
-      ["학급·데이터", () => void this.plugin.openDataManagement()],
-      ["백업·유지관리", () => void this.plugin.openMaintenance()]
-    ];
-    for (const [label, run] of viewButtons) {
-      const button = views.createEl("button", { text: label });
-      button.addEventListener("click", run);
-    }
   }
 
   private renderSummary(

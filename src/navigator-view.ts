@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
 import { DASHBOARD_VIEW_TYPE } from "./dashboard-view";
 import { CURRICULUM_OPS_VIEW_TYPE } from "./curriculum-ops-view";
 import { CALENDAR_VIEW_TYPE } from "./calendar-view";
@@ -14,8 +14,9 @@ import type ClassManagementPlugin from "./main";
 
 export const NAVIGATOR_VIEW_TYPE = "class-management-navigator";
 
-interface NavAction {
+interface NavItem {
   label: string;
+  icon: string;
   run: () => void;
 }
 
@@ -54,89 +55,111 @@ export class NavigatorView extends ItemView {
     this.render();
   }
 
-  private viewEntries(): Array<{ type: string; label: string; open: () => void }> {
+  private viewEntries(): Array<{ type: string; label: string; icon: string; open: () => void }> {
     const plugin = this.plugin;
     return [
-      { type: DASHBOARD_VIEW_TYPE, label: "학급 대시보드", open: () => void plugin.openDashboard() },
-      { type: CURRICULUM_OPS_VIEW_TYPE, label: "교육과정 운영", open: () => void plugin.openCurriculumOps() },
-      { type: CALENDAR_VIEW_TYPE, label: "학급 캘린더", open: () => void plugin.openCalendar() },
-      { type: ACTIVITY_LIST_VIEW_TYPE, label: "통합 목록", open: () => void plugin.openActivityList() },
-      { type: STUDENT_TIMELINE_VIEW_TYPE, label: "학생별 타임라인", open: () => plugin.openStudentTimelineFlow() },
-      { type: TASK_VIEW_TYPE, label: "GTD 할 일", open: () => void plugin.openTasks() },
-      { type: ROUTINE_VIEW_TYPE, label: "루틴 체크리스트", open: () => void plugin.openRoutines() },
-      { type: CURRICULUM_VIEW_TYPE, label: "교육과정 일체화", open: () => void plugin.openCurriculum() },
-      { type: REPORT_VIEW_TYPE, label: "분석·보고서", open: () => void plugin.openReports() },
-      { type: DATA_MANAGEMENT_VIEW_TYPE, label: "학급·데이터", open: () => void plugin.openDataManagement() },
-      { type: MAINTENANCE_VIEW_TYPE, label: "백업·유지관리", open: () => void plugin.openMaintenance() }
+      { type: DASHBOARD_VIEW_TYPE, label: "학급 대시보드", icon: "school", open: () => void plugin.openDashboard() },
+      { type: CURRICULUM_OPS_VIEW_TYPE, label: "교육과정 운영", icon: "calendar-clock", open: () => void plugin.openCurriculumOps() },
+      { type: CALENDAR_VIEW_TYPE, label: "학급 캘린더", icon: "calendar-days", open: () => void plugin.openCalendar() },
+      { type: ACTIVITY_LIST_VIEW_TYPE, label: "통합 목록", icon: "list", open: () => void plugin.openActivityList() },
+      { type: STUDENT_TIMELINE_VIEW_TYPE, label: "학생별 타임라인", icon: "user", open: () => plugin.openStudentTimelineFlow() },
+      { type: TASK_VIEW_TYPE, label: "GTD 할 일", icon: "list-todo", open: () => void plugin.openTasks() },
+      { type: ROUTINE_VIEW_TYPE, label: "루틴 체크리스트", icon: "repeat", open: () => void plugin.openRoutines() },
+      { type: CURRICULUM_VIEW_TYPE, label: "교육과정 일체화", icon: "book-open-check", open: () => void plugin.openCurriculum() },
+      { type: REPORT_VIEW_TYPE, label: "분석·보고서", icon: "bar-chart-2", open: () => void plugin.openReports() },
+      { type: DATA_MANAGEMENT_VIEW_TYPE, label: "학급·데이터", icon: "database", open: () => void plugin.openDataManagement() },
+      { type: MAINTENANCE_VIEW_TYPE, label: "백업·유지관리", icon: "archive", open: () => void plugin.openMaintenance() }
     ];
   }
 
   /** 뷰별 작업 목록 — 하루 작업 순서와 사용 빈도 순으로 배열한다. */
-  private contextActions(): NavAction[] {
+  private contextActions(): NavItem[] {
     const plugin = this.plugin;
-    const map: Record<string, NavAction[]> = {
+    const map: Record<string, NavItem[]> = {
       [DASHBOARD_VIEW_TYPE]: [
-        { label: "출결 체크", run: () => plugin.openAttendanceModal() },
-        { label: "학생 빠른 기록", run: () => plugin.openRecordFlow() },
-        { label: "과제 체크", run: () => plugin.openAssignmentFlow() },
-        { label: "할 일 빠른 수집", run: () => plugin.openTaskModal() },
-        { label: "가정통신문 회신", run: () => plugin.openNoticeFlow() },
-        { label: "학생부 근거 기록", run: () => plugin.openSchoolRecordEvidenceFlow() },
-        { label: "학생부 학급 일괄", run: () => plugin.openSchoolRecordBatch() },
-        { label: "학생 추가·명렬표", run: () => plugin.openStudentModal() }
+        { label: "출결 체크", icon: "user-check", run: () => plugin.openAttendanceModal() },
+        { label: "학생 빠른 기록", icon: "pencil", run: () => plugin.openRecordFlow() },
+        { label: "과제 체크", icon: "clipboard-check", run: () => plugin.openAssignmentFlow() },
+        { label: "할 일 빠른 수집", icon: "inbox", run: () => plugin.openTaskModal() },
+        { label: "가정통신문 회신", icon: "mail", run: () => plugin.openNoticeFlow() },
+        { label: "학생부 근거 기록", icon: "file-text", run: () => plugin.openSchoolRecordEvidenceFlow() },
+        { label: "학생부 학급 일괄", icon: "files", run: () => plugin.openSchoolRecordBatch() },
+        { label: "학생 추가·명렬표", icon: "user-plus", run: () => plugin.openStudentModal() }
       ],
       [CURRICULUM_OPS_VIEW_TYPE]: [
-        { label: "주간학습안내 생성", run: () => void plugin.generateWeeklyPlan() },
-        { label: "진도 자동 배정", run: () => void plugin.runProgressAssignment() },
-        { label: "진도표 차시 가져오기", run: () => plugin.openProgressImportModal() },
-        { label: "학사일정 노트", run: () => void plugin.openAcademicCalendarNote() },
-        { label: "기준 시수 노트", run: () => void plugin.openHoursStandardNote() },
-        { label: "기초시간표 노트", run: () => void plugin.openBaseTimetableNote() }
+        { label: "주간학습안내 생성", icon: "newspaper", run: () => void plugin.generateWeeklyPlan() },
+        { label: "진도 자동 배정", icon: "wand", run: () => void plugin.runProgressAssignment() },
+        { label: "진도표 차시 가져오기", icon: "download", run: () => plugin.openProgressImportModal() },
+        { label: "학사일정 노트", icon: "calendar", run: () => void plugin.openAcademicCalendarNote() },
+        { label: "기준 시수 노트", icon: "clock", run: () => void plugin.openHoursStandardNote() },
+        { label: "기초시간표 노트", icon: "table", run: () => void plugin.openBaseTimetableNote() }
       ],
       [CALENDAR_VIEW_TYPE]: [
-        { label: "학생 빠른 기록", run: () => plugin.openRecordFlow() },
-        { label: "출결 체크", run: () => plugin.openAttendanceModal() },
-        { label: "과제 체크", run: () => plugin.openAssignmentFlow() },
-        { label: "할 일 빠른 수집", run: () => plugin.openTaskModal() },
-        { label: "주간학습안내 생성", run: () => void plugin.generateWeeklyPlan() }
+        { label: "학생 빠른 기록", icon: "pencil", run: () => plugin.openRecordFlow() },
+        { label: "출결 체크", icon: "user-check", run: () => plugin.openAttendanceModal() },
+        { label: "과제 체크", icon: "clipboard-check", run: () => plugin.openAssignmentFlow() },
+        { label: "할 일 빠른 수집", icon: "inbox", run: () => plugin.openTaskModal() },
+        { label: "주간학습안내 생성", icon: "newspaper", run: () => void plugin.generateWeeklyPlan() }
       ],
       [ACTIVITY_LIST_VIEW_TYPE]: [
-        { label: "학생 빠른 기록", run: () => plugin.openRecordFlow() },
-        { label: "출결 체크", run: () => plugin.openAttendanceModal() },
-        { label: "과제 체크", run: () => plugin.openAssignmentFlow() },
-        { label: "학생별 타임라인", run: () => plugin.openStudentTimelineFlow() }
+        { label: "학생 빠른 기록", icon: "pencil", run: () => plugin.openRecordFlow() },
+        { label: "출결 체크", icon: "user-check", run: () => plugin.openAttendanceModal() },
+        { label: "과제 체크", icon: "clipboard-check", run: () => plugin.openAssignmentFlow() },
+        { label: "학생별 타임라인", icon: "user", run: () => plugin.openStudentTimelineFlow() }
       ],
       [STUDENT_TIMELINE_VIEW_TYPE]: [
-        { label: "학생 빠른 기록", run: () => plugin.openRecordFlow() },
-        { label: "학생부 근거 기록", run: () => plugin.openSchoolRecordEvidenceFlow() }
+        { label: "학생 빠른 기록", icon: "pencil", run: () => plugin.openRecordFlow() },
+        { label: "학생부 근거 기록", icon: "file-text", run: () => plugin.openSchoolRecordEvidenceFlow() }
       ],
       [TASK_VIEW_TYPE]: [
-        { label: "할 일 빠른 수집", run: () => plugin.openTaskModal() }
+        { label: "할 일 빠른 수집", icon: "inbox", run: () => plugin.openTaskModal() }
       ],
       [CURRICULUM_VIEW_TYPE]: [
-        { label: "새 통합 단원 설계", run: () => plugin.openCurriculumUnitModal() },
-        { label: "학생부 근거 기록", run: () => plugin.openSchoolRecordEvidenceFlow() },
-        { label: "학생부 학급 일괄", run: () => plugin.openSchoolRecordBatch() }
+        { label: "새 통합 단원 설계", icon: "plus-circle", run: () => plugin.openCurriculumUnitModal() },
+        { label: "학생부 근거 기록", icon: "file-text", run: () => plugin.openSchoolRecordEvidenceFlow() },
+        { label: "학생부 학급 일괄", icon: "files", run: () => plugin.openSchoolRecordBatch() }
       ],
       [REPORT_VIEW_TYPE]: [
-        { label: "AI 협업 설정", run: () => plugin.openAiSetup() }
+        { label: "AI 협업 설정", icon: "bot", run: () => plugin.openAiSetup() }
       ],
       [DATA_MANAGEMENT_VIEW_TYPE]: [
-        { label: "학생 추가·명렬표", run: () => plugin.openStudentModal() },
-        { label: "학급 공간 초기화", run: () => void plugin.initializeWorkspace() }
+        { label: "학생 추가·명렬표", icon: "user-plus", run: () => plugin.openStudentModal() },
+        { label: "학급 공간 초기화", icon: "folder-plus", run: () => void plugin.initializeWorkspace() }
       ]
     };
     return map[this.contextViewType] ?? [];
   }
 
-  private globalActions(): NavAction[] {
+  private globalActions(): NavItem[] {
     const plugin = this.plugin;
     return [
-      { label: "출결 체크", run: () => plugin.openAttendanceModal() },
-      { label: "학생 빠른 기록", run: () => plugin.openRecordFlow() },
-      { label: "과제 체크", run: () => plugin.openAssignmentFlow() },
-      { label: "할 일 빠른 수집", run: () => plugin.openTaskModal() }
+      { label: "출결 체크", icon: "user-check", run: () => plugin.openAttendanceModal() },
+      { label: "학생 빠른 기록", icon: "pencil", run: () => plugin.openRecordFlow() },
+      { label: "과제 체크", icon: "clipboard-check", run: () => plugin.openAssignmentFlow() },
+      { label: "할 일 빠른 수집", icon: "inbox", run: () => plugin.openTaskModal() }
     ];
+  }
+
+  private renderItem(
+    parent: HTMLElement,
+    item: { label: string; icon: string; run: () => void },
+    active = false
+  ): void {
+    const row = parent.createDiv({ cls: "class-management-nav-item" });
+    if (active) row.addClass("is-active");
+    row.setAttribute("role", "button");
+    row.setAttribute("tabindex", "0");
+    row.setAttribute("aria-label", item.label);
+    const icon = row.createSpan({ cls: "class-management-nav-icon" });
+    setIcon(icon, item.icon);
+    row.createSpan({ text: item.label, cls: "class-management-nav-label" });
+    row.addEventListener("click", item.run);
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        item.run();
+      }
+    });
   }
 
   private render(): void {
@@ -145,49 +168,39 @@ export class NavigatorView extends ItemView {
     container.addClass("class-management-nav-view");
 
     const viewSection = container.createDiv({ cls: "class-management-nav-section" });
-    viewSection.createEl("h4", { text: "뷰" });
+    viewSection.createDiv({ text: "뷰", cls: "class-management-nav-title" });
     for (const entry of this.viewEntries()) {
-      const item = viewSection.createEl("button", {
-        text: entry.label,
-        cls: "class-management-nav-item"
-      });
-      if (entry.type === this.contextViewType) item.addClass("is-active");
-      item.addEventListener("click", entry.open);
+      this.renderItem(
+        viewSection,
+        { label: entry.label, icon: entry.icon, run: entry.open },
+        entry.type === this.contextViewType
+      );
     }
 
     const context = this.contextActions();
-    const contextSection = container.createDiv({ cls: "class-management-nav-section" });
     const activeLabel = this.viewEntries().find(
       (entry) => entry.type === this.contextViewType
     )?.label;
-    contextSection.createEl("h4", { text: `${activeLabel ?? "현재 화면"} 작업` });
+    const contextSection = container.createDiv({ cls: "class-management-nav-section" });
+    contextSection.createDiv({
+      text: `${activeLabel ?? "현재 화면"} 작업`,
+      cls: "class-management-nav-title"
+    });
     if (context.length === 0) {
       contextSection.createEl("p", {
         cls: "class-management-nav-hint",
         text: "이 화면의 작업은 화면 안의 버튼을 사용합니다."
       });
     }
-    for (const action of context) {
-      const item = contextSection.createEl("button", {
-        text: action.label,
-        cls: "class-management-nav-item is-action"
-      });
-      item.addEventListener("click", action.run);
-    }
+    for (const action of context) this.renderItem(contextSection, action);
 
     const globals = this.globalActions().filter(
       (action) => !context.some((item) => item.label === action.label)
     );
     if (globals.length > 0) {
       const globalSection = container.createDiv({ cls: "class-management-nav-section" });
-      globalSection.createEl("h4", { text: "자주 쓰는 명령" });
-      for (const action of globals) {
-        const item = globalSection.createEl("button", {
-          text: action.label,
-          cls: "class-management-nav-item is-action"
-        });
-        item.addEventListener("click", action.run);
-      }
+      globalSection.createDiv({ text: "자주 쓰는 명령", cls: "class-management-nav-title" });
+      for (const action of globals) this.renderItem(globalSection, action);
     }
   }
 }
