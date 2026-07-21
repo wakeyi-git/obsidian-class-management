@@ -226,6 +226,73 @@ export function overrideTableRow(override: TimetableOverride): string {
   return `| ${override.date} | ${override.period} | ${escapeTableCell(override.subject)} | ${escapeTableCell(override.reason)} |`;
 }
 
+const OVERRIDE_TABLE_HEADER = "| 날짜 | 교시 | 과목 | 사유 |";
+const OVERRIDE_TABLE_SEPARATOR = "| --- | ---: | --- | --- |";
+
+export function upsertTimetableOverrideContent(
+  content: string,
+  override: TimetableOverride
+): string {
+  const overrides = parseOverrides(content).filter(
+    (item) => !(item.date === override.date && item.period === override.period)
+  );
+  overrides.push(override);
+  return writeOverrideSection(content, overrides);
+}
+
+export function removeTimetableOverrideContent(
+  content: string,
+  date: string,
+  period: number
+): string {
+  const overrides = parseOverrides(content).filter(
+    (item) => !(item.date === date && item.period === period)
+  );
+  return writeOverrideSection(content, overrides);
+}
+
+function writeOverrideSection(content: string, overrides: TimetableOverride[]): string {
+  const sorted = overrides
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date) || a.period - b.period);
+  const table = [
+    OVERRIDE_TABLE_HEADER,
+    OVERRIDE_TABLE_SEPARATOR,
+    ...sorted.map((item) => overrideTableRow(item))
+  ];
+
+  const lines = content.split(/\r?\n/);
+  const headingIndex = lines.findIndex((line) => /^#{2,3}\s+시간표 변경/.test(line.trim()));
+  if (headingIndex < 0) {
+    const trimmed = content.replace(/\n+$/, "");
+    return [trimmed, "", "## 시간표 변경", "", ...table, ""].join("\n");
+  }
+
+  let sectionEnd = lines.length;
+  for (let index = headingIndex + 1; index < lines.length; index += 1) {
+    if (/^#{1,6}\s/.test((lines[index] ?? "").trim())) {
+      sectionEnd = index;
+      break;
+    }
+  }
+  let tableStart = -1;
+  let tableEnd = -1;
+  for (let index = headingIndex + 1; index < sectionEnd; index += 1) {
+    if ((lines[index] ?? "").trim().startsWith("|")) {
+      if (tableStart < 0) tableStart = index;
+      tableEnd = index;
+    } else if (tableStart >= 0) {
+      break;
+    }
+  }
+
+  if (tableStart < 0) {
+    const insertion = [...table, ""];
+    return [...lines.slice(0, sectionEnd), ...insertion, ...lines.slice(sectionEnd)].join("\n");
+  }
+  return [...lines.slice(0, tableStart), ...table, ...lines.slice(tableEnd + 1)].join("\n");
+}
+
 function addDaysLocal(date: string, days: number): string {
   const [year, month, day] = date.split("-").map(Number);
   const value = new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1, 12);

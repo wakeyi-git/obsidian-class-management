@@ -7,9 +7,11 @@ const {
   baseTimetableMarkdown,
   parseBaseTimetable,
   plannedHoursBySubject,
+  removeTimetableOverrideContent,
   resolveDay,
   resolveWeek,
-  subjectSlots
+  subjectSlots,
+  upsertTimetableOverrideContent
 } = await loadTypeScriptModule("../src/timetable.ts");
 
 const calendarFile = { path: "학사일정.md", basename: "학사일정", stat: { ctime: 1 } };
@@ -108,6 +110,50 @@ test("과목 슬롯과 편성 시수를 계산한다", () => {
   const planned = plannedHoursBySubject(calendar, timetable, "2026-05-04", "2026-05-08");
   assert.equal(planned["국어"], 2);
   assert.equal(planned["창체(자율)"], 3);
+});
+
+test("시간표 변경을 노트 내용에 추가·교체·제거한다", () => {
+  const added = upsertTimetableOverrideContent(timetableContent, {
+    date: "2026-05-11",
+    period: 3,
+    subject: "창체(동아리)",
+    reason: "동아리 지정일"
+  });
+  let parsed = parseBaseTimetable(timetableFile, { schoolYear: "2026", semester: "1학기" }, added);
+  assert.equal(parsed.overrides.length, 2);
+  assert.equal(parsed.grid[0][0], "국어");
+
+  const replaced = upsertTimetableOverrideContent(added, {
+    date: "2026-05-06",
+    period: 1,
+    subject: "과학",
+    reason: "보강"
+  });
+  parsed = parseBaseTimetable(timetableFile, { schoolYear: "2026", semester: "1학기" }, replaced);
+  assert.equal(parsed.overrides.length, 2);
+  assert.equal(
+    parsed.overrides.find((item) => item.date === "2026-05-06")?.subject,
+    "과학"
+  );
+
+  const removed = removeTimetableOverrideContent(replaced, "2026-05-06", 1);
+  parsed = parseBaseTimetable(timetableFile, { schoolYear: "2026", semester: "1학기" }, removed);
+  assert.equal(parsed.overrides.length, 1);
+  assert.equal(parsed.overrides[0]?.date, "2026-05-11");
+  assert.match(removed, /## 시간표 변경/);
+});
+
+test("시간표 변경 절이 없으면 새로 만든다", () => {
+  const withoutSection = timetableContent.split("## 시간표 변경")[0];
+  const added = upsertTimetableOverrideContent(withoutSection, {
+    date: "2026-05-12",
+    period: 2,
+    subject: "체육",
+    reason: ""
+  });
+  const parsed = parseBaseTimetable(timetableFile, { schoolYear: "2026", semester: "1학기" }, added);
+  assert.equal(parsed.overrides.length, 1);
+  assert.equal(parsed.overrides[0]?.subject, "체육");
 });
 
 test("스캐폴드 시간표를 되읽을 수 있다", () => {

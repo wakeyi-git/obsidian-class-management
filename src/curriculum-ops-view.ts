@@ -1,4 +1,5 @@
-import { ItemView, TFile, WorkspaceLeaf } from "obsidian";
+import { ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
+import { TimetableCellModal } from "./timetable-cell-modal";
 import {
   availableHours,
   countClassDays,
@@ -177,6 +178,15 @@ export class CurriculumOpsView extends ItemView {
     const contents = timetable
       ? this.buildSlotContents(calendar, timetable, tables)
       : new Map<string, ProgressRow>();
+    const editable = timetable !== null &&
+      timetable.semester === this.plugin.settings.semester;
+    const subjects = this.collectSubjects(tables);
+    if (editable) {
+      section.createEl("p", {
+        cls: "class-management-ops-hint",
+        text: "칸을 클릭하면 그 날짜의 교시만 다른 과목으로 바꿀 수 있습니다. 행사 교시는 학사일정 노트에서 수정하세요."
+      });
+    }
 
     const maxPeriods = Math.max(1, ...days.map((day) => day.periods.length));
     const table = section.createEl("table", { cls: "class-management-ops-week-table" });
@@ -218,8 +228,49 @@ export class CurriculumOpsView extends ItemView {
             cls: "class-management-ops-topic"
           });
         }
+        if (editable) {
+          cell.addClass("is-editable");
+          cell.setAttribute("role", "button");
+          cell.setAttribute("tabindex", "0");
+          cell.setAttribute(
+            "aria-label",
+            `${day.date} ${period}교시 ${resolved.subject || "빈 교시"} 과목 변경`
+          );
+          const openEditor = (): void => {
+            if (resolved.source === "event") {
+              new Notice("행사가 배정된 교시입니다. 학사일정 노트의 행사 표에서 수정하세요.");
+              return;
+            }
+            new TimetableCellModal(this.plugin, {
+              date: day.date,
+              period,
+              currentSubject: resolved.subject,
+              hasOverride: resolved.source === "override",
+              subjects
+            }).open();
+          };
+          cell.addEventListener("click", openEditor);
+          cell.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openEditor();
+            }
+          });
+        }
       }
     }
+  }
+
+  private collectSubjects(tables: ProgressTable[]): string[] {
+    const subjects: string[] = [];
+    const push = (subject: string): void => {
+      const trimmed = subject.trim();
+      if (trimmed && !subjects.includes(trimmed)) subjects.push(trimmed);
+    };
+    for (const subject of this.plugin.settings.schoolSubjects) push(subject);
+    for (const table of tables) push(table.subject);
+    for (const area of ["창체(자율)", "창체(동아리)", "창체(진로)"]) push(area);
+    return subjects;
   }
 
   private buildSlotContents(

@@ -52,7 +52,8 @@ import type {
   NoticeSheet,
   ProgressRow,
   SchoolRecordArea,
-  StudentEntry
+  StudentEntry,
+  TimetableOverride
 } from "./types";
 
 const DEFAULT_CLASS_ID = "default-class";
@@ -733,6 +734,20 @@ export default class ClassManagementPlugin extends Plugin {
   openProgressImportModal(): void {
     if (!this.canWriteActiveClass()) return;
     new ProgressImportModal(this).open();
+  }
+
+  async saveTimetableOverride(override: TimetableOverride): Promise<void> {
+    const file = await this.repository.ensureBaseTimetableNote(this.settings.semester);
+    await this.repository.upsertTimetableOverride(file, override);
+    new Notice(`${override.date} ${override.period}교시 → ${override.subject}`);
+    await this.refreshViews();
+  }
+
+  async removeTimetableOverrideAt(date: string, period: number): Promise<void> {
+    const file = await this.repository.ensureBaseTimetableNote(this.settings.semester);
+    await this.repository.removeTimetableOverride(file, date, period);
+    new Notice(`${date} ${period}교시 변경을 제거했습니다.`);
+    await this.refreshViews();
   }
 
   async runProgressAssignment(): Promise<void> {

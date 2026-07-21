@@ -21,7 +21,12 @@ import {
   schoolRecordEvidenceFrontmatter
 } from "./school-record-evidence";
 import { academicCalendarMarkdown, parseAcademicCalendar } from "./academic-calendar";
-import { baseTimetableMarkdown, parseBaseTimetable } from "./timetable";
+import {
+  baseTimetableMarkdown,
+  parseBaseTimetable,
+  removeTimetableOverrideContent,
+  upsertTimetableOverrideContent
+} from "./timetable";
 import { formatAssignedSlots, parseProgressTable, progressTableMarkdown } from "./progress";
 import { hoursStandardMarkdown, parseHoursStandard } from "./hours-audit";
 import type {
@@ -30,7 +35,8 @@ import type {
   HoursStandard,
   ProgressAssignment,
   ProgressRow,
-  ProgressTable
+  ProgressTable,
+  TimetableOverride
 } from "./types";
 import type {
   AttendanceMark,
@@ -1220,6 +1226,20 @@ export class ClassRepository {
     await this.app.vault.modify(
       table.file,
       progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)
+    );
+  }
+
+  async upsertTimetableOverride(file: TFile, override: TimetableOverride): Promise<void> {
+    this.assertWritableClass();
+    await this.app.vault.process(file, (content) =>
+      upsertTimetableOverrideContent(content, override)
+    );
+  }
+
+  async removeTimetableOverride(file: TFile, date: string, period: number): Promise<void> {
+    this.assertWritableClass();
+    await this.app.vault.process(file, (content) =>
+      removeTimetableOverrideContent(content, date, period)
     );
   }
 
