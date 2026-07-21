@@ -1778,3 +1778,164 @@
     min-height: 40px;
   }
 }
+
+/* ===== 교육과정 운영 뷰 ===== */
+
+.class-management-ops-view {
+  padding: 16px;
+}
+
+.class-management-ops-setup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  margin-bottom: 12px;
+}
+
+.class-management-ops-setup-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.class-management-ops-setup-item .is-ready {
+  color: var(--text-success, var(--color-green));
+}
+
+.class-management-ops-setup-item .is-missing {
+  color: var(--text-error, var(--color-red));
+}
+
+.class-management-ops-hint {
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.class-management-ops-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.class-management-ops-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px solid var(--class-management-card-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+  font-size: 0.92em;
+}
+
+.class-management-ops-week-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.class-management-ops-week-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.class-management-ops-week-table,
+.class-management-ops-audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 16px;
+  font-size: 0.9em;
+}
+
+.class-management-ops-week-table th,
+.class-management-ops-week-table td,
+.class-management-ops-audit-table th,
+.class-management-ops-audit-table td {
+  border: 1px solid var(--background-modifier-border);
+  padding: 4px 6px;
+  text-align: center;
+  vertical-align: top;
+}
+
+.class-management-ops-week-table th.is-closed,
+.class-management-ops-week-table td.is-closed {
+  background: color-mix(in srgb, var(--background-modifier-error) 18%, transparent);
+}
+
+.class-management-ops-week-table td.is-event {
+  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+}
+
+.class-management-ops-week-table td.is-override {
+  background: color-mix(in srgb, var(--color-yellow, #e5c07b) 16%, transparent);
+}
+
+.class-management-ops-day-status {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.class-management-ops-topic {
+  font-size: 0.82em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.class-management-ops-audit-table tr.is-over td {
+  color: var(--text-error, var(--color-red));
+}
+
+.class-management-ops-audit-table tr.is-under td {
+  color: var(--color-orange, #d19a66);
+}
+
+.class-management-ops-audit-table tr.is-missing td {
+  color: var(--text-muted);
+}
+
+.class-management-ops-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.class-management-progress-import-input {
+  width: 100%;
+  min-height: 200px;
+  font-family: var(--font-monospace);
+  margin: 8px 0;
+}
+
+.class-management-calendar-day.is-school-closed {
+  background: color-mix(in srgb, var(--background-modifier-error) 12%, transparent);
+}
+
+.class-management-calendar-day-status {
+  font-size: 0.75em;
+  color: var(--text-error, var(--color-red));
+}
+
+.class-management-calendar-school-event {
+  display: block;
+  font-size: 0.75em;
+  color: var(--text-accent);
+}
+
+@media (max-width: 600px) {
+  .class-management-ops-week-table {
+    font-size: 0.78em;
+  }
+
+  .class-management-ops-view button {
+    min-height: 40px;
+  }
+}

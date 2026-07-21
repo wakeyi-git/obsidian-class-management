@@ -8,8 +8,9 @@ import {
   moveCalendarAnchor,
   type CalendarEvent
 } from "./calendar";
+import { dayStatus, eventsOn } from "./academic-calendar";
 import type ClassManagementPlugin from "./main";
-import type { ActivityKind } from "./types";
+import type { AcademicCalendar, ActivityKind } from "./types";
 
 export const CALENDAR_VIEW_TYPE = "class-management-calendar";
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
@@ -18,6 +19,7 @@ export class ClassCalendarView extends ItemView {
   private anchor = new Date();
   private mode: "month" | "week";
   private events: CalendarEvent[] = [];
+  private academicCalendar: AcademicCalendar | null = null;
   private kind: "" | ActivityKind = "";
   private studentNumber = "";
 
@@ -48,6 +50,7 @@ export class ClassCalendarView extends ItemView {
   async refresh(): Promise<void> {
     const activities = await this.plugin.activityIndex.getEntries();
     this.events = buildCalendarEvents(activities);
+    this.academicCalendar = await this.plugin.repository.getAcademicCalendar();
     this.render();
   }
 
@@ -167,6 +170,22 @@ export class ClassCalendarView extends ItemView {
 
       const dayHeader = cell.createDiv({ cls: "class-management-calendar-day-header" });
       dayHeader.createEl("span", { text: String(day.getDate()) });
+      if (this.academicCalendar) {
+        const status = dayStatus(this.academicCalendar, key);
+        if (status.kind === "closed" || status.kind === "vacation") {
+          cell.addClass("is-school-closed");
+          dayHeader.createEl("span", {
+            text: status.name || "휴업",
+            cls: "class-management-calendar-day-status"
+          });
+        }
+        eventsOn(this.academicCalendar, key).forEach((event) => {
+          cell.createEl("span", {
+            text: `${event.type === "단축" || event.type === "연장" ? `${event.type} ` : ""}${event.name}`,
+            cls: "class-management-calendar-school-event"
+          });
+        });
+      }
       const add = dayHeader.createEl("button", {
         text: "+",
         attr: { "aria-label": `${key} 항목 추가` }

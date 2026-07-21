@@ -20,6 +20,18 @@ import {
   schoolRecordEvidenceBody,
   schoolRecordEvidenceFrontmatter
 } from "./school-record-evidence";
+import { academicCalendarMarkdown, parseAcademicCalendar } from "./academic-calendar";
+import { baseTimetableMarkdown, parseBaseTimetable } from "./timetable";
+import { formatAssignedSlots, parseProgressTable, progressTableMarkdown } from "./progress";
+import { hoursStandardMarkdown, parseHoursStandard } from "./hours-audit";
+import type {
+  AcademicCalendar,
+  BaseTimetable,
+  HoursStandard,
+  ProgressAssignment,
+  ProgressRow,
+  ProgressTable
+} from "./types";
 import type {
   AttendanceMark,
   AssignmentMark,
@@ -112,6 +124,22 @@ export class ClassRepository {
 
   get curriculumLessonsFolderPath(): string {
     return joinVaultPath(this.curriculumFolderPath, "수업일지");
+  }
+
+  get academicCalendarFolderPath(): string {
+    return joinVaultPath(this.curriculumFolderPath, "학사일정");
+  }
+
+  get timetableFolderPath(): string {
+    return joinVaultPath(this.curriculumFolderPath, "시간표");
+  }
+
+  get progressFolderPath(): string {
+    return joinVaultPath(this.curriculumFolderPath, "진도표");
+  }
+
+  get weeklyPlanFolderPath(): string {
+    return joinVaultPath(this.curriculumFolderPath, "주간학습안내");
   }
 
   get routineTemplatesFolderPath(): string {
@@ -1022,6 +1050,187 @@ export class ClassRepository {
     ].join("\n");
 
     await this.app.vault.create(path, content);
+  }
+
+  async getAcademicCalendar(): Promise<AcademicCalendar | null> {
+    const file = await this.findScheduleNote(
+      this.academicCalendarFolderPath,
+      "academic-calendar",
+      (frontmatter) => String(frontmatter.schoolYear ?? "") === this.getSettings().schoolYear
+    );
+    if (!file) return null;
+    const frontmatter = this.app.metadataCache.getFileCache(file.file)?.frontmatter ?? {};
+    return parseAcademicCalendar(file.file, frontmatter as Record<string, unknown>, file.content);
+  }
+
+  async getHoursStandard(): Promise<HoursStandard | null> {
+    const file = await this.findScheduleNote(
+      this.academicCalendarFolderPath,
+      "hours-standard",
+      (frontmatter) => String(frontmatter.schoolYear ?? "") === this.getSettings().schoolYear
+    );
+    if (!file) return null;
+    const frontmatter = this.app.metadataCache.getFileCache(file.file)?.frontmatter ?? {};
+    return parseHoursStandard(file.file, frontmatter as Record<string, unknown>, file.content);
+  }
+
+  async getBaseTimetable(semester: string): Promise<BaseTimetable | null> {
+    const settings = this.getSettings();
+    const file = await this.findScheduleNote(
+      this.timetableFolderPath,
+      "timetable",
+      (frontmatter) =>
+        String(frontmatter.schoolYear ?? "") === settings.schoolYear &&
+        String(frontmatter.semester ?? "") === semester
+    );
+    if (!file) return null;
+    const frontmatter = this.app.metadataCache.getFileCache(file.file)?.frontmatter ?? {};
+    return parseBaseTimetable(file.file, frontmatter as Record<string, unknown>, file.content);
+  }
+
+  async getProgressTables(semester: string): Promise<ProgressTable[]> {
+    const settings = this.getSettings();
+    const tables: ProgressTable[] = [];
+    for (const file of this.markdownFilesIn(this.progressFolderPath)) {
+      const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+      if (frontmatter?.["class-management"] !== "subject-progress") continue;
+      if (String(frontmatter.schoolYear ?? "") !== settings.schoolYear) continue;
+      if (String(frontmatter.semester ?? "") !== semester) continue;
+      const content = await this.app.vault.cachedRead(file);
+      tables.push(parseProgressTable(file, frontmatter as Record<string, unknown>, content));
+    }
+    return tables.sort((a, b) => a.subject.localeCompare(b.subject, "ko"));
+  }
+
+  private async findScheduleNote(
+    folderPath: string,
+    kind: string,
+    matches: (frontmatter: Record<string, unknown>) => boolean
+  ): Promise<{ file: TFile; content: string } | null> {
+    let fallback: TFile | null = null;
+    for (const file of this.markdownFilesIn(folderPath)) {
+      const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+      if (frontmatter?.["class-management"] !== kind) continue;
+      if (matches(frontmatter as Record<string, unknown>)) {
+        return { file, content: await this.app.vault.cachedRead(file) };
+      }
+      fallback = fallback ?? file;
+    }
+    if (!fallback) return null;
+    return { file: fallback, content: await this.app.vault.cachedRead(fallback) };
+  }
+
+  async ensureAcademicCalendarNote(): Promise<TFile> {
+    this.assertWritableClass();
+    const settings = this.getSettings();
+    await this.ensureFolder(this.academicCalendarFolderPath);
+    const path = joinVaultPath(
+      this.academicCalendarFolderPath,
+      `${safeFileSegment(settings.schoolYear)} 학사일정.md`
+    );
+    const existing = this.app.vault.getAbstractFileByPath(path);
+    if (existing instanceof TFile) return existing;
+    return this.app.vault.create(
+      path,
+      academicCalendarMarkdown(settings.schoolYear, settings.className)
+    );
+  }
+
+  async ensureHoursStandardNote(): Promise<TFile> {
+    this.assertWritableClass();
+    const settings = this.getSettings();
+    await this.ensureFolder(this.academicCalendarFolderPath);
+    const path = joinVaultPath(
+      this.academicCalendarFolderPath,
+      `${safeFileSegment(settings.schoolYear)} 기준 시수.md`
+    );
+    const existing = this.app.vault.getAbstractFileByPath(path);
+    if (existing instanceof TFile) return existing;
+    return this.app.vault.create(
+      path,
+      hoursStandardMarkdown(settings.schoolYear, settings.className, settings.schoolSubjects)
+    );
+  }
+
+  async ensureBaseTimetableNote(semester: string): Promise<TFile> {
+    this.assertWritableClass();
+    const settings = this.getSettings();
+    await this.ensureFolder(this.timetableFolderPath);
+    const path = joinVaultPath(
+      this.timetableFolderPath,
+      `${safeFileSegment(settings.schoolYear)} ${safeFileSegment(semester)} 기초시간표.md`
+    );
+    const existing = this.app.vault.getAbstractFileByPath(path);
+    if (existing instanceof TFile) return existing;
+    const calendar = await this.getAcademicCalendar();
+    return this.app.vault.create(
+      path,
+      baseTimetableMarkdown(
+        settings.schoolYear,
+        semester,
+        settings.className,
+        calendar?.weekdayPeriods ?? [5, 6, 5, 6, 5]
+      )
+    );
+  }
+
+  async ensureProgressTableNote(subject: string, semester: string): Promise<TFile> {
+    this.assertWritableClass();
+    const settings = this.getSettings();
+    await this.ensureFolder(this.progressFolderPath);
+    const path = joinVaultPath(
+      this.progressFolderPath,
+      `${safeFileSegment(settings.schoolYear)} ${safeFileSegment(semester)} ${safeFileSegment(subject)} 진도표.md`
+    );
+    const existing = this.app.vault.getAbstractFileByPath(path);
+    if (existing instanceof TFile) return existing;
+    return this.app.vault.create(
+      path,
+      progressTableMarkdown(settings.schoolYear, semester, subject, settings.className, [])
+    );
+  }
+
+  async appendProgressRows(table: ProgressTable, rows: ProgressRow[]): Promise<void> {
+    this.assertWritableClass();
+    const settings = this.getSettings();
+    await this.app.vault.modify(
+      table.file,
+      progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, [
+        ...table.rows,
+        ...rows
+      ])
+    );
+  }
+
+  async writeProgressAssignments(
+    table: ProgressTable,
+    assignment: ProgressAssignment
+  ): Promise<void> {
+    this.assertWritableClass();
+    const settings = this.getSettings();
+    const rows = table.rows.map((row) => {
+      const entry = assignment.rows.find((item) => item.row === row);
+      if (!entry) return row;
+      const assigned = formatAssignedSlots(entry.slots);
+      return {
+        ...row,
+        assigned: entry.shortage > 0 ? `${assigned}${assigned ? " " : ""}(부족 ${entry.shortage})` : assigned
+      };
+    });
+    await this.app.vault.modify(
+      table.file,
+      progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)
+    );
+  }
+
+  async createWeeklyPlanNote(weekStart: string, markdown: string): Promise<TFile> {
+    this.assertWritableClass();
+    await this.ensureFolder(this.weeklyPlanFolderPath);
+    const path = this.availableMarkdownPath(
+      this.weeklyPlanFolderPath,
+      `${safeFileSegment(weekStart)} 주간학습안내`
+    );
+    return this.app.vault.create(path, markdown);
   }
 
   private markdownFilesIn(folderPath: string): TFile[] {

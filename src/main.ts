@@ -11,6 +11,13 @@ import { ClassRepository } from "./class-repository";
 import { CurriculumLessonModal } from "./curriculum-lesson-modal";
 import { CurriculumUnitModal } from "./curriculum-unit-modal";
 import { CurriculumView, CURRICULUM_VIEW_TYPE } from "./curriculum-view";
+import { CurriculumOpsView, CURRICULUM_OPS_VIEW_TYPE } from "./curriculum-ops-view";
+import { ProgressImportModal } from "./progress-import-modal";
+import { mondayOf, semesterRange } from "./academic-calendar";
+import { resolveWeek, subjectSlots } from "./timetable";
+import { assignProgress, slotContentMap } from "./progress";
+import { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } from "./weekly-plan";
+import { localDate } from "./utils";
 import {
   DataManagementView,
   DATA_MANAGEMENT_VIEW_TYPE
@@ -43,6 +50,7 @@ import type {
   CurriculumLesson,
   CurriculumUnit,
   NoticeSheet,
+  ProgressRow,
   SchoolRecordArea,
   StudentEntry
 } from "./types";
@@ -128,6 +136,10 @@ export default class ClassManagementPlugin extends Plugin {
     this.registerView(TASK_VIEW_TYPE, (leaf) => new TaskView(leaf, this));
     this.registerView(ROUTINE_VIEW_TYPE, (leaf) => new RoutineView(leaf, this));
     this.registerView(CURRICULUM_VIEW_TYPE, (leaf) => new CurriculumView(leaf, this));
+    this.registerView(
+      CURRICULUM_OPS_VIEW_TYPE,
+      (leaf) => new CurriculumOpsView(leaf, this)
+    );
     this.registerView(REPORT_VIEW_TYPE, (leaf) => new ReportView(leaf, this));
     this.registerView(
       DATA_MANAGEMENT_VIEW_TYPE,
@@ -199,6 +211,41 @@ export default class ClassManagementPlugin extends Plugin {
       id: "open-calendar",
       name: "학급 캘린더 열기",
       callback: () => void this.openCalendar()
+    });
+    this.addCommand({
+      id: "open-curriculum-ops",
+      name: "교육과정 운영 열기",
+      callback: () => void this.openCurriculumOps()
+    });
+    this.addCommand({
+      id: "open-academic-calendar",
+      name: "학사일정 노트 열기",
+      callback: () => void this.openAcademicCalendarNote()
+    });
+    this.addCommand({
+      id: "open-hours-standard",
+      name: "기준 시수 노트 열기",
+      callback: () => void this.openHoursStandardNote()
+    });
+    this.addCommand({
+      id: "open-base-timetable",
+      name: "기초시간표 노트 열기",
+      callback: () => void this.openBaseTimetableNote()
+    });
+    this.addCommand({
+      id: "import-progress-rows",
+      name: "진도표 차시 가져오기",
+      callback: () => this.openProgressImportModal()
+    });
+    this.addCommand({
+      id: "assign-progress",
+      name: "진도 자동 배정",
+      callback: () => void this.runProgressAssignment()
+    });
+    this.addCommand({
+      id: "generate-weekly-plan",
+      name: "주간학습안내 생성 (이번 주)",
+      callback: () => void this.generateWeeklyPlan()
     });
     this.addCommand({
       id: "open-tasks",
@@ -649,6 +696,135 @@ export default class ClassManagementPlugin extends Plugin {
     await this.app.workspace.revealLeaf(leaf);
   }
 
+  async openCurriculumOps(): Promise<void> {
+    const existing = this.app.workspace.getLeavesOfType(CURRICULUM_OPS_VIEW_TYPE)[0];
+    const leaf = existing ?? this.app.workspace.getLeaf(true);
+    if (!existing) await leaf.setViewState({ type: CURRICULUM_OPS_VIEW_TYPE, active: true });
+    await this.app.workspace.revealLeaf(leaf);
+  }
+
+  async openAcademicCalendarNote(): Promise<void> {
+    try {
+      const file = await this.repository.ensureAcademicCalendarNote();
+      await this.openFile(file);
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "학사일정 노트를 열지 못했습니다.");
+    }
+  }
+
+  async openHoursStandardNote(): Promise<void> {
+    try {
+      const file = await this.repository.ensureHoursStandardNote();
+      await this.openFile(file);
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "기준 시수 노트를 열지 못했습니다.");
+    }
+  }
+
+  async openBaseTimetableNote(): Promise<void> {
+    try {
+      const file = await this.repository.ensureBaseTimetableNote(this.settings.semester);
+      await this.openFile(file);
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "기초시간표 노트를 열지 못했습니다.");
+    }
+  }
+
+  openProgressImportModal(): void {
+    if (!this.canWriteActiveClass()) return;
+    new ProgressImportModal(this).open();
+  }
+
+  async runProgressAssignment(): Promise<void> {
+    try {
+      const calendar = await this.repository.getAcademicCalendar();
+      if (!calendar) {
+        new Notice("학사일정 노트가 필요합니다. `학사일정 노트 열기`를 먼저 실행하세요.");
+        return;
+      }
+      const timetable = await this.repository.getBaseTimetable(this.settings.semester);
+      if (!timetable) {
+        new Notice("기초시간표 노트가 필요합니다. `기초시간표 노트 열기`를 먼저 실행하세요.");
+        return;
+      }
+      const tables = await this.repository.getProgressTables(this.settings.semester);
+      if (tables.length === 0) {
+        new Notice("진도표가 없습니다. `진도표 차시 가져오기`로 차시를 입력하세요.");
+        return;
+      }
+      const range = semesterRange(calendar, this.settings.semester);
+      if (!range.from || !range.to) {
+        new Notice("학사일정 노트의 학기 시작·종료일을 확인하세요.");
+        return;
+      }
+      const issues: string[] = [];
+      for (const table of tables) {
+        const slots = subjectSlots(calendar, timetable, range.from, range.to, table.subject);
+        const assignment = assignProgress(table.rows, slots);
+        await this.repository.writeProgressAssignments(table, assignment);
+        issues.push(...assignment.issues.map((issue) => `${table.subject}: ${issue}`));
+      }
+      new Notice(
+        issues.length > 0
+          ? `진도 배정 완료. 확인할 항목 ${issues.length}건은 각 진도표의 배정 열을 확인하세요.`
+          : `${tables.length}개 진도표의 배정을 완료했습니다.`
+      );
+      await this.refreshViews();
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "진도 배정에 실패했습니다.");
+    }
+  }
+
+  async generateWeeklyPlan(weekStart?: string): Promise<void> {
+    try {
+      const calendar = await this.repository.getAcademicCalendar();
+      if (!calendar) {
+        new Notice("학사일정 노트가 필요합니다. `학사일정 노트 열기`를 먼저 실행하세요.");
+        return;
+      }
+      const timetable = await this.repository.getBaseTimetable(this.settings.semester);
+      if (!timetable) {
+        new Notice("기초시간표 노트가 필요합니다. `기초시간표 노트 열기`를 먼저 실행하세요.");
+        return;
+      }
+      const monday = weekStart ?? mondayOf(localDate());
+      const days = resolveWeek(calendar, timetable, monday);
+      const tables = await this.repository.getProgressTables(this.settings.semester);
+      const range = semesterRange(calendar, this.settings.semester);
+      const contents = new Map<string, ProgressRow>();
+      if (range.from && range.to) {
+        for (const table of tables) {
+          const slots = subjectSlots(calendar, timetable, range.from, range.to, table.subject);
+          const assignment = assignProgress(table.rows, slots);
+          for (const [key, row] of slotContentMap(assignment)) contents.set(key, row);
+        }
+      }
+      const weekEnd = days[days.length - 1]?.date ?? monday;
+      const notices = this.repository
+        .getNoticeSummaries()
+        .filter((notice) => notice.dueDate && notice.dueDate >= monday && notice.dueDate <= weekEnd)
+        .map((notice) => `${notice.title} — 회신 마감 ${notice.dueDate}`);
+      const morningActivities = (await this.repository.getRoutineTemplates())
+        .filter((template) => template.frequency === "daily")
+        .map((template) => template.title);
+      const markdown = buildWeeklyPlanMarkdown({
+        className: this.settings.className,
+        schoolYear: this.settings.schoolYear,
+        semester: this.settings.semester,
+        weekStart: monday,
+        weekEnd,
+        days: buildWeeklyPlanDays(days, (date, period) => contents.get(`${date}|${period}`)),
+        notices,
+        morningActivities
+      });
+      const file = await this.repository.createWeeklyPlanNote(monday, markdown);
+      new Notice(`${monday} 주간학습안내를 생성했습니다.`);
+      await this.openFile(file);
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "주간학습안내 생성에 실패했습니다.");
+    }
+  }
+
   openCurriculumUnitModal(existing?: CurriculumUnit): void {
     if (!this.canWriteActiveClass()) return;
     new CurriculumUnitModal(this.app, this.settings, async (unit, current) => {
@@ -924,7 +1100,12 @@ export default class ClassManagementPlugin extends Plugin {
       .getLeavesOfType(MAINTENANCE_VIEW_TYPE)
       .map((leaf) => leaf.view)
       .filter((view): view is MaintenanceView => view instanceof MaintenanceView);
+    const opsViews = this.app.workspace
+      .getLeavesOfType(CURRICULUM_OPS_VIEW_TYPE)
+      .map((leaf) => leaf.view)
+      .filter((view): view is CurriculumOpsView => view instanceof CurriculumOpsView);
     await Promise.all([
+      ...opsViews.map((view) => view.refresh()),
       ...activityViews.map((view) => view.refresh()),
       ...timelineViews.map((view) => view.refresh()),
       ...calendarViews.map((view) => view.refresh()),

@@ -1,0 +1,120 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { loadTypeScriptModule } from "./helpers.mjs";
+
+const {
+  assignProgress,
+  formatAssignedSlots,
+  parseProgressImport,
+  parseProgressTable,
+  progressTableMarkdown,
+  slotContentMap
+} = await loadTypeScriptModule("../src/progress.ts");
+
+const file = { path: "진도표.md", basename: "진도표", stat: { ctime: 1 } };
+
+function makeRow(order, topic, hours, fixedDate = "") {
+  return {
+    order,
+    unit: "1. 분수",
+    topic,
+    hours,
+    standard: "",
+    materials: "",
+    fixedDate,
+    assigned: "",
+    note: ""
+  };
+}
+
+test("진도표 Markdown을 되읽을 수 있다", () => {
+  const markdown = progressTableMarkdown("2026", "2학기", "수학", "우리 반", [
+    makeRow(1, "분수의 의미", 2),
+    { ...makeRow(2, "분수 비교 | 정리", 1), materials: "분수 막대", standard: "[4수01-10]" }
+  ]);
+  const parsed = parseProgressTable(file, { schoolYear: "2026", semester: "2학기", subject: "수학" }, markdown);
+  assert.equal(parsed.subject, "수학");
+  assert.equal(parsed.rows.length, 2);
+  assert.equal(parsed.rows[0].hours, 2);
+  assert.equal(parsed.rows[1].topic, "분수 비교 | 정리");
+  assert.equal(parsed.rows[1].materials, "분수 막대");
+});
+
+test("TSV·CSV 차시 자료를 가져온다", () => {
+  const tsv = "단원\t학습 내용\t시수\n1. 분수\t분수의 의미\t2\n1. 분수\t분수 비교\t";
+  const imported = parseProgressImport(tsv, 1);
+  assert.equal(imported.rows.length, 2);
+  assert.equal(imported.rows[0].hours, 2);
+  assert.equal(imported.rows[1].hours, 1);
+  assert.equal(imported.rows[1].order, 2);
+
+  const csv = '1. 분수,"분수, 나눗셈",1,[4수01-10]';
+  const csvImported = parseProgressImport(csv, 5);
+  assert.equal(csvImported.rows[0].topic, "분수, 나눗셈");
+  assert.equal(csvImported.rows[0].order, 5);
+  assert.equal(csvImported.rows[0].standard, "[4수01-10]");
+
+  const empty = parseProgressImport("단원\t\t\n한줄", 1);
+  assert.equal(empty.rows.length, 0);
+  assert.ok(empty.issues.length >= 1);
+});
+
+test("진도를 수업 시간에 순서대로 배정한다", () => {
+  const slots = [
+    { date: "2026-08-17", period: 2 },
+    { date: "2026-08-19", period: 3 },
+    { date: "2026-08-21", period: 1 }
+  ];
+  const assignment = assignProgress([makeRow(1, "분수의 의미", 2), makeRow(2, "분수 비교", 1)], slots);
+  assert.deepEqual(assignment.rows[0].slots, [
+    { date: "2026-08-17", period: 2 },
+    { date: "2026-08-19", period: 3 }
+  ]);
+  assert.deepEqual(assignment.rows[1].slots, [{ date: "2026-08-21", period: 1 }]);
+  assert.equal(assignment.issues.length, 0);
+  assert.equal(assignment.unassignedSlots.length, 0);
+});
+
+test("고정 날짜 차시가 먼저 배정된다", () => {
+  const slots = [
+    { date: "2026-08-17", period: 2 },
+    { date: "2026-08-19", period: 3 },
+    { date: "2026-08-21", period: 1 }
+  ];
+  const assignment = assignProgress(
+    [makeRow(1, "일반 차시", 2), makeRow(2, "국악 강사 수업", 1, "2026-08-19")],
+    slots
+  );
+  assert.deepEqual(assignment.rows[1].slots, [{ date: "2026-08-19", period: 3 }]);
+  assert.deepEqual(assignment.rows[0].slots, [
+    { date: "2026-08-17", period: 2 },
+    { date: "2026-08-21", period: 1 }
+  ]);
+});
+
+test("부족·잉여 시수를 경고한다", () => {
+  const shortage = assignProgress([makeRow(1, "차시", 3)], [{ date: "2026-08-17", period: 1 }]);
+  assert.equal(shortage.rows[0].shortage, 2);
+  assert.ok(shortage.issues.some((issue) => /2차시 부족/.test(issue)));
+
+  const leftover = assignProgress([makeRow(1, "차시", 1)], [
+    { date: "2026-08-17", period: 1 },
+    { date: "2026-08-18", period: 1 }
+  ]);
+  assert.ok(leftover.issues.some((issue) => /남는 수업 시간/.test(issue)));
+
+  const missingFixed = assignProgress([makeRow(1, "고정", 1, "2026-08-20")], [
+    { date: "2026-08-17", period: 1 }
+  ]);
+  assert.ok(missingFixed.issues.some((issue) => /수업이 없습니다/.test(issue)));
+});
+
+test("배정 결과 표기와 슬롯 맵을 만든다", () => {
+  const assignment = assignProgress([makeRow(1, "분수의 의미", 2)], [
+    { date: "2026-08-17", period: 2 },
+    { date: "2026-08-19", period: 3 }
+  ]);
+  assert.equal(formatAssignedSlots(assignment.rows[0].slots), "08-17(2), 08-19(3)");
+  const map = slotContentMap(assignment);
+  assert.equal(map.get("2026-08-19|3")?.topic, "분수의 의미");
+});

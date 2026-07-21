@@ -414,3 +414,149 @@ export interface SchoolRecordEvidence {
   inquiryProcess: string;
   studentTransferEvidence: string;
 }
+
+export type ClosedDayCategory = "공휴일" | "재량휴업일" | "기타";
+
+export interface ClosedDay {
+  date: string;
+  category: ClosedDayCategory;
+  name: string;
+}
+
+export type SchoolEventType = "행사" | "전일행사" | "단축" | "연장";
+
+export interface SchoolEvent {
+  date: string;
+  type: SchoolEventType;
+  name: string;
+  periods: number[];
+  subject: string;
+}
+
+export interface AcademicCalendar {
+  file: TFile;
+  schoolYear: string;
+  semester1Start: string;
+  semester1End: string;
+  semester2Start: string;
+  semester2End: string;
+  weekdayPeriods: number[];
+  closedDays: ClosedDay[];
+  events: SchoolEvent[];
+}
+
+export interface HoursStandardEntry {
+  subject: string;
+  hours: number;
+}
+
+export interface HoursStandard {
+  file: TFile;
+  schoolYear: string;
+  tolerancePercent: number;
+  entries: HoursStandardEntry[];
+}
+
+export interface TimetableOverride {
+  date: string;
+  period: number;
+  subject: string;
+  reason: string;
+}
+
+export interface BaseTimetable {
+  file: TFile;
+  schoolYear: string;
+  semester: string;
+  periods: number;
+  grid: string[][];
+  overrides: TimetableOverride[];
+}
+
+export interface ResolvedPeriod {
+  period: number;
+  subject: string;
+  source: "base" | "override" | "event";
+}
+
+export interface ResolvedDay {
+  date: string;
+  weekday: number;
+  isClassDay: boolean;
+  reason: string;
+  periods: ResolvedPeriod[];
+  events: SchoolEvent[];
+}
+
+export interface ProgressRow {
+  order: number;
+  unit: string;
+  topic: string;
+  hours: number;
+  standard: string;
+  materials: string;
+  fixedDate: string;
+  assigned: string;
+  note: string;
+}
+
+export interface ProgressTable {
+  file: TFile;
+  schoolYear: string;
+  semester: string;
+  subject: string;
+  rows: ProgressRow[];
+}
+
+export interface SubjectSlot {
+  date: string;
+  period: number;
+}
+
+export interface AssignedProgressRow {
+  row: ProgressRow;
+  slots: SubjectSlot[];
+  shortage: number;
+}
+
+export interface ProgressAssignment {
+  rows: AssignedProgressRow[];
+  unassignedSlots: SubjectSlot[];
+  issues: string[];
+}
+
+export interface HoursAuditRow {
+  subject: string;
+  standardHours: number;
+  plannedHours: number;
+  taughtHours: number;
+  deltaPercent: number;
+  status: "ok" | "over" | "under" | "missing";
+}
+
+export interface WeeklyPlanCell {
+  period: number;
+  subject: string;
+  unit: string;
+  topic: string;
+  materials: string;
+}
+
+export interface WeeklyPlanDay {
+  date: string;
+  weekday: number;
+  isClassDay: boolean;
+  reason: string;
+  cells: WeeklyPlanCell[];
+}
+
+export interface WeeklyPlanInput {
+  className: string;
+  schoolYear: string;
+  semester: string;
+  weekStart: string;
+  weekEnd: string;
+  days: WeeklyPlanDay[];
+  notices: string[];
+  morningActivities: string[];
+}
