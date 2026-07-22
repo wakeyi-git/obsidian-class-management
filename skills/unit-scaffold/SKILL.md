@@ -10,7 +10,7 @@ description: 진도표를 근거로 일반 단원 계획 노트를 일괄 생성
 ## 경로
 
 - 저장소: `/Users/wakeyi/Documents/develop/class-management` (이하 REPO)
-- 볼트: `/Users/wakeyi/Documents/classroom` (이하 VAULT), 대상 폴더 `VAULT/학급운영/교육과정/설계/`
+- 볼트: `/Users/wakeyi/Documents/classroom` (이하 VAULT), 대상 폴더 `VAULT/학급운영/교육과정/단원/`
 
 ## 절차
 

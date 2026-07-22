@@ -51,21 +51,21 @@ src/
 |---|---|---|---|
 | student | 학생/ | 명단·프로필 | 모든 학생 기록의 앵커 |
 | attendance | 출결/ | 일별 출결표 | 오늘 패널·대시보드 |
-| record | 기록/ | 관찰 기록·**학생부 근거**(reviewStatus: raw→검토) | 단원·수업일지 링크 |
+| record | 학생 기록/ | 관찰 기록·**학생부 근거**(reviewStatus: raw→검토) | 단원·수업일지 링크 |
 | assignment | 과제/ | **과제**(수행평가) 확인표+평가 정보·루브릭 | 단원 링크, 진도표 과제 열 |
 | task / notice / routine-* | 할 일/ 가정통신문/ 루틴/ | GTD·회신 마감·루틴 | 오늘 패널 |
 | academic-calendar | 교육과정/학사일정/ | 학기·휴업일·행사 원장(표) | 모든 날짜 계산의 근원 |
 | hours-standard | 교육과정/ | 기준 시수 | 시수 점검 |
 | timetable | 교육과정/시간표/ | 기초시간표+시간표 변경(오버라이드) 원장 | resolveDay 단일 진실 |
 | subject-progress | 교육과정/진도표/ | 차시 원장(11열: …성취기준·프로젝트·과제…) | 배정·고정(📌)·링크 열 |
-| curriculum-unit | 교육과정/설계/ | **단원**(일반 within-subject / 통합 concept-inquiry) | 성취기준·차시·평가·근거의 허브 |
+| curriculum-unit | 교육과정/단원/ | **단원**(일반 within-subject / 통합 concept-inquiry) | 성취기준·차시·평가·근거의 허브 |
 | curriculum-lesson | 교육과정/수업일지/ | **수업일지** = 차시의 기록 허브(단원 연계 선택) | 진도표 비고 역링크 |
 | school-event | 교육과정/행사/ | 행사 계획·성찰 | 학사일정 행사와 1:1 |
 | weekly-plan | 교육과정/주간학습안내/ | 주간안내 스냅숏 | 생성물(재생성 가능) |
 | achievement-standard | 교육과정/성취기준/ | 성취기준 전문+연계 목록 (볼트 데이터, 플러그인 미파싱) | 코드 위키링크의 대상 |
 | home/backup/report/diagnostics/ai-draft | (관리) | 홈·백업·보고서·진단·AI 초안 | 유지보수 |
 
-Bases 보기 7종(`교육과정/뷰/`): 단원(구분·진행률)·수업일지·과제·행사·학생부 근거·주간학습안내·연계 기록(단원 임베드용). 정의의 단일 진실은 `core/entity-notes.ts`.
+Bases 보기 7종(`교육과정/모아보기/`): 단원(구분·진행률)·수업일지·과제·행사·학생부 근거·주간학습안내·연계 기록(단원 임베드용). 정의의 단일 진실은 `core/entity-notes.ts`.
 
 ## 8. 기능 맵 (4도메인)
 

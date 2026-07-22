@@ -79,7 +79,7 @@ const DEFAULT_CLASS_ID = "default-class";
 const DEFAULT_SCHOOL_YEAR = String(new Date().getFullYear());
 // 저장된 설정의 스키마 표식. loadSettings의 정규화는 멱등이므로 버전과 무관하게
 // 항상 실행하며, 저장 형식이 비호환으로 바뀔 때에만 이 값을 올리고 분기를 추가한다.
-const SETTINGS_SCHEMA_VERSION = 12;
+const SETTINGS_SCHEMA_VERSION = 13;
 const DEFAULT_SETTINGS: ClassManagementSettings = {
   className: "우리 반",
   schoolYear: DEFAULT_SCHOOL_YEAR,
@@ -91,7 +91,7 @@ const DEFAULT_SETTINGS: ClassManagementSettings = {
   schoolSubjects: defaultSubjectsForGrade("3"),
   baseFolder: "학급운영",
   studentsFolder: "학생",
-  recordsFolder: "기록",
+  recordsFolder: "학생 기록",
   attendanceFolder: "출결",
   assignmentsFolder: "과제",
   tasksFolder: "할 일",
@@ -185,6 +185,8 @@ export default class ClassManagementPlugin extends Plugin {
       window.setTimeout(() => void this.stampRawLessonRecords(), 2000);
       // 학기 경계를 지나면 설정 전환을 제안한다(자동 변경은 하지 않음).
       window.setTimeout(() => void this.suggestSemesterSwitch(), 2600);
+      // 1.30.0 폴더 직관화 이후 구 이름 폴더가 남아 있으면 이행 안내(자동 이동은 하지 않음).
+      window.setTimeout(() => this.warnLegacyFolders(), 3200);
     });
     this.registerView(REPORT_VIEW_TYPE, (leaf) => new ReportView(leaf, this));
     this.registerView(
@@ -449,6 +451,10 @@ export default class ClassManagementPlugin extends Plugin {
       },
       savedActivityViews: loaded?.savedActivityViews ?? []
     };
+    // v13: 폴더 직관화 — 기본 이름을 쓰던 설정만 새 이름으로 옮긴다(사용자 지정 이름은 유지).
+    if ((loaded?.schemaVersion ?? 0) < 13 && loaded?.recordsFolder === "기록") {
+      this.settings.recordsFolder = "학생 기록";
+    }
     this.settings.schemaVersion = SETTINGS_SCHEMA_VERSION;
     if (!loaded?.classProfiles?.length) {
       this.settings.classProfiles = [{
@@ -1135,6 +1141,27 @@ export default class ClassManagementPlugin extends Plugin {
     } catch {
       // 제안 실패는 조용히 넘어간다 — 다음 로드에서 다시 시도된다.
     }
+  }
+
+  /** 1.30.0 폴더 이름 변경(기록→학생 기록, 설계→단원, 뷰→모아보기) 전 구조를 감지해 안내한다. */
+  warnLegacyFolders(): void {
+    const pairs: Array<[string, string]> = [
+      [`${this.repository.baseFolderPath}/기록`, this.repository.recordsFolderPath],
+      [`${this.repository.curriculumFolderPath}/설계`, this.repository.curriculumUnitsFolderPath],
+      [`${this.repository.curriculumFolderPath}/뷰`, this.repository.basesFolderPath]
+    ];
+    const legacy = pairs.filter(
+      ([oldPath, newPath]) =>
+        oldPath !== newPath &&
+        this.app.vault.getAbstractFileByPath(oldPath) &&
+        !this.app.vault.getAbstractFileByPath(newPath)
+    );
+    if (legacy.length === 0) return;
+    new Notice(
+      `구버전 폴더 이름이 남아 있습니다: ${legacy.map(([oldPath]) => oldPath).join(", ")}. ` +
+        "폴더 이름을 새 구조(학생 기록·단원·모아보기)로 바꿔 주세요 — CHANGELOG 1.30.0 이행 안내 참고.",
+      12000
+    );
   }
 
   /** 수동 작성 수업일지를 진도표 비고에 역링크한다(플러그인 생성분과 같은 형식, 멱등). */

@@ -133,7 +133,7 @@ export class ClassRepository {
   }
 
   get curriculumUnitsFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "설계");
+    return joinVaultPath(this.curriculumFolderPath, "단원");
   }
 
   get curriculumLessonsFolderPath(): string {
@@ -1382,7 +1382,7 @@ export class ClassRepository {
   }
 
   get basesFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "뷰");
+    return joinVaultPath(this.curriculumFolderPath, "모아보기");
   }
 
   /** 일체화 Bases 보기를 스캐폴드한다. 정의는 entity-notes.ts BASES_VIEW_FILES가 단일 진실. */

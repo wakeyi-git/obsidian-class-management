@@ -119,7 +119,7 @@ export class ClassManagementSettingTab extends PluginSettingTab {
       .setName("기록 폴더")
       .addText((text) =>
         text.setValue(this.plugin.settings.recordsFolder).onChange(async (value) => {
-          this.plugin.settings.recordsFolder = value.trim() || "기록";
+          this.plugin.settings.recordsFolder = value.trim() || "학생 기록";
           await this.plugin.saveSettings();
         })
       );
