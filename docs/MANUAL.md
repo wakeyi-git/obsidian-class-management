@@ -1,6 +1,6 @@
 # Classroom Manager 시기별 사용 설명서
 
-> 학년 흐름을 따라 "지금 무엇을 하면 되는지"만 담은 교사용 설명서입니다. 기능의 설계 배경은 [PRODUCT.md](PRODUCT.md), 화면 지도는 [UX-FLOWS.md](UX-FLOWS.md) 참고. (1.30.0 기준)
+> 학년 흐름을 따라 "지금 무엇을 하면 되는지"만 담은 교사용 설명서입니다. 기능의 설계 배경은 [PRODUCT.md](PRODUCT.md), 화면 지도는 [UX-FLOWS.md](UX-FLOWS.md) 참고. (1.31.0 기준)
 
 ## 기본기 — 화면과 조작 (처음 5분)
 
