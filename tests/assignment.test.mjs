@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { loadTypeScriptModule } from "./helpers.mjs";
 
 const { formatAssignmentTableRow, parseAssignmentTable } =
-  await loadTypeScriptModule("../src/assignment.ts");
+  await loadTypeScriptModule("../packages/core/src/assignment.ts");
 
 const assignments = [
   { studentNumber: "1", studentName: "김하늘", status: "제출" },

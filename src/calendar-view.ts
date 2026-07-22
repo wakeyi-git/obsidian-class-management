@@ -1,16 +1,16 @@
 import { ItemView, Modal, Setting, WorkspaceLeaf } from "obsidian";
-import { addOption } from "./dom";
-import { ACTIVITY_KIND_LABELS } from "./activity";
+import { addOption } from "@core/dom";
+import { ACTIVITY_KIND_LABELS } from "@core/activity";
 import {
   buildCalendarEvents,
   calendarDays,
   dateKey,
   moveCalendarAnchor,
   type CalendarEvent
-} from "./calendar";
-import { dayStatus, eventsOn } from "./academic-calendar";
+} from "@core/calendar";
+import { dayStatus, eventsOn } from "@core/academic-calendar";
 import type ClassManagementPlugin from "./main";
-import type { AcademicCalendar, ActivityKind } from "./types";
+import type { AcademicCalendar, ActivityKind } from "@core/types";
 
 export const CALENDAR_VIEW_TYPE = "class-management-calendar";
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];

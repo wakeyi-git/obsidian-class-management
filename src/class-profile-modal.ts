@@ -1,6 +1,6 @@
 import { Modal, Notice, Setting } from "obsidian";
 import type ClassManagementPlugin from "./main";
-import { defaultSubjectsForGrade } from "./school-record-evidence";
+import { defaultSubjectsForGrade } from "@core/school-record-evidence";
 
 export class ClassProfileModal extends Modal {
   private name = "";

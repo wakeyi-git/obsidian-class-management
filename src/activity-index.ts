@@ -1,6 +1,6 @@
 import { App, TFile } from "obsidian";
 import type { ClassRepository } from "./class-repository";
-import type { ActivityEntry, RecordEntry } from "./types";
+import type { ActivityEntry, RecordEntry } from "@core/types";
 
 export class ActivityIndex {
   private cache?: ActivityEntry[];

@@ -6,7 +6,7 @@ const {
   buildHoursAudit,
   hoursStandardMarkdown,
   parseHoursStandard
-} = await loadTypeScriptModule("../src/hours-audit.ts");
+} = await loadTypeScriptModule("../packages/core/src/hours-audit.ts");
 
 const file = { path: "기준 시수.md", basename: "기준 시수", stat: { ctime: 1 } };
 

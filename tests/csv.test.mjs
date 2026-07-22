@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { loadTypeScriptModule } from "./helpers.mjs";
 
-const { parseRosterCsv } = await loadTypeScriptModule("../src/csv.ts");
+const { parseRosterCsv } = await loadTypeScriptModule("../packages/core/src/csv.ts");
 
 test("헤더 있는 한글 CSV와 BOM을 인식한다", () => {
   const korean = parseRosterCsv("﻿번호,이름\r\n1,김하늘\r\n2,이바다\r\n");

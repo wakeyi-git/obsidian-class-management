@@ -1,12 +1,12 @@
 import { App, ButtonComponent, Modal, Notice, Setting, SuggestModal } from "obsidian";
-import { decodeCsv, parseRosterCsv, type RosterCsvResult } from "./csv";
+import { decodeCsv, parseRosterCsv, type RosterCsvResult } from "@core/csv";
 import type {
   NewRecord,
   NewStudent,
   RosterImportSummary,
   StudentEntry
-} from "./types";
-import { localDate } from "./utils";
+} from "@core/types";
+import { localDate } from "@core/utils";
 
 export class StudentModal extends Modal {
   private name = "";

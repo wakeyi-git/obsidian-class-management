@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { loadTypeScriptModule } from "./helpers.mjs";
 
-const { parseAcademicCalendar } = await loadTypeScriptModule("../src/academic-calendar.ts");
-const { parseBaseTimetable, resolveWeek } = await loadTypeScriptModule("../src/timetable.ts");
-const { assignProgress, slotContentMap } = await loadTypeScriptModule("../src/progress.ts");
+const { parseAcademicCalendar } = await loadTypeScriptModule("../packages/core/src/academic-calendar.ts");
+const { parseBaseTimetable, resolveWeek } = await loadTypeScriptModule("../packages/core/src/timetable.ts");
+const { assignProgress, slotContentMap } = await loadTypeScriptModule("../packages/core/src/progress.ts");
 const { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } =
-  await loadTypeScriptModule("../src/weekly-plan.ts");
+  await loadTypeScriptModule("../packages/core/src/weekly-plan.ts");
 
 const calendar = parseAcademicCalendar(
   { path: "학사일정.md", basename: "학사일정", stat: { ctime: 1 } },

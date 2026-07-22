@@ -1,5 +1,5 @@
 import { Modal, Notice, Setting } from "obsidian";
-import { parseProgressImport, parseProgressTable } from "./progress";
+import { parseProgressImport, parseProgressTable } from "@core/progress";
 import type ClassManagementPlugin from "./main";
 
 const CREATIVE_AREAS = ["창체(자율)", "창체(동아리)", "창체(봉사)", "창체(진로)"];

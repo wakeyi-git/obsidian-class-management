@@ -7,9 +7,9 @@ import {
   CURRICULUM_LESSON_STATUS_LABELS,
   CURRICULUM_UNIT_STATUS_LABELS,
   taughtHoursForUnit
-} from "./curriculum";
+} from "@core/curriculum";
 import type ClassManagementPlugin from "./main";
-import type { CurriculumLesson, CurriculumUnit, RecordEntry } from "./types";
+import type { CurriculumLesson, CurriculumUnit, RecordEntry } from "@core/types";
 
 export const CURRICULUM_VIEW_TYPE = "class-management-curriculum";
 

@@ -1,12 +1,12 @@
 import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
-import { dayStatus, semesterForDate, weekdayLabel } from "./academic-calendar";
-import { resolveDay } from "./timetable";
-import { buildAssignedSlotContents } from "./progress";
-import { collectSubjectOptions } from "./subject-options";
+import { dayStatus, semesterForDate, weekdayLabel } from "@core/academic-calendar";
+import { resolveDay } from "@core/timetable";
+import { buildAssignedSlotContents } from "@core/progress";
+import { collectSubjectOptions } from "@core/subject-options";
 import { showTimetableCellMenu, type TimetableCellContext } from "./timetable-cell-modal";
-import { localDate } from "./utils";
+import { localDate } from "@core/utils";
 import type ClassManagementPlugin from "./main";
-import type { AcademicCalendar, ProgressRow, SchoolEvent } from "./types";
+import type { AcademicCalendar, ProgressRow, SchoolEvent } from "@core/types";
 
 export const TODAY_VIEW_TYPE = "class-management-today";
 

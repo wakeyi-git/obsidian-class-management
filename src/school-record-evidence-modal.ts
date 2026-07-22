@@ -6,8 +6,8 @@ import {
   normalizeSubjects,
   SCHOOL_RECORD_SUBAREAS,
   validateSchoolRecordEvidence
-} from "./school-record-evidence";
-import { SCHOOL_RECORD_AREAS } from "./school-record";
+} from "@core/school-record-evidence";
+import { SCHOOL_RECORD_AREAS } from "@core/school-record";
 import type {
   ClassManagementSettings,
   CurriculumLesson,
@@ -16,8 +16,8 @@ import type {
   SchoolRecordArea,
   SchoolRecordEvidence,
   StudentEntry
-} from "./types";
-import { localDate } from "./utils";
+} from "@core/types";
+import { localDate } from "@core/utils";
 
 export class SchoolRecordEvidenceModal extends Modal {
   private date: string;

@@ -11,7 +11,7 @@ import {
 const { buildFullExportCsv, buildDiagnosticMarkdown } =
   await loadTypeScriptModule("../src/data-management.ts");
 const { emptySchoolRecordEvidence } =
-  await loadTypeScriptModule("../src/school-record-evidence.ts");
+  await loadTypeScriptModule("../packages/core/src/school-record-evidence.ts");
 
 const profile = {
   id: "class-1",

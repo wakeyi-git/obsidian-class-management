@@ -8,7 +8,7 @@ import {
   makeSchoolRecordActivities
 } from "./helpers.mjs";
 
-const { buildAiDraftMarkdown } = await loadTypeScriptModule("../src/ai-collaboration.ts");
+const { buildAiDraftMarkdown } = await loadTypeScriptModule("../packages/core/src/ai-collaboration.ts");
 
 test("익명화된 학생 피드백 초안을 만든다", () => {
   const activityFile = makeActivityFile();

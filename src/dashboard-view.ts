@@ -1,7 +1,7 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import type ClassManagementPlugin from "./main";
-import type { AttendanceMark, RecordEntry, StudentEntry } from "./types";
-import { localDate } from "./utils";
+import type { AttendanceMark, RecordEntry, StudentEntry } from "@core/types";
+import { localDate } from "@core/utils";
 
 export const DASHBOARD_VIEW_TYPE = "class-management-dashboard";
 

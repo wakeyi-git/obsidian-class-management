@@ -1,8 +1,8 @@
 import { App, TFile, TFolder } from "obsidian";
 import type { ClassRepository } from "./class-repository";
-import { isLegacyAttendanceContent, isWikiLinkStudentPath } from "./migration";
-import type { ClassManagementSettings } from "./types";
-import { joinVaultPath } from "./utils";
+import { isLegacyAttendanceContent, isWikiLinkStudentPath } from "@core/migration";
+import type { ClassManagementSettings } from "@core/types";
+import { joinVaultPath } from "@core/utils";
 
 export interface MigrationPreview {
   legacyAttendance: TFile[];

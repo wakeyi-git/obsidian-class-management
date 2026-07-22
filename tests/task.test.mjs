@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { loadTypeScriptModule } from "./helpers.mjs";
 
 const { nextRecurringDate, taskRecurrenceLabel } =
-  await loadTypeScriptModule("../src/task.ts");
+  await loadTypeScriptModule("../packages/core/src/task.ts");
 
 test("반복 주기별 다음 날짜를 계산한다", () => {
   assert.equal(nextRecurringDate("2026-07-21", "daily"), "2026-07-22");

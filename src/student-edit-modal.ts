@@ -1,6 +1,6 @@
 import { Modal, Notice, Setting } from "obsidian";
 import type ClassManagementPlugin from "./main";
-import type { StudentEntry, StudentStatus } from "./types";
+import type { StudentEntry, StudentStatus } from "@core/types";
 
 export class StudentEditModal extends Modal {
   private name: string;

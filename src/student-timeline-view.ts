@@ -1,8 +1,8 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
-import { addOption } from "./dom";
-import { ACTIVITY_KIND_LABELS, filterActivities } from "./activity";
+import { addOption } from "@core/dom";
+import { ACTIVITY_KIND_LABELS, filterActivities } from "@core/activity";
 import type ClassManagementPlugin from "./main";
-import type { ActivityEntry, ActivityKind, StudentEntry } from "./types";
+import type { ActivityEntry, ActivityKind, StudentEntry } from "@core/types";
 
 export const STUDENT_TIMELINE_VIEW_TYPE = "class-management-student-timeline";
 

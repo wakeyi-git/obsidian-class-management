@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { loadTypeScriptModule, makeActivityFile, makeExpandedActivities } from "./helpers.mjs";
 
 const { analyzeActivities, buildActivitiesCsv, buildReportMarkdown } =
-  await loadTypeScriptModule("../src/report.ts");
+  await loadTypeScriptModule("../packages/core/src/report.ts");
 
 test("미완료 할 일과 미회신을 집계한다", () => {
   const analytics = analyzeActivities(makeExpandedActivities());

@@ -5,16 +5,16 @@ import {
   normalizeSubjects,
   SCHOOL_RECORD_SUBAREAS,
   validateSchoolRecordEvidence
-} from "./school-record-evidence";
-import { SCHOOL_RECORD_AREAS } from "./school-record";
+} from "@core/school-record-evidence";
+import { SCHOOL_RECORD_AREAS } from "@core/school-record";
 import type {
   ClassManagementSettings,
   CurriculumUnit,
   NewRecord,
   SchoolRecordArea,
   StudentEntry
-} from "./types";
-import { localDate } from "./utils";
+} from "@core/types";
+import { localDate } from "@core/utils";
 
 export class SchoolRecordBatchModal extends Modal {
   private date = localDate();

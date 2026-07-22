@@ -1,8 +1,8 @@
 import { ItemView, Notice, WorkspaceLeaf, setIcon } from "obsidian";
-import { eventsOn, semesterForDate, weekdayLabel } from "./academic-calendar";
-import { resolveDay } from "./timetable";
-import { buildAssignedSlotContents } from "./progress";
-import { collectSubjectOptions } from "./subject-options";
+import { eventsOn, semesterForDate, weekdayLabel } from "@core/academic-calendar";
+import { resolveDay } from "@core/timetable";
+import { buildAssignedSlotContents } from "@core/progress";
+import { collectSubjectOptions } from "@core/subject-options";
 import { TimetableCellModal } from "./timetable-cell-modal";
 import type ClassManagementPlugin from "./main";
 

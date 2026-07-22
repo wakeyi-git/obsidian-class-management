@@ -1,8 +1,8 @@
 import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
-import { addDays } from "./academic-calendar";
-import { localDate } from "./utils";
+import { addDays } from "@core/academic-calendar";
+import { localDate } from "@core/utils";
 import type ClassManagementPlugin from "./main";
-import type { ActivityEntry, SchoolRecordArea } from "./types";
+import type { ActivityEntry, SchoolRecordArea } from "@core/types";
 
 export const STUDENT_INSPECTOR_VIEW_TYPE = "class-management-student-inspector";
 

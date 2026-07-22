@@ -1,39 +1,39 @@
 import { App, TAbstractFile, TFile, TFolder } from "obsidian";
-import { formatAttendanceTableRow, parseAttendanceMetadata } from "./attendance";
-import { formatAssignmentTableRow, parseAssignmentTable } from "./assignment";
-import { formatNoticeTableRow, parseNoticeTable } from "./notice";
+import { formatAttendanceTableRow, parseAttendanceMetadata } from "@core/attendance";
+import { formatAssignmentTableRow, parseAssignmentTable } from "@core/assignment";
+import { formatNoticeTableRow, parseNoticeTable } from "@core/notice";
 import {
   parseRoutineInstanceItems,
   parseRoutineItems,
   routineRunsOn
-} from "./routine";
-import { nextRecurringDate } from "./task";
+} from "@core/routine";
+import { nextRecurringDate } from "@core/task";
 import {
   BASES_VIEW_FILES,
   schoolEventNoteFileName,
   schoolEventNoteMarkdown
-} from "./entity-notes";
+} from "@core/entity-notes";
 import {
   curriculumLessonMarkdown,
   curriculumUnitMarkdown,
   parseCurriculumLesson,
   parseCurriculumUnit
-} from "./curriculum";
+} from "@core/curriculum";
 import {
   applySchoolRecordEvidenceToFrontmatter,
   parseSchoolRecordEvidence,
   schoolRecordEvidenceBody,
   schoolRecordEvidenceFrontmatter
-} from "./school-record-evidence";
-import { academicCalendarMarkdown, parseAcademicCalendar } from "./academic-calendar";
+} from "@core/school-record-evidence";
+import { academicCalendarMarkdown, parseAcademicCalendar } from "@core/academic-calendar";
 import {
   baseTimetableMarkdown,
   parseBaseTimetable,
   removeTimetableOverrideContent,
   upsertTimetableOverrideContent
-} from "./timetable";
-import { formatAssignedSlots, parseProgressTable, progressTableMarkdown } from "./progress";
-import { hoursStandardMarkdown, parseHoursStandard } from "./hours-audit";
+} from "@core/timetable";
+import { formatAssignedSlots, parseProgressTable, progressTableMarkdown } from "@core/progress";
+import { hoursStandardMarkdown, parseHoursStandard } from "@core/hours-audit";
 import type {
   AcademicCalendar,
   BaseTimetable,
@@ -44,7 +44,7 @@ import type {
   ProgressTable,
   SchoolEvent,
   TimetableOverride
-} from "./types";
+} from "@core/types";
 import type {
   AttendanceMark,
   AssignmentMark,
@@ -70,8 +70,8 @@ import type {
   StudentStatus,
   TaskEntry,
   TaskStatus
-} from "./types";
-import type { SchoolRecordEvidence, SchoolRecordReviewStatus } from "./types";
+} from "@core/types";
+import type { SchoolRecordEvidence, SchoolRecordReviewStatus } from "@core/types";
 import {
   compareStudentNumber,
   joinVaultPath,
@@ -79,7 +79,7 @@ import {
   localTimeForFile,
   safeFileSegment,
   yamlString
-} from "./utils";
+} from "@core/utils";
 
 export class ClassRepository {
   constructor(

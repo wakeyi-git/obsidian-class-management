@@ -7,13 +7,13 @@ import {
   semesterForDate,
   semesterRange,
   weekdayLabel
-} from "./academic-calendar";
-import { isRemovedSubject, plannedHoursBySubject, resolveDay } from "./timetable";
-import { buildAssignedSlotContents } from "./progress";
-import { collectSubjectOptions } from "./subject-options";
-import { buildHoursAudit } from "./hours-audit";
-import { addDays } from "./academic-calendar";
-import { localDate } from "./utils";
+} from "@core/academic-calendar";
+import { isRemovedSubject, plannedHoursBySubject, resolveDay } from "@core/timetable";
+import { buildAssignedSlotContents } from "@core/progress";
+import { collectSubjectOptions } from "@core/subject-options";
+import { buildHoursAudit } from "@core/hours-audit";
+import { addDays } from "@core/academic-calendar";
+import { localDate } from "@core/utils";
 import type ClassManagementPlugin from "./main";
 import type {
   AcademicCalendar,
@@ -22,7 +22,7 @@ import type {
   HoursStandard,
   ProgressRow,
   ProgressTable
-} from "./types";
+} from "@core/types";
 
 export const CURRICULUM_OPS_VIEW_TYPE = "class-management-curriculum-ops";
 

@@ -1,8 +1,8 @@
 import { ItemView, Modal, Notice, Setting, WorkspaceLeaf } from "obsidian";
-import { frequencyLabel } from "./routine";
+import { frequencyLabel } from "@core/routine";
 import type ClassManagementPlugin from "./main";
-import type { RoutineFrequency, RoutineInstance, RoutineTemplate } from "./types";
-import { localDate } from "./utils";
+import type { RoutineFrequency, RoutineInstance, RoutineTemplate } from "@core/types";
+import { localDate } from "@core/utils";
 
 export const ROUTINE_VIEW_TYPE = "class-management-routine-view";
 

@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { loadTypeScriptModule, makeSchoolRecordActivities } from "./helpers.mjs";
 
 const { classifySchoolRecordReferences } =
-  await loadTypeScriptModule("../src/school-record.ts");
+  await loadTypeScriptModule("../packages/core/src/school-record.ts");
 
 const schoolRecordActivities = makeSchoolRecordActivities();
 

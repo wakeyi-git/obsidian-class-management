@@ -1,5 +1,5 @@
 import { Menu, Modal, Notice, Setting } from "obsidian";
-import { REMOVED_PERIOD_SUBJECT } from "./timetable";
+import { REMOVED_PERIOD_SUBJECT } from "@core/timetable";
 import type ClassManagementPlugin from "./main";
 
 export interface TimetableCellContext {
@@ -81,9 +81,10 @@ export function showTimetableCellMenu(
     );
   }
   if (current && !context.isRemoved) {
+    const lesson = plugin.findLessonAt(context.date, context.period);
     menu.addItem((item) =>
       item
-        .setTitle("수업일지")
+        .setTitle(lesson ? "수업일지 열기" : "수업일지 쓰기")
         .setIcon("notebook-pen")
         .onClick(() => void plugin.recordLessonAt(context.date, context.period))
     );
@@ -129,7 +130,7 @@ export class TimetableCellModal extends Modal {
 
   onOpen(): void {
     this.contentEl.empty();
-    this.titleEl.setText(`${this.context.date} ${this.context.period}교시 과목 변경`);
+    this.titleEl.setText(`${this.context.date} ${this.context.period}교시 편집`);
     this.contentEl.createEl("p", {
       text: `이 날짜의 해당 교시만 바뀌며, 기초시간표 노트의 '시간표 변경' 표에 기록됩니다. 현재: ${this.context.currentSubject || "(비어 있음)"}`
     });

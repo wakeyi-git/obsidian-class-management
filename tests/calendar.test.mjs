@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { loadTypeScriptModule, makeActivities, makeActivityFile } from "./helpers.mjs";
 
 const { buildCalendarEvents, calendarDays, dateKey, moveCalendarAnchor } =
-  await loadTypeScriptModule("../src/calendar.ts");
+  await loadTypeScriptModule("../packages/core/src/calendar.ts");
 
 test("월간 달력은 주 단위로 채워진다", () => {
   const julyDays = calendarDays(new Date(2026, 6, 21), "month");

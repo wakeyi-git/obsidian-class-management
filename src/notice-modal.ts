@@ -1,14 +1,14 @@
 import { App, ButtonComponent, Modal, Notice, Setting, SuggestModal, TFile } from "obsidian";
-import { addOption } from "./dom";
-import { NOTICE_STATUSES } from "./notice";
+import { addOption } from "@core/dom";
+import { NOTICE_STATUSES } from "@core/notice";
 import type {
   NoticeMark,
   NoticeSheet,
   NoticeStatus,
   NoticeSummary,
   StudentEntry
-} from "./types";
-import { localDate } from "./utils";
+} from "@core/types";
+import { localDate } from "@core/utils";
 
 type NoticeChoice = { kind: "new" } | { kind: "existing"; summary: NoticeSummary };
 

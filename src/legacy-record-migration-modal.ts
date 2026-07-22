@@ -1,8 +1,8 @@
 import { Modal, Notice, Setting } from "obsidian";
 import type ClassManagementPlugin from "./main";
 import { SchoolRecordEvidenceModal } from "./school-record-evidence-modal";
-import { suggestLegacySchoolRecordEvidence } from "./school-record-evidence";
-import type { ActivityEntry } from "./types";
+import { suggestLegacySchoolRecordEvidence } from "@core/school-record-evidence";
+import type { ActivityEntry } from "@core/types";
 
 export class LegacyRecordMigrationModal extends Modal {
   constructor(

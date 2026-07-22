@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { loadTypeScriptModule } from "./helpers.mjs";
 
 const { parseRoutineItems, parseRoutineInstanceItems, routineRunsOn } =
-  await loadTypeScriptModule("../src/routine.ts");
+  await loadTypeScriptModule("../packages/core/src/routine.ts");
 
 test("템플릿 체크리스트 항목을 파싱한다", () => {
   assert.deepEqual(parseRoutineItems("# 준비\n- [ ] 출석 확인\n- [ ] 알림장 확인"), [

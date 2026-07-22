@@ -1,27 +1,27 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
-import { addOption } from "./dom";
-import { createAiDraft } from "./ai-collaboration";
+import { addOption } from "@core/dom";
+import { createAiDraft } from "@core/ai-collaboration";
 import type ClassManagementPlugin from "./main";
 import {
   analyzeActivities,
   buildActivitiesCsv,
   buildReportMarkdown,
   selectReportActivities
-} from "./report";
+} from "@core/report";
 import { SchoolRecordDraftModal } from "./school-record-modal";
 import { LegacyRecordMigrationModal } from "./legacy-record-migration-modal";
 import { SchoolRecordReviewModal } from "./school-record-review-modal";
 import {
   buildSchoolRecordCoverage,
   normalizeSubjects
-} from "./school-record-evidence";
+} from "@core/school-record-evidence";
 import type {
   ActivityEntry,
   AiDraftKind,
   ReportOptions,
   SchoolRecordArea
-} from "./types";
-import { localDate } from "./utils";
+} from "@core/types";
+import { localDate } from "@core/utils";
 
 export const REPORT_VIEW_TYPE = "class-management-report-view";
 

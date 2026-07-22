@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type ClassManagementPlugin from "./main";
-import { defaultSubjectsForGrade } from "./school-record-evidence";
+import { defaultSubjectsForGrade } from "@core/school-record-evidence";
 
 export class ClassManagementSettingTab extends PluginSettingTab {
   constructor(app: App, private readonly plugin: ClassManagementPlugin) {

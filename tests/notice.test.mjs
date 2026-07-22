@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { loadTypeScriptModule } from "./helpers.mjs";
 
 const { formatNoticeTableRow, parseNoticeTable } =
-  await loadTypeScriptModule("../src/notice.ts");
+  await loadTypeScriptModule("../packages/core/src/notice.ts");
 
 test("회신 표를 만들고 되읽을 수 있다", () => {
   const noticeMarks = [

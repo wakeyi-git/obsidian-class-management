@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { EMPTY_FILTERS, loadTypeScriptModule, makeActivities } from "./helpers.mjs";
 
-const { filterActivities } = await loadTypeScriptModule("../src/activity.ts");
+const { filterActivities } = await loadTypeScriptModule("../packages/core/src/activity.ts");
 
 test("검색어로 활동을 거른다", () => {
   const activities = makeActivities();

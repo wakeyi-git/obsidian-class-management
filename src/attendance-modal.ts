@@ -1,7 +1,7 @@
 import { App, ButtonComponent, Modal, Notice, Setting } from "obsidian";
-import { ATTENDANCE_STATUSES } from "./attendance";
-import type { AttendanceMark, AttendanceStatus, StudentEntry } from "./types";
-import { localDate } from "./utils";
+import { ATTENDANCE_STATUSES } from "@core/attendance";
+import type { AttendanceMark, AttendanceStatus, StudentEntry } from "@core/types";
+import { localDate } from "@core/utils";
 
 export class AttendanceModal extends Modal {
   private date = localDate();

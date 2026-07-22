@@ -16,9 +16,16 @@
     "lib": [
       "ES2021",
       "DOM"
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@core/*": [
+        "packages/core/src/*"
+      ]
+    }
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "packages/core/src/**/*.ts"
   ]
 }

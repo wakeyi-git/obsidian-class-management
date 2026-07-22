@@ -8,6 +8,7 @@ const production = process.argv[2] === "production";
 const context = await esbuild.context({
   banner: { js: banner },
   entryPoints: ["src/main.ts"],
+  alias: { "@core": "./packages/core/src" },
   bundle: true,
   external: [
     "obsidian",

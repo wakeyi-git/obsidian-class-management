@@ -4,8 +4,8 @@ import {
   SCHOOL_RECORD_AREAS,
   schoolRecordReferenceCounts,
   selectStudentActivities
-} from "./school-record";
-import type { ActivityEntry, SchoolRecordArea, StudentEntry } from "./types";
+} from "@core/school-record";
+import type { ActivityEntry, SchoolRecordArea, StudentEntry } from "@core/types";
 
 export class SchoolRecordDraftModal extends Modal {
   private creating = false;

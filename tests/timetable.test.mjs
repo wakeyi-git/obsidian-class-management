@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { loadTypeScriptModule } from "./helpers.mjs";
 
-const { parseAcademicCalendar } = await loadTypeScriptModule("../src/academic-calendar.ts");
+const { parseAcademicCalendar } = await loadTypeScriptModule("../packages/core/src/academic-calendar.ts");
 const {
   baseTimetableMarkdown,
   parseBaseTimetable,
@@ -12,7 +12,7 @@ const {
   resolveWeek,
   subjectSlots,
   upsertTimetableOverrideContent
-} = await loadTypeScriptModule("../src/timetable.ts");
+} = await loadTypeScriptModule("../packages/core/src/timetable.ts");
 
 const calendarFile = { path: "학사일정.md", basename: "학사일정", stat: { ctime: 1 } };
 const calendar = parseAcademicCalendar(calendarFile, {

@@ -1,5 +1,5 @@
 import { FuzzySuggestModal, type App, type FuzzyMatch } from "obsidian";
-import type { ProgressRow } from "./types";
+import type { ProgressRow } from "@core/types";
 
 export class ProgressPinModal extends FuzzySuggestModal<ProgressRow> {
   constructor(

@@ -1,5 +1,5 @@
 import { Modal, Notice, Setting } from "obsidian";
-import { aiSetupPaths, setupAiWorkspace } from "./ai-collaboration";
+import { aiSetupPaths, setupAiWorkspace } from "@core/ai-collaboration";
 import type ClassManagementPlugin from "./main";
 
 export class AiSetupModal extends Modal {

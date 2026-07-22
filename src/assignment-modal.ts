@@ -1,5 +1,5 @@
 import { App, ButtonComponent, Modal, Notice, Setting, SuggestModal, TFile } from "obsidian";
-import { ASSIGNMENT_STATUSES } from "./assignment";
+import { ASSIGNMENT_STATUSES } from "@core/assignment";
 import type {
   AssignmentMark,
   AssignmentSheet,
@@ -8,8 +8,8 @@ import type {
   CurriculumUnit,
   CurriculumUnitLink,
   StudentEntry
-} from "./types";
-import { localDate } from "./utils";
+} from "@core/types";
+import { localDate } from "@core/utils";
 
 type AssignmentChoice =
   | { kind: "new" }

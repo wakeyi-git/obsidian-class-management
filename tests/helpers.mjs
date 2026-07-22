@@ -10,6 +10,7 @@ export async function loadTypeScriptModule(relativePath) {
     format: "esm",
     platform: "node",
     target: "node18",
+    alias: { "@core": fileURLToPath(new URL("../packages/core/src", import.meta.url)) },
     write: false
   });
   const output = result.outputFiles?.[0];

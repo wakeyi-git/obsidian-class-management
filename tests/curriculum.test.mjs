@@ -13,7 +13,7 @@ const {
   parseCurriculumLesson,
   parseCurriculumUnit,
   taughtHoursForUnit
-} = await loadTypeScriptModule("../src/curriculum.ts");
+} = await loadTypeScriptModule("../packages/core/src/curriculum.ts");
 
 const curriculumSettings = {
   className: "우리 반",

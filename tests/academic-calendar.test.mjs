@@ -15,7 +15,7 @@ const {
   periodCountFor,
   semesterForDate,
   semesterRange
-} = await loadTypeScriptModule("../src/academic-calendar.ts");
+} = await loadTypeScriptModule("../packages/core/src/academic-calendar.ts");
 
 const file = { path: "학급운영/교육과정/학사일정/2026 학사일정.md", basename: "2026 학사일정", stat: { ctime: 1 } };
 const frontmatter = {

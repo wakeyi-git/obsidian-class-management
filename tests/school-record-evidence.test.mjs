@@ -15,9 +15,9 @@ const {
   schoolRecordEvidenceFrontmatter,
   suggestLegacySchoolRecordEvidence,
   validateSchoolRecordEvidence
-} = await loadTypeScriptModule("../src/school-record-evidence.ts");
+} = await loadTypeScriptModule("../packages/core/src/school-record-evidence.ts");
 const { classifySchoolRecordReferences } =
-  await loadTypeScriptModule("../src/school-record.ts");
+  await loadTypeScriptModule("../packages/core/src/school-record.ts");
 
 const subjectEvidence = makeSubjectEvidence(emptySchoolRecordEvidence);
 

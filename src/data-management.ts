@@ -1,9 +1,9 @@
 import type { App } from "obsidian";
 import type { ClassRepository } from "./class-repository";
-import type { ActivityEntry, ClassProfile, CurriculumUnit, StudentEntry } from "./types";
-import { validateSchoolRecordEvidence } from "./school-record-evidence";
-import { auditConceptInquiryDesign, auditCurriculumAlignment } from "./curriculum";
-import { csvCell, escapeTableCell } from "./utils";
+import type { ActivityEntry, ClassProfile, CurriculumUnit, StudentEntry } from "@core/types";
+import { validateSchoolRecordEvidence } from "@core/school-record-evidence";
+import { auditConceptInquiryDesign, auditCurriculumAlignment } from "@core/curriculum";
+import { csvCell, escapeTableCell } from "@core/utils";
 
 export type DiagnosticLevel = "error" | "warning" | "info";
 

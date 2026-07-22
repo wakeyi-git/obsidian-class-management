@@ -1,5 +1,5 @@
 import { Notice, Plugin, TFile, type WorkspaceLeaf } from "obsidian";
-import { EMPTY_ACTIVITY_FILTERS } from "./activity";
+import { EMPTY_ACTIVITY_FILTERS } from "@core/activity";
 import { ActivityIndex } from "./activity-index";
 import { ActivityListView, ACTIVITY_LIST_VIEW_TYPE } from "./activity-list-view";
 import { AiSetupModal } from "./ai-setup-modal";
@@ -19,12 +19,12 @@ import { StudentInspectorView, STUDENT_INSPECTOR_VIEW_TYPE } from "./student-ins
 import { LessonInspectorView, LESSON_INSPECTOR_VIEW_TYPE } from "./lesson-inspector-view";
 import { ProgressImportModal } from "./progress-import-modal";
 import { ProgressPinModal } from "./progress-pin-modal";
-import { addDays, mondayOf, semesterForDate, semesterRange } from "./academic-calendar";
-import { isRemovedSubject, resolveDay, subjectSlots } from "./timetable";
-import { assignProgress, buildAssignedSlotContents } from "./progress";
-import { taughtHoursForUnit } from "./curriculum";
-import { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } from "./weekly-plan";
-import { localDate } from "./utils";
+import { addDays, mondayOf, semesterForDate, semesterRange } from "@core/academic-calendar";
+import { isRemovedSubject, resolveDay, subjectSlots } from "@core/timetable";
+import { assignProgress, buildAssignedSlotContents } from "@core/progress";
+import { taughtHoursForUnit } from "@core/curriculum";
+import { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } from "@core/weekly-plan";
+import { localDate } from "@core/utils";
 import {
   DataManagementView,
   DATA_MANAGEMENT_VIEW_TYPE
@@ -40,7 +40,7 @@ import { RoutineView, ROUTINE_VIEW_TYPE } from "./routine-view";
 import { ReportView, REPORT_VIEW_TYPE } from "./report-view";
 import { SchoolRecordEvidenceModal } from "./school-record-evidence-modal";
 import { SchoolRecordBatchModal } from "./school-record-batch-modal";
-import { defaultSubjectsForGrade } from "./school-record-evidence";
+import { defaultSubjectsForGrade } from "@core/school-record-evidence";
 import { ClassManagementSettingTab } from "./settings-tab";
 import {
   StudentTimelineView,
@@ -48,7 +48,7 @@ import {
 } from "./student-timeline-view";
 import { TaskModal } from "./task-modal";
 import { TaskView, TASK_VIEW_TYPE } from "./task-view";
-import type { BaseTimetable, NewCurriculumLesson, ProgressTable, SchoolEvent } from "./types";
+import type { BaseTimetable, NewCurriculumLesson, ProgressTable, SchoolEvent } from "@core/types";
 import type {
   ActivityListFilters,
   ActivityColumn,
@@ -63,7 +63,7 @@ import type {
   SchoolRecordArea,
   StudentEntry,
   TimetableOverride
-} from "./types";
+} from "@core/types";
 
 const DEFAULT_CLASS_ID = "default-class";
 const DEFAULT_SCHOOL_YEAR = String(new Date().getFullYear());

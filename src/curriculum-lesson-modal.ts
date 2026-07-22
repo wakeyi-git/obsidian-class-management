@@ -3,15 +3,15 @@ import {
   CONCEPT_INQUIRY_PHASE_LABELS,
   CURRICULUM_LESSON_STATUS_LABELS,
   emptyCurriculumLesson
-} from "./curriculum";
+} from "@core/curriculum";
 import type {
   ConceptInquiryPhase,
   CurriculumLesson,
   CurriculumLessonStatus,
   CurriculumUnit,
   NewCurriculumLesson
-} from "./types";
-import { localDate } from "./utils";
+} from "@core/types";
+import { localDate } from "@core/utils";
 
 /**
  * 수업 기록(수업일지) 모달 — 차시의 허브 노트.

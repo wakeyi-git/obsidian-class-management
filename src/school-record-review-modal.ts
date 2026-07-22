@@ -1,7 +1,7 @@
 import { Modal, Notice, Setting } from "obsidian";
 import type ClassManagementPlugin from "./main";
-import { SCHOOL_RECORD_SUBAREAS } from "./school-record-evidence";
-import type { ActivityEntry, SchoolRecordReviewStatus } from "./types";
+import { SCHOOL_RECORD_SUBAREAS } from "@core/school-record-evidence";
+import type { ActivityEntry, SchoolRecordReviewStatus } from "@core/types";
 
 const REVIEW_LABELS: Record<SchoolRecordReviewStatus, string> = {
   raw: "RAW",

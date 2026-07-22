@@ -1,8 +1,8 @@
 import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
-import { listDates, semesterRange } from "./academic-calendar";
-import { localDate } from "./utils";
+import { listDates, semesterRange } from "@core/academic-calendar";
+import { localDate } from "@core/utils";
 import type ClassManagementPlugin from "./main";
-import type { AcademicCalendar, AssignmentSummary, CurriculumUnit } from "./types";
+import type { AcademicCalendar, AssignmentSummary, CurriculumUnit } from "@core/types";
 
 export const CURRICULUM_GANTT_VIEW_TYPE = "class-management-curriculum-gantt";
 

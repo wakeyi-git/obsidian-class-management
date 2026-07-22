@@ -9,7 +9,7 @@ const {
   parseProgressTable,
   progressTableMarkdown,
   slotContentMap
-} = await loadTypeScriptModule("../src/progress.ts");
+} = await loadTypeScriptModule("../packages/core/src/progress.ts");
 
 const file = { path: "진도표.md", basename: "진도표", stat: { ctime: 1 } };
 

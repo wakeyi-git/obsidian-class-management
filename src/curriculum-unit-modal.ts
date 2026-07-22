@@ -9,7 +9,7 @@ import {
   createConceptInquiryStrand,
   emptyCurriculumUnit,
   EVALUATION_METHOD_OPTIONS
-} from "./curriculum";
+} from "@core/curriculum";
 import type {
   ClassManagementSettings,
   ConceptInquiryPhase,
@@ -19,7 +19,7 @@ import type {
   CurriculumUnit,
   CurriculumUnitStatus,
   NewCurriculumUnit
-} from "./types";
+} from "@core/types";
 
 export class CurriculumUnitModal extends Modal {
   private draft: NewCurriculumUnit;

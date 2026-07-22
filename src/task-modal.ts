@@ -1,5 +1,5 @@
 import { App, Modal, Notice, Setting } from "obsidian";
-import type { NewTask, StudentEntry, TaskStatus } from "./types";
+import type { NewTask, StudentEntry, TaskStatus } from "@core/types";
 
 export class TaskModal extends Modal {
   private title = "";

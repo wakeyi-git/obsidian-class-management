@@ -1,9 +1,9 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
-import { addOption } from "./dom";
+import { addOption } from "@core/dom";
 import type ClassManagementPlugin from "./main";
-import { taskRecurrenceLabel } from "./task";
-import type { NoticeSheet, TaskEntry, TaskStatus } from "./types";
-import { localDate } from "./utils";
+import { taskRecurrenceLabel } from "@core/task";
+import type { NoticeSheet, TaskEntry, TaskStatus } from "@core/types";
+import { localDate } from "@core/utils";
 
 export const TASK_VIEW_TYPE = "class-management-task-view";
 

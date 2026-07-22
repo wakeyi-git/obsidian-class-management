@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { loadTypeScriptModule } from "./helpers.mjs";
 
 const { isLegacyAttendanceContent, isWikiLinkStudentPath } =
-  await loadTypeScriptModule("../src/migration.ts");
+  await loadTypeScriptModule("../packages/core/src/migration.ts");
 
 test("레거시 3열 출결 표를 식별한다", () => {
   assert.equal(isLegacyAttendanceContent("| 번호 | 학생 | 상태 |\n| --- | --- | --- |"), true);

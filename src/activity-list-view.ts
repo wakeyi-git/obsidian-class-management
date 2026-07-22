@@ -1,11 +1,11 @@
 import { App, ItemView, Modal, Notice, Setting, WorkspaceLeaf } from "obsidian";
-import { addOption } from "./dom";
+import { addOption } from "@core/dom";
 import {
   ACTIVITY_KIND_LABELS,
   EMPTY_ACTIVITY_FILTERS,
   filterActivities,
   uniqueActivityStatuses
-} from "./activity";
+} from "@core/activity";
 import type ClassManagementPlugin from "./main";
 import type {
   ActivityColumn,
@@ -13,7 +13,7 @@ import type {
   ActivityKind,
   ActivityListFilters,
   ClassManagementSettings
-} from "./types";
+} from "@core/types";
 
 export const ACTIVITY_LIST_VIEW_TYPE = "class-management-activity-list";
 
