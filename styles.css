@@ -1024,6 +1024,14 @@
   background: var(--color-green);
 }
 
+.class-management-calendar-event.is-project::before {
+  background-color: var(--interactive-accent);
+}
+
+.class-management-calendar-event.is-project strong {
+  color: var(--interactive-accent);
+}
+
 .class-management-calendar-event.is-routine::before {
   background: var(--color-cyan);
 }

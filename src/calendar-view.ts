@@ -10,7 +10,8 @@ import {
 } from "@core/calendar";
 import { dayStatus, eventsOn } from "@core/academic-calendar";
 import type ClassManagementPlugin from "./main";
-import type { AcademicCalendar, ActivityKind } from "@core/types";
+import type { AcademicCalendar, ActivityKind,
+  CurriculumUnit } from "@core/types";
 
 export const CALENDAR_VIEW_TYPE = "class-management-calendar";
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
@@ -20,6 +21,7 @@ export class ClassCalendarView extends ItemView {
   private mode: "month" | "week";
   private events: CalendarEvent[] = [];
   private academicCalendar: AcademicCalendar | null = null;
+  private projects: CurriculumUnit[] = [];
   private kind: "" | ActivityKind = "";
   private studentNumber = "";
 
@@ -51,6 +53,9 @@ export class ClassCalendarView extends ItemView {
     const activities = await this.plugin.activityIndex.getEntries();
     this.events = buildCalendarEvents(activities);
     this.academicCalendar = await this.plugin.repository.getAcademicCalendar();
+    this.projects = this.plugin.repository
+      .getCurriculumUnits()
+      .filter((unit) => unit.conceptInquiryEnabled && unit.startDate && unit.endDate);
     this.render();
   }
 
@@ -185,6 +190,16 @@ export class ClassCalendarView extends ItemView {
             cls: "class-management-calendar-school-event"
           });
         });
+      }
+      for (const unit of this.projects) {
+        const boundary = unit.startDate === key ? "시작" : unit.endDate === key ? "마침" : "";
+        if (!boundary) continue;
+        const project = cell.createEl("button", {
+          cls: "class-management-calendar-event is-project",
+          attr: { "aria-label": `${unit.unitName} 프로젝트 ${boundary} — 단원 노트 열기` }
+        });
+        project.createEl("strong", { text: `✦ ${unit.unitName} ${boundary}` });
+        project.addEventListener("click", () => void this.plugin.openFile(unit.file));
       }
       const add = dayHeader.createEl("button", {
         text: "+",
