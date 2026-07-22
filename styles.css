@@ -64,9 +64,9 @@
 
 .class-management-curriculum-board {
   display: grid;
-  grid-template-columns: repeat(4, minmax(340px, 1fr));
+  grid-template-columns: repeat(4, minmax(360px, 1fr));
   gap: 8px;
-  min-width: 1400px;
+  min-width: 1480px;
   align-items: start;
 }
 
@@ -157,9 +157,22 @@
 
 .class-management-curriculum-metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 6px;
   margin: 12px 0;
+}
+
+/* 클릭 가능한(링크된) 텍스트 — 옵시디언 내부 링크와 같은 변수 사용 */
+.class-management-link-text {
+  color: var(--link-color, var(--text-accent));
+  text-decoration-line: var(--link-decoration, none);
+  text-decoration-thickness: var(--link-decoration-thickness, auto);
+  cursor: var(--cursor-link, pointer);
+}
+
+.class-management-link-text:hover {
+  color: var(--link-color-hover, var(--text-accent-hover, var(--text-accent)));
+  text-decoration-line: var(--link-decoration-hover, underline);
 }
 
 .class-management-curriculum-title-button {
@@ -170,12 +183,10 @@
   border: 0;
   background: transparent;
   box-shadow: none;
-  color: var(--text-normal);
   font-size: var(--h3-size, 1.1em);
   font-weight: 650;
   text-align: left;
   white-space: normal;
-  cursor: pointer;
 }
 
 .class-management-curriculum-title-button:focus-visible {
@@ -191,8 +202,8 @@
 
 .class-management-curriculum-column .class-management-actions button {
   min-width: 0;
-  padding: 4px 8px;
-  font-size: var(--font-ui-smaller);
+  padding: 6px 8px;
+  font-size: var(--font-ui-small);
   white-space: nowrap;
 }
 
@@ -1167,9 +1178,15 @@
   border: 0;
   background: transparent;
   box-shadow: none;
+  color: var(--link-color, var(--text-accent));
   font-weight: 650;
   text-align: left;
   white-space: normal;
+}
+
+.class-management-task-card-title button:hover {
+  color: var(--link-color-hover, var(--text-accent-hover, var(--text-accent)));
+  text-decoration-line: var(--link-decoration-hover, underline);
 }
 
 .class-management-task-card small {
@@ -1975,8 +1992,14 @@
 }
 
 .class-management-standard-chip {
-  color: var(--text-accent);
-  cursor: pointer;
+  color: var(--link-color, var(--text-accent));
+  text-decoration-line: var(--link-decoration, none);
+  cursor: var(--cursor-link, pointer);
+}
+
+.class-management-standard-chip:hover {
+  color: var(--link-color-hover, var(--text-accent-hover, var(--text-accent)));
+  text-decoration-line: var(--link-decoration-hover, underline);
 }
 
 .class-management-standard-chip:focus-visible {

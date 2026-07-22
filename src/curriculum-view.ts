@@ -248,7 +248,7 @@ export class CurriculumView extends ItemView {
     }
     const titleButton = heading.createEl("button", {
       text: unit.unitName,
-      cls: "class-management-curriculum-title-button",
+      cls: "class-management-curriculum-title-button class-management-link-text",
       attr: { "aria-label": `${unit.unitName} 단원 노트 열기` }
     });
     titleButton.addEventListener("click", () => void this.plugin.openFile(unit.file));
