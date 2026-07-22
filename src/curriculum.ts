@@ -439,7 +439,7 @@ export function curriculumLessonMarkdown(
     "",
     `# ${lesson.date || "날짜 미정"} · ${lesson.subject} ${lesson.sequence}차시`,
     "",
-    ...(lesson.unitPath ? [`- 통합 단원: [[${lesson.unitPath}|${lesson.unitTitle}]]`] : []),
+    ...(lesson.unitPath ? [`- 단원: [[${lesson.unitPath}|${lesson.unitTitle}]]`] : []),
     `- 교시: ${lesson.period || "미정"}`,
     `- 상태: ${CURRICULUM_LESSON_STATUS_LABELS[lesson.status]}`,
     ...(lesson.conceptInquiryPhase ? [`- 탐구 단계: ${CONCEPT_INQUIRY_PHASE_LABELS[lesson.conceptInquiryPhase]}`] : []),

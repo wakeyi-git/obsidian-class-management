@@ -244,10 +244,10 @@ export function schoolRecordEvidenceBody(evidence: SchoolRecordEvidence): string
   const subarea = SCHOOL_RECORD_SUBAREAS[evidence.area][evidence.subarea] ?? evidence.subarea;
   const rows: Array<[string, string]> = [
     ["학교생활기록부 영역", areaLabel(evidence.area)],
-    ["통합 단원", evidence.curriculumUnitPath
+    ["단원", evidence.curriculumUnitPath
       ? `${evidence.curriculumUnitPath}${evidence.curriculumUnitTitle ? ` (${evidence.curriculumUnitTitle})` : ""}`
       : evidence.curriculumUnitTitle],
-    ["수업 실행 기록", evidence.curriculumLessonPath],
+    ["수업일지", evidence.curriculumLessonPath],
     ["학생이 형성한 개념적 이해", evidence.conceptualUnderstanding],
     ["탐구 과정", evidence.inquiryProcess],
     ["전이 증거", evidence.studentTransferEvidence],

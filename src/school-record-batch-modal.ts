@@ -97,7 +97,7 @@ export class SchoolRecordBatchModal extends Modal {
       })
     );
     if (this.curriculumUnits.length) {
-      new Setting(this.commonEl).setName("통합 단원 연결").addDropdown((dropdown) =>
+      new Setting(this.commonEl).setName("단원 연결").addDropdown((dropdown) =>
         dropdown
           .addOption("", "연결 안 함")
           .addOptions(Object.fromEntries(this.curriculumUnits.map((unit) => [unit.id, `${unit.subject} · ${unit.unitName}`])))

@@ -1089,7 +1089,7 @@ export default class ClassManagementPlugin extends Plugin {
       if (current) await this.repository.updateCurriculumUnit(current.file, unit);
       else await this.repository.createCurriculumUnit(unit);
       this.activityIndex.invalidate();
-      new Notice(`${unit.subject} ${unit.unitName} 통합 설계를 저장했습니다.`);
+      new Notice(`${unit.subject} ${unit.unitName} 단원 설계를 저장했습니다.`);
       await this.refreshViews();
     }, existing).open();
   }
@@ -1117,7 +1117,7 @@ export default class ClassManagementPlugin extends Plugin {
         await this.refreshUnitProgress(current.unitId);
       }
       this.activityIndex.invalidate();
-      new Notice(`${lesson.date} ${lesson.subject} 수업 기록을 저장했습니다.`);
+      new Notice(`${lesson.date} ${lesson.subject} 수업일지를 저장했습니다.`);
       await this.refreshViews();
     }, existing, options?.prefill).open();
   }
@@ -1147,6 +1147,49 @@ export default class ClassManagementPlugin extends Plugin {
       }
     } catch {
       // 진도표 기입 실패는 과제 저장을 막지 않는다.
+    }
+  }
+
+  /** 이 교시의 학생부 근거 기록 흐름 — 학생 선택 후 날짜·단원·수업일지가 채워진 모달을 연다. */
+  async recordEvidenceAt(date: string, period: number): Promise<void> {
+    try {
+      const students = this.repository.getStudents();
+      if (!students.length) {
+        new Notice("먼저 학생을 추가해 주세요.");
+        return;
+      }
+      const lesson = this.findLessonAt(date, period);
+      const calendar = await this.repository.getAcademicCalendar();
+      const semester = calendar ? semesterForDate(calendar, date) : "";
+      const timetable = semester ? await this.repository.getBaseTimetable(semester) : null;
+      const resolved = calendar && timetable
+        ? resolveDay(calendar, timetable, date).periods.find((item) => item.period === period)
+        : undefined;
+      const subject = resolved?.subject.trim() ?? lesson?.subject ?? "";
+      const units = this.repository.getCurriculumUnits();
+      const unit =
+        units.find((item) => item.id === lesson?.unitId) ??
+        (() => {
+          const candidates = units.filter((item) =>
+            item.subject === subject &&
+            item.startDate && item.endDate && item.startDate <= date && date <= item.endDate
+          );
+          return candidates.length === 1 ? candidates[0] : undefined;
+        })();
+      new StudentSuggestModal(
+        this.app,
+        students,
+        (student) => this.openSchoolRecordEvidenceModal(
+          student,
+          date,
+          "subject-development",
+          unit,
+          lesson
+        ),
+        `${date} ${period}교시${subject ? `(${subject})` : ""} 근거를 기록할 학생을 검색하세요`
+      ).open();
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "근거 기록을 열지 못했습니다.");
     }
   }
 
@@ -1230,7 +1273,7 @@ export default class ClassManagementPlugin extends Plugin {
         }
       });
     } catch (error) {
-      new Notice(error instanceof Error ? error.message : "수업 기록을 열지 못했습니다.");
+      new Notice(error instanceof Error ? error.message : "수업일지를 열지 못했습니다.");
     }
   }
 
@@ -1302,7 +1345,7 @@ export default class ClassManagementPlugin extends Plugin {
         });
       }
       if (targets.length > 0) {
-        new Notice(`지난 수업 기록 ${targets.length}건을 RAW로 확정했습니다.`);
+        new Notice(`지난 수업일지 ${targets.length}건을 RAW로 확정했습니다.`);
       }
     } catch {
       // 스탬프 실패는 다음 로드에서 재시도된다.

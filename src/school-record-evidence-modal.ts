@@ -80,7 +80,7 @@ export class SchoolRecordEvidenceModal extends Modal {
       .addButton((button) => button.setButtonText("취소").onClick(() => this.close()))
       .addButton((button) => {
         this.saveButton = button;
-        button.setButtonText("RAW 근거 저장").setCta().onClick(() => void this.save());
+        button.setButtonText("학생부 근거 저장 (RAW)").setCta().onClick(() => void this.save());
       });
   }
 
@@ -111,31 +111,46 @@ export class SchoolRecordEvidenceModal extends Modal {
       unit.id,
       `${unit.subject} · ${unit.unitName}`
     ]));
-    this.addDropdown("통합 단원 연결", options, this.evidence.curriculumUnitId, (value) => {
+    this.addDropdown("단원 연결", options, this.evidence.curriculumUnitId, (value) => {
       const unit = this.curriculumUnits.find((entry) => entry.id === value);
       if (unit) this.applyCurriculumUnit(unit);
       else this.clearCurriculumLink();
       this.renderFields();
     }, "연결 안 함");
-    if (!this.evidence.curriculumUnitId) return;
-    const lessons = this.curriculumLessons.filter((lesson) => lesson.unitId === this.evidence.curriculumUnitId);
+    if (!this.curriculumLessons.length) return;
+    // 단원을 골랐으면 그 단원의 수업일지 + 단원 없는 수업일지(허브), 아니면 전체
+    const lessons = this.curriculumLessons
+      .filter((lesson) =>
+        !this.evidence.curriculumUnitId ||
+        lesson.unitId === this.evidence.curriculumUnitId ||
+        !lesson.unitId
+      )
+      .sort((a, b) => b.date.localeCompare(a.date));
     if (!lessons.length) return;
     this.addDropdown(
-      "수업 실행 기록 연결",
+      "수업일지 연결",
       Object.fromEntries(lessons.map((lesson) => [
         lesson.id,
-        `${lesson.date} · ${lesson.sequence}차시 · ${lesson.objective}`
+        `${lesson.date || "날짜 미정"}${lesson.period ? ` ${lesson.period}` : ""} · ${lesson.subject}${
+          lesson.objective ? ` · ${lesson.objective}` : lesson.unitTitle ? ` · ${lesson.unitTitle}` : ""
+        }`
       ])),
       this.evidence.curriculumLessonId,
       (value) => {
         const lesson = lessons.find((entry) => entry.id === value);
-        if (lesson) this.applyCurriculumLesson(lesson);
-        else {
+        if (lesson) {
+          this.applyCurriculumLesson(lesson);
+          // 단원이 연결된 수업일지를 고르면 단원도 함께 따라온다
+          if (lesson.unitId && lesson.unitId !== this.evidence.curriculumUnitId) {
+            const unit = this.curriculumUnits.find((entry) => entry.id === lesson.unitId);
+            if (unit) { this.applyCurriculumUnit(unit); this.renderFields(); }
+          }
+        } else {
           this.evidence.curriculumLessonId = "";
           this.evidence.curriculumLessonPath = "";
         }
       },
-      "차시 선택 안 함"
+      "연결 안 함"
     );
   }
 

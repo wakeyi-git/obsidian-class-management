@@ -43,13 +43,14 @@ export function schoolEventNoteFileName(event: SchoolEvent): string {
  */
 export const BASES_VIEW_FILES: Array<[string, string]> = [
   [
-    "통합 단원.base",
+    "단원.base",
     [
       "filters:",
       "  and:",
       "    - 'file.hasTag(\"class-management/curriculum-unit\")'",
       "formulas:",
       "  진행률: 'if(taughtHours, ((taughtHours / plannedHours * 100).round(0)).toString() + \"%\", \"0%\")'",
+      "  구분: 'if(conceptInquiryEnabled, \"통합\", \"일반\")'",
       "views:",
       "  - type: table",
       '    name: "단원별"',
@@ -58,6 +59,7 @@ export const BASES_VIEW_FILES: Array<[string, string]> = [
       "      direction: ASC",
       "    order:",
       "      - file.name",
+      "      - formula.구분",
       "      - unitName",
       "      - curriculumStatus",
       "      - plannedHours",
@@ -111,7 +113,7 @@ export const BASES_VIEW_FILES: Array<[string, string]> = [
       "    - 'file.hasTag(\"class-management/assignment\")'",
       "views:",
       "  - type: table",
-      '    name: "평가 과제"',
+      '    name: "전체"',
       "    order:",
       "      - file.name",
       "      - date",

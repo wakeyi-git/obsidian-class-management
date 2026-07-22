@@ -39,7 +39,7 @@ export class CurriculumUnitModal extends Modal {
   }
 
   onOpen(): void {
-    this.setTitle(this.existing ? "통합 단원 설계 수정" : "새 통합 단원 설계");
+    this.setTitle(this.existing ? "단원 설계 수정" : "새 단원 설계");
     this.modalEl.addClass("class-management-curriculum-modal");
     this.contentEl.createEl("p", {
       text: "성취기준에서 목표를 정하고, 수용할 만한 평가 증거를 먼저 결정한 뒤 학생 중심 학습 경험과 기록 초점을 연결합니다."
@@ -359,7 +359,7 @@ export class CurriculumUnitModal extends Modal {
     } catch (error) {
       this.saving = false;
       this.saveButton?.setDisabled(false).setButtonText("통합 설계 저장");
-      new Notice(error instanceof Error ? error.message : "통합 단원 설계를 저장하지 못했습니다.");
+      new Notice(error instanceof Error ? error.message : "단원 설계를 저장하지 못했습니다.");
     }
   }
 }

@@ -64,7 +64,7 @@ export class CurriculumView extends ItemView {
       text: `${this.plugin.settings.grade}학년 ${this.plugin.settings.semester} · 성취기준에서 시작해 수업과 과정중심 평가, 학생별 기록까지 연결합니다.`
     });
     const actions = header.createDiv({ cls: "class-management-actions" });
-    const newButton = actions.createEl("button", { text: "새 통합 단원", cls: "mod-cta" });
+    const newButton = actions.createEl("button", { text: "새 단원 설계", cls: "mod-cta" });
     newButton.addEventListener("click", () => this.plugin.openCurriculumUnitModal());
     const reportButton = actions.createEl("button", { text: "분석·보고서" });
     reportButton.addEventListener("click", () => void this.plugin.openReports());
@@ -86,7 +86,7 @@ export class CurriculumView extends ItemView {
       : 0;
     const summary = container.createDiv({ cls: "class-management-summary" });
     [
-      ["통합 단원", `${units.length}개`],
+      ["단원", `${units.length}개`],
       ["운영 시수", `${completedHours}/${plannedHours}시간`],
       ["연결된 학생 근거", `${linkedEvidence}건`],
       ["평균 연결도", `${average}%`]
@@ -144,9 +144,9 @@ export class CurriculumView extends ItemView {
   ): void {
     if (!units.length) {
       const empty = container.createDiv({ cls: "class-management-empty class-management-panel" });
-      empty.createEl("h3", { text: "통합 단원 설계가 없습니다." });
+      empty.createEl("h3", { text: "단원 설계가 없습니다." });
       empty.createEl("p", { text: "성취기준과 학생 요구를 바탕으로 첫 단원을 설계해 보세요." });
-      const button = empty.createEl("button", { text: "첫 통합 단원 만들기", cls: "mod-cta" });
+      const button = empty.createEl("button", { text: "첫 단원 설계 만들기", cls: "mod-cta" });
       button.addEventListener("click", () => this.plugin.openCurriculumUnitModal());
       return;
     }
@@ -198,7 +198,7 @@ export class CurriculumView extends ItemView {
     const actions = card.createDiv({ cls: "class-management-actions" });
     const edit = actions.createEl("button", { text: "설계 수정" });
     edit.addEventListener("click", () => this.plugin.openCurriculumUnitModal(unit));
-    const lesson = actions.createEl("button", { text: "차시 기록" });
+    const lesson = actions.createEl("button", { text: "수업일지" });
     lesson.addEventListener("click", () => this.plugin.openCurriculumLessonModal(unit));
     const evidenceButton = actions.createEl("button", { text: "학생 근거" });
     evidenceButton.addEventListener("click", () => this.plugin.openCurriculumEvidenceFlow(unit));

@@ -133,9 +133,12 @@ export class LessonInspectorView extends ItemView {
 
     const units = repository
       .getCurriculumUnits()
-      .filter((unit) => unit.subject === subject);
+      .filter((unit) =>
+        unit.subject === subject &&
+        (!unit.startDate || !unit.endDate || (unit.startDate <= date && date <= unit.endDate))
+      );
     if (units.length > 0) {
-      const section = this.section(container, "book-open-check", "연결된 통합 단원");
+      const section = this.section(container, "book-open-check", "연결된 단원");
       for (const unit of units) {
         const item = section.createDiv({ cls: "class-management-today-item" });
         item.createSpan({ text: unit.unitName, cls: "class-management-nav-label" });
@@ -168,11 +171,16 @@ export class LessonInspectorView extends ItemView {
     if (subject) {
       const lesson = this.plugin.findLessonAt(date, period);
       const record = actions.createEl("button", {
-        text: lesson ? "수업 기록 열기" : "이 교시 기록"
+        text: lesson ? "수업일지 열기" : "수업일지 쓰기"
       });
       record.addEventListener(
         "click",
         () => void this.plugin.recordLessonAt(date, period)
+      );
+      const evidence = actions.createEl("button", { text: "학생부 근거" });
+      evidence.addEventListener(
+        "click",
+        () => void this.plugin.recordEvidenceAt(date, period)
       );
     }
     const table = tables.find((item) => item.subject === subject);

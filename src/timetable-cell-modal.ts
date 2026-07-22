@@ -83,7 +83,7 @@ export function showTimetableCellMenu(
   if (current && !context.isRemoved) {
     menu.addItem((item) =>
       item
-        .setTitle("이 교시 기록 (수업일지)")
+        .setTitle("수업일지")
         .setIcon("notebook-pen")
         .onClick(() => void plugin.recordLessonAt(context.date, context.period))
     );

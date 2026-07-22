@@ -12,7 +12,7 @@ import { escapeTableCell, splitMarkdownTableRow, yamlString } from "./utils";
 import type { AcademicCalendar, BaseTimetable } from "./types";
 
 export const PROGRESS_TABLE_HEADER =
-  "| 고정 | 순 | 배정 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 통합 단원 | 과제(평가) | 준비물 | 비고 |";
+  "| 고정 | 순 | 배정 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 통합 단원 | 과제 | 준비물 | 비고 |";
 export const PROGRESS_TABLE_SEPARATOR =
   "| --- | ---: | --- | --- | --- | ---: | --- | --- | --- | --- | --- |";
 

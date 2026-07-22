@@ -48,17 +48,17 @@ export class CurriculumLessonModal extends Modal {
   private render(): void {
     this.contentEl.empty();
     this.setTitle(
-      this.unit ? `${this.unit.unitName} 수업 기록` : "수업 기록 (수업일지)"
+      this.unit ? `${this.unit.unitName} 수업일지` : "수업일지"
     );
     this.contentEl.createEl("blockquote", {
       text: this.unit
         ? `${this.unit.subject} · 성취기준과 평가계획에 연결된 차시입니다. 계획 단계에서는 목표와 활동을, 실행 후에는 평가 증거·피드백·성찰을 남깁니다.`
-        : "이 차시의 기록 허브입니다. 메모만 남겨도 되고, 통합 단원을 연결하면 탐구·성찰 기록으로 확장됩니다. 학생 관찰·과제가 이 노트를 링크합니다."
+        : "이 차시의 기록 허브입니다. 메모만 남겨도 되고, 단원을 연결하면 탐구·성찰 기록으로 확장됩니다. 학생 관찰·과제가 이 노트를 링크합니다."
     });
 
     new Setting(this.contentEl)
       .setName("연계 단원")
-      .setDesc("선택 사항 — 프로젝트·통합 단원 차시라면 연결하세요.")
+      .setDesc("선택 사항 — 이 차시가 속한 단원을 연결하세요.")
       .addDropdown((dropdown) => {
         dropdown.addOption("", "연결 없음");
         for (const unit of this.units) {
@@ -112,7 +112,7 @@ export class CurriculumLessonModal extends Modal {
       .addButton((button) => button.setButtonText("취소").onClick(() => this.close()))
       .addButton((button) => {
         this.saveButton = button;
-        button.setButtonText("수업 기록 저장").setCta().onClick(() => void this.save());
+        button.setButtonText("수업일지 저장").setCta().onClick(() => void this.save());
       });
   }
 
@@ -210,8 +210,8 @@ export class CurriculumLessonModal extends Modal {
       this.close();
     } catch (error) {
       this.saving = false;
-      this.saveButton?.setDisabled(false).setButtonText("수업 기록 저장");
-      new Notice(error instanceof Error ? error.message : "수업 기록을 저장하지 못했습니다.");
+      this.saveButton?.setDisabled(false).setButtonText("수업일지 저장");
+      new Notice(error instanceof Error ? error.message : "수업일지를 저장하지 못했습니다.");
     }
   }
 }
