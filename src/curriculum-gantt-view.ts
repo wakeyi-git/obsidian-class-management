@@ -13,6 +13,8 @@ export const CURRICULUM_GANTT_VIEW_TYPE = "class-management-curriculum-gantt";
 export class CurriculumGanttView extends ItemView {
   private semester = "";
   private integratedOnly = false;
+  private rangeFrom = "";
+  private rangeTo = "";
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: ClassManagementPlugin) {
     super(leaf);
@@ -50,6 +52,8 @@ export class CurriculumGanttView extends ItemView {
       container.createEl("p", { text: `${this.semester} 기간이 학사일정에 없습니다.` });
       return;
     }
+    this.rangeFrom = range.from;
+    this.rangeTo = range.to;
     const days = listDates(range.from, range.to);
     const total = days.length;
     const pos = (date: string): number => {
@@ -104,9 +108,13 @@ export class CurriculumGanttView extends ItemView {
 
     const today = localDate();
     if (today >= range.from && today <= range.to) {
-      const line = body.createDiv({ cls: "class-management-gantt-today" });
-      line.style.setProperty("--gantt-today", `${pos(today)}%`);
+      // 라벨 폭(190px) 이후 트랙 영역만 덮는 오버레이 안에 두어 막대와 같은 좌표계를 쓴다.
+      const overlay = body.createDiv({ cls: "class-management-gantt-overlay" });
+      const line = overlay.createDiv({ cls: "class-management-gantt-today" });
+      line.style.left = `${pos(today)}%`;
       line.setAttribute("title", `오늘 ${today}`);
+      const flag = overlay.createDiv({ cls: "class-management-gantt-today-flag", text: "오늘" });
+      flag.style.left = `${pos(today)}%`;
     }
   }
 
@@ -125,6 +133,12 @@ export class CurriculumGanttView extends ItemView {
     filter.addEventListener("click", () => {
       this.integratedOnly = !this.integratedOnly;
       void this.refresh();
+    });
+    const today = localDate();
+    const inRange = today >= this.rangeFrom && today <= this.rangeTo;
+    bar.createSpan({
+      cls: "class-management-gantt-todaychip",
+      text: `오늘 ${today}${inRange ? "" : " · 학기 범위 밖(방학)"}`
     });
     const legend = bar.createDiv({ cls: "class-management-gantt-legend" });
     legend.createSpan({ cls: "legend-integrated", text: "통합" });
