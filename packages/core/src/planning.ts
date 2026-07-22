@@ -43,6 +43,15 @@ export function wikiLinkText(link: string): string {
   return (pipe >= 0 ? inner.slice(pipe + 1) : inner).trim();
 }
 
+/** `[[경로\|별칭]]` 위키링크에서 링크 대상(경로)만 얻는다 — wikiLinkText의 짝. */
+export function wikiLinkTarget(link: string): string {
+  const match = link.trim().match(/\[\[([^\]]+)\]\]/);
+  if (!match) return "";
+  const inner = (match[1] ?? "").replace(/\\\|/g, "|");
+  const pipe = inner.lastIndexOf("|");
+  return (pipe >= 0 ? inner.slice(0, pipe) : inner).trim();
+}
+
 /** 진도표를 과목·단원별로 묶어 단원 노트 초안 재료를 만든다. 단원명이 빈 행은 제외. */
 export function unitScaffoldsFromProgress(table: Pick<ProgressTable, "rows">): UnitScaffold[] {
   const groups = new Map<string, ProgressRow[]>();

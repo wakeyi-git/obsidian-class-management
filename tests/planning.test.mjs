@@ -11,6 +11,7 @@ const {
   standardGradeBand,
   standardSubject,
   unitScaffoldsFromProgress,
+  wikiLinkTarget,
   wikiLinkText
 } = await loadTypeScriptModule("../packages/core/src/planning.ts");
 
@@ -63,6 +64,13 @@ test("unitScaffoldsFromProgress: 단원 묶음·시수·기간·전개를 만든
   assert.equal(second.startDate, "");
   assert.match(second.summary, /\(배정 전\)/);
   assert.match(second.learningPlan, /미배정/);
+});
+
+test("wikiLinkTarget: 링크 대상 경로를 얻는다", () => {
+  assert.equal(wikiLinkTarget("[[학급운영/과제/2026-10-16 국어 수행평가\\|수행평가]]"), "학급운영/과제/2026-10-16 국어 수행평가");
+  assert.equal(wikiLinkTarget("[[국어 독도 홍보단|독도 홍보단]]"), "국어 독도 홍보단");
+  assert.equal(wikiLinkTarget("[[이름만]]"), "이름만");
+  assert.equal(wikiLinkTarget("텍스트"), "");
 });
 
 test("wikiLinkText: 별칭·이스케이프 파이프·일반 텍스트", () => {

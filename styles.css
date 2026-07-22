@@ -1899,12 +1899,19 @@
   font-size: var(--font-ui-smaller);
 }
 
-.class-management-slot-markers .is-project {
+/* 주간 시간표 칸은 과목·진도가 가운데 정렬이므로 마커도 맞춘다 (오늘 패널은 왼쪽 리스트라 그대로) */
+.class-management-ops-week-table .class-management-slot-markers {
+  justify-content: center;
+}
+
+.class-management-slot-markers .is-project,
+.class-management-slot-marker-text.is-project {
   color: var(--interactive-accent);
   font-weight: 600;
 }
 
-.class-management-slot-markers .is-assignment {
+.class-management-slot-markers .is-assignment,
+.class-management-slot-marker-text.is-assignment {
   color: var(--color-orange);
   font-weight: 600;
 }

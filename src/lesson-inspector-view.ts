@@ -1,7 +1,9 @@
+import type { ProgressRow } from "@core/types";
 import { ItemView, Notice, WorkspaceLeaf, setIcon } from "obsidian";
 import { eventsOn, semesterForDate, weekdayLabel } from "@core/academic-calendar";
 import { resolveDay } from "@core/timetable";
 import { buildAssignedSlotContents } from "@core/progress";
+import { wikiLinkTarget, wikiLinkText } from "@core/planning";
 import { collectSubjectOptions } from "@core/subject-options";
 import { TimetableCellModal } from "./timetable-cell-modal";
 import type ClassManagementPlugin from "./main";
@@ -129,6 +131,7 @@ export class LessonInspectorView extends ItemView {
         line.createSpan({ text: label, cls: "class-management-today-badge" });
         line.createSpan({ text: value, cls: "class-management-inspector-value" });
       }
+      this.renderRowLinks(progress, row);
     }
 
     const units = repository
@@ -142,7 +145,7 @@ export class LessonInspectorView extends ItemView {
       for (const unit of units) {
         const item = section.createDiv({ cls: "class-management-today-item" });
         item.createSpan({ text: unit.unitName, cls: "class-management-nav-label" });
-        item.addEventListener("click", () => void this.plugin.openFile(unit.file));
+        this.openable(item, `${unit.unitName} 단원 노트 열기`, () => void this.plugin.openFile(unit.file));
       }
     }
 
@@ -194,6 +197,52 @@ export class LessonInspectorView extends ItemView {
         this.plugin.openProgressImportModal();
       });
     }
+  }
+
+  /** 배정 차시의 프로젝트·과제 링크를 열기 항목으로 보여 준다. */
+  private renderRowLinks(container: HTMLElement, row: ProgressRow): void {
+    const links: Array<{ marker: string; cls: string; label: string; target: string }> = [];
+    if (row.unitLink.trim()) {
+      links.push({
+        marker: "✦",
+        cls: "is-project",
+        label: wikiLinkText(row.unitLink),
+        target: wikiLinkTarget(row.unitLink)
+      });
+    }
+    for (const match of row.assignmentLink.matchAll(/\[\[(?:[^\]]|\\\])*?\]\]/g)) {
+      links.push({
+        marker: "◆",
+        cls: "is-assignment",
+        label: wikiLinkText(match[0]),
+        target: wikiLinkTarget(match[0])
+      });
+    }
+    for (const link of links) {
+      const item = container.createDiv({ cls: "class-management-today-item" });
+      const label = item.createSpan({ cls: "class-management-nav-label" });
+      label.createSpan({ text: `${link.marker} `, cls: `class-management-slot-marker-text ${link.cls}` });
+      label.createSpan({ text: link.label });
+      this.openable(item, `${link.label} 노트 열기`, () => {
+        const file = this.app.metadataCache.getFirstLinkpathDest(link.target, "");
+        if (file) void this.plugin.openFile(file);
+        else new Notice(`노트를 찾지 못했습니다: ${link.target}`);
+      });
+    }
+  }
+
+  /** 클릭 가능한 항목에 키보드 동등 동작을 부여한다 (UIUX §1). */
+  private openable(el: HTMLElement, label: string, run: () => void): void {
+    el.setAttribute("role", "button");
+    el.setAttribute("tabindex", "0");
+    el.setAttribute("aria-label", label);
+    el.addEventListener("click", run);
+    el.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        run();
+      }
+    });
   }
 
   private section(container: HTMLElement, icon: string, title: string): HTMLElement {
