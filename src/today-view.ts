@@ -1,3 +1,4 @@
+import { registerLongPress } from "@core/dom";
 import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
 import { dayStatus, semesterForDate, weekdayLabel } from "@core/academic-calendar";
 import { resolveDay } from "@core/timetable";
@@ -162,6 +163,7 @@ export class TodayView extends ItemView {
           event.preventDefault();
           showTimetableCellMenu(this.plugin, event, context);
         });
+        registerLongPress(row, (x, y) => showTimetableCellMenu(this.plugin, { x, y }, context));
       }
     }
   }

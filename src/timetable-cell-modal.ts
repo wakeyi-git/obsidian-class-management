@@ -16,7 +16,7 @@ export interface TimetableCellContext {
 /** 시간표 칸 우클릭 메뉴 — 과목 바로 변경·수업 삭제·변경 제거·진도 고정, 상세 입력은 편집 모달로. */
 export function showTimetableCellMenu(
   plugin: ClassManagementPlugin,
-  event: MouseEvent,
+  event: MouseEvent | { x: number; y: number },
   context: TimetableCellContext
 ): void {
   const run = (promise: Promise<void>, fallback: string): void => {
@@ -111,7 +111,8 @@ export function showTimetableCellMenu(
       .setIcon("pencil")
       .onClick(() => new TimetableCellModal(plugin, context).open())
   );
-  menu.showAtMouseEvent(event);
+  if (event instanceof MouseEvent) menu.showAtMouseEvent(event);
+  else menu.showAtPosition(event);
 }
 
 export class TimetableCellModal extends Modal {

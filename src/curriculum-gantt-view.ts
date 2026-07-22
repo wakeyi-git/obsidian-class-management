@@ -1,4 +1,5 @@
-import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
+import { ItemView, Menu, WorkspaceLeaf, setIcon } from "obsidian";
+import { registerLongPress } from "@core/dom";
 import { listDates, semesterRange } from "@core/academic-calendar";
 import { localDate } from "@core/utils";
 import type ClassManagementPlugin from "./main";
@@ -118,7 +119,7 @@ export class CurriculumGanttView extends ItemView {
     }
   }
 
-  /** 클릭 가능한 요소에 키보드 동등 동작을 부여한다 (DESIGN §7.4). */
+  /** 클릭 가능한 요소에 키보드·터치 동등 동작을 부여한다 (DESIGN §7.4, UIUX §1 터치 등가). */
   private actionable(el: HTMLElement, label: string, run: () => void): void {
     el.setAttribute("role", "button");
     el.setAttribute("tabindex", "0");
@@ -129,6 +130,13 @@ export class CurriculumGanttView extends ItemView {
         event.preventDefault();
         run();
       }
+    });
+    // 작은 막대·마커는 터치로 정확히 탭하기 어렵고 호버 title도 없으므로,
+    // 길게 누르면 전체 라벨을 메뉴로 보여 주고 열기 동작을 제공한다.
+    registerLongPress(el, (x, y) => {
+      const menu = new Menu();
+      menu.addItem((item) => item.setTitle(label).setIcon("book-open").onClick(run));
+      menu.showAtPosition({ x, y });
     });
   }
 

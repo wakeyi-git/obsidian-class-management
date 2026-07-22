@@ -2551,3 +2551,10 @@
   padding: 1px 8px;
   margin-left: 4px;
 }
+
+/* 길게 누르기 대상 — iOS 콜아웃·텍스트 선택이 편집 메뉴를 가로채지 않게 한다 */
+.class-management-longpress {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

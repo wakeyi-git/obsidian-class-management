@@ -1,3 +1,4 @@
+import { registerLongPress } from "@core/dom";
 import { ItemView, TFile, WorkspaceLeaf } from "obsidian";
 import { showTimetableCellMenu, type TimetableCellContext } from "./timetable-cell-modal";
 import {
@@ -365,6 +366,7 @@ export class CurriculumOpsView extends ItemView {
       event.preventDefault();
       showTimetableCellMenu(this.plugin, event, context);
     });
+    registerLongPress(cell, (x, y) => showTimetableCellMenu(this.plugin, { x, y }, context));
   }
 
   private collectSubjects(
