@@ -238,7 +238,7 @@ export function academicCalendarMarkdown(schoolYear: string, className: string):
     `semester1End: ${yamlString(`${year}-07-17`)}`,
     `semester2Start: ${yamlString(`${year}-08-17`)}`,
     `semester2End: ${yamlString(`${next}-01-09`)}`,
-    "weekdayPeriods: [5, 6, 5, 6, 5]",
+    "weekdayPeriods: \"5, 6, 5, 6, 5\"",
     "tags:",
     "  - class-management/academic-calendar",
     "---",

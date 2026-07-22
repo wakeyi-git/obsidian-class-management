@@ -109,3 +109,8 @@ test("스캐폴드 Markdown을 되읽을 수 있다", () => {
   assert.ok(parsed.closedDays.some((day) => day.name === "어린이날"));
   assert.ok(parsed.events.some((event) => event.type === "단축"));
 });
+
+test("weekdayPeriods: 쉼표 문자열과 숫자 배열 모두 파싱된다", () => {
+  assert.deepEqual(parseWeekdayPeriods("5, 6, 5, 6, 5"), [5, 6, 5, 6, 5]);
+  assert.deepEqual(parseWeekdayPeriods([5, 6, 5, 5, 5]), [5, 6, 5, 5, 5]);
+});

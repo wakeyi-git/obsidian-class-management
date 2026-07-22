@@ -321,7 +321,8 @@ export function curriculumUnitMarkdown(
     `microConcepts: ${JSON.stringify(unit.microConcepts)}`,
     `knowledgeStructure: ${yamlString(unit.knowledgeStructure)}`,
     `conceptMap: ${yamlString(unit.conceptMap)}`,
-    `conceptInquiryStrands: ${JSON.stringify(unit.conceptInquiryStrands)}`,
+    // 객체 배열은 옵시디언 속성 편집기가 못 다루므로 JSON 문자열로 저장한다(파서는 양쪽 다 읽음).
+    `conceptInquiryStrands: ${yamlString(JSON.stringify(unit.conceptInquiryStrands))}`,
     `inquiryPhases: ${JSON.stringify(unit.inquiryPhases)}`,
     `priorKnowledge: ${yamlString(unit.priorKnowledge)}`,
     `transferContext: ${yamlString(unit.transferContext)}`,

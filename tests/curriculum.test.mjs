@@ -210,3 +210,31 @@ test("단원 없는 수업 기록(허브)도 저장·되읽기·본문 축약이
   Object.assign(bare, { id: "lesson-hub-2", date: "2026-09-03", subject: "수학" });
   assert.match(curriculumLessonMarkdown(bare, curriculumSettings), /## 기록/);
 });
+
+test("conceptInquiryStrands는 JSON 문자열로 저장되고 양쪽 형태 모두 파싱된다", () => {
+  const unit = emptyCurriculumUnit(curriculumSettings);
+  unit.unitName = "테스트";
+  unit.conceptInquiryEnabled = true;
+  unit.conceptInquiryStrands = [createConceptInquiryStrand(1)];
+  unit.conceptInquiryStrands[0].title = "도구와 삶";
+  const markdown = curriculumUnitMarkdown(unit, curriculumSettings);
+  const line = markdown.split("\n").find((item) => item.startsWith("conceptInquiryStrands:"));
+  assert.match(line, /^conceptInquiryStrands: "\[/); // 따옴표로 감싼 문자열(속성 편집기 호환)
+
+  const asString = JSON.stringify(unit.conceptInquiryStrands);
+  const parsedFromString = parseCurriculumUnit(
+    { path: "u.md", basename: "u", stat: { ctime: 1 } },
+    { "class-management": "curriculum-unit", curriculumUnitId: unit.id, unitName: "테스트",
+      conceptInquiryStrands: asString },
+    markdown
+  );
+  assert.equal(parsedFromString.conceptInquiryStrands[0].title, "도구와 삶");
+
+  const parsedFromArray = parseCurriculumUnit(
+    { path: "u.md", basename: "u", stat: { ctime: 1 } },
+    { "class-management": "curriculum-unit", curriculumUnitId: unit.id, unitName: "테스트",
+      conceptInquiryStrands: unit.conceptInquiryStrands },
+    markdown
+  );
+  assert.equal(parsedFromArray.conceptInquiryStrands[0].title, "도구와 삶");
+});
