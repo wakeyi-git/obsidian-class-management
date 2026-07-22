@@ -327,12 +327,13 @@ export class ActivityListView extends ItemView {
           appendHighlightedText(detail, activity.detail || activity.title, this.filters.query);
         } else {
           const source = row.createEl("td");
-          const open = source.createEl("button", { text: "열기" });
+          const actions = source.createDiv({ cls: "class-management-actions" });
+          const open = actions.createEl("button", { text: "열기" });
           open.addEventListener("click", () => void this.plugin.openFile(activity.file));
           if (activity.studentNumber) {
             const student = studentsByNumber.get(activity.studentNumber);
             if (student) {
-              const timeline = source.createEl("button", { text: "타임라인" });
+              const timeline = actions.createEl("button", { text: "타임라인" });
               timeline.addEventListener("click", () => void this.plugin.openStudentTimeline(student));
             }
           }
