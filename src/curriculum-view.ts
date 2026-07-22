@@ -8,8 +8,9 @@ import {
   CURRICULUM_UNIT_STATUS_LABELS,
   taughtHoursForUnit
 } from "@core/curriculum";
+import { localDate } from "@core/utils";
 import type ClassManagementPlugin from "./main";
-import type { CurriculumLesson, CurriculumUnit, RecordEntry } from "@core/types";
+import type { CurriculumLesson, CurriculumUnit, CurriculumUnitStatus, RecordEntry } from "@core/types";
 
 export const CURRICULUM_VIEW_TYPE = "class-management-curriculum";
 
@@ -150,15 +151,37 @@ export class CurriculumView extends ItemView {
       button.addEventListener("click", () => this.plugin.openCurriculumUnitModal());
       return;
     }
-    const grid = container.createDiv({ cls: "class-management-curriculum-units" });
-    units.forEach((unit) => this.renderUnitCard(grid, unit, lessons, records));
+    // 칸반 보드 — 기간이 시작되면 운영 중, 지나면 운영 완료로 자동 배치(노트는 다시 쓰지 않음).
+    const board = container.createDiv({ cls: "class-management-curriculum-board" });
+    const today = localDate();
+    for (const [status, label] of Object.entries(CURRICULUM_UNIT_STATUS_LABELS)) {
+      const column = board.createDiv({ cls: "class-management-curriculum-column" });
+      const items = units
+        .filter((unit) => this.stageOf(unit, today) === status)
+        .sort((a, b) => (a.startDate || "9999").localeCompare(b.startDate || "9999"));
+      column.createEl("h3", { text: `${label} ${items.length}` });
+      if (items.length === 0) {
+        column.createEl("p", { text: "해당 단계 단원이 없습니다.", cls: "setting-item-description" });
+      }
+      items.forEach((unit) => this.renderUnitCard(column, unit, lessons, records, label));
+    }
+  }
+
+  /** 표시 단계 — 기간(운영 중·완료)은 날짜로 파생하고, 기간 전에는 노트의 설계 상태를 따른다. */
+  private stageOf(unit: CurriculumUnit, today: string): CurriculumUnitStatus {
+    if (unit.startDate && unit.endDate) {
+      if (today > unit.endDate) return "completed";
+      if (today >= unit.startDate) return "in-progress";
+    }
+    return unit.status === "draft" ? "draft" : "ready";
   }
 
   private renderUnitCard(
     container: HTMLElement,
     unit: CurriculumUnit,
     allLessons: CurriculumLesson[],
-    records: RecordEntry[]
+    records: RecordEntry[],
+    stageLabel?: string
   ): void {
     const lessons = allLessons.filter((lesson) => lesson.unitId === unit.id);
     const evidence = records.filter((record) => record.schoolRecordEvidence?.curriculumUnitId === unit.id);
@@ -169,7 +192,7 @@ export class CurriculumView extends ItemView {
     const card = container.createDiv({ cls: "class-management-curriculum-unit" });
     const top = card.createDiv({ cls: "class-management-curriculum-unit-top" });
     const heading = top.createDiv();
-    heading.createEl("span", { text: `${unit.subject} · ${CURRICULUM_UNIT_STATUS_LABELS[unit.status]}`, cls: "class-management-curriculum-badge" });
+    heading.createEl("span", { text: `${unit.subject} · ${stageLabel ?? CURRICULUM_UNIT_STATUS_LABELS[unit.status]}`, cls: "class-management-curriculum-badge" });
     if (unit.conceptInquiryEnabled) {
       heading.createEl("span", { text: "개념기반 탐구", cls: "class-management-curriculum-badge is-concept" });
     }

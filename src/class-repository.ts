@@ -8,7 +8,7 @@ import {
   parseRoutineItems,
   routineRunsOn
 } from "@core/routine";
-import { nextRecurringDate } from "@core/task";
+import { nextRecurringDate, taskMarkdown } from "@core/task";
 import {
   BASES_VIEW_FILES,
   schoolEventNoteFileName,
@@ -659,32 +659,7 @@ export class ClassRepository {
     const settings = this.getSettings();
     const baseName = `${localDate()} ${localTimeForFile()} ${safeFileSegment(title)}`;
     const path = this.availableMarkdownPath(this.tasksFolderPath, baseName);
-    const content = [
-      "---",
-      "class-management: task",
-      `class: ${yamlString(settings.className)}`,
-      `schoolYear: ${yamlString(settings.schoolYear)}`,
-      `semester: ${yamlString(settings.semester)}`,
-      `taskTitle: ${yamlString(title)}`,
-      `taskStatus: ${yamlString(task.status)}`,
-      `project: ${yamlString(task.project)}`,
-      `context: ${yamlString(task.context)}`,
-      `startDate: ${yamlString(task.startDate)}`,
-      `dueDate: ${yamlString(task.dueDate)}`,
-      `priority: ${yamlString(task.priority)}`,
-      `recurrence: ${yamlString(task.recurrence)}`,
-      `studentNumber: ${yamlString(task.studentNumber)}`,
-      `studentName: ${yamlString(task.studentName)}`,
-      `created: ${localDate()}`,
-      "tags:",
-      "  - class-management/task",
-      "---",
-      "",
-      `# ${title}`,
-      "",
-      task.detail.trim(),
-      ""
-    ].join("\n");
+    const content = taskMarkdown(task, settings, localDate());
     return this.app.vault.create(path, content);
   }
 

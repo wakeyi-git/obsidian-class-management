@@ -64,10 +64,32 @@
   margin-bottom: 12px;
 }
 
-.class-management-curriculum-units {
+.class-management-curriculum-view {
+  overflow-x: auto;
+}
+
+.class-management-curriculum-board {
   display: grid;
-  grid-template-columns: repeat(2, minmax(320px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(300px, 1fr));
+  gap: 8px;
+  min-width: 1240px;
+  align-items: start;
+}
+
+.class-management-curriculum-column {
+  padding: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: var(--background-secondary);
+  min-height: 160px;
+}
+
+.class-management-curriculum-column > h3 {
+  margin: 0 0 8px;
+}
+
+.class-management-curriculum-column .class-management-curriculum-unit {
+  margin-bottom: 8px;
 }
 
 .class-management-curriculum-unit {

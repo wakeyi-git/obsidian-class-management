@@ -1,4 +1,5 @@
-import type { TaskEntry } from "./types";
+import { yamlString } from "./utils";
+import type { TaskEntry, NewTask } from "./types";
 
 export function nextRecurringDate(
   date: string,
@@ -32,4 +33,41 @@ function formatDate(value: Date): string {
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+/** 할 일 노트 본문 — 플러그인과 예약 수집 스킬이 같은 형식을 쓴다. extra는 sourceKey 같은 추가 프론트매터. */
+export function taskMarkdown(
+  task: NewTask,
+  settings: { className: string; schoolYear: string; semester: string },
+  createdDate: string,
+  extra: Record<string, string> = {}
+): string {
+  const title = task.title.trim();
+  return [
+    "---",
+    "class-management: task",
+    `class: ${yamlString(settings.className)}`,
+    `schoolYear: ${yamlString(settings.schoolYear)}`,
+    `semester: ${yamlString(settings.semester)}`,
+    `taskTitle: ${yamlString(title)}`,
+    `taskStatus: ${yamlString(task.status)}`,
+    `project: ${yamlString(task.project)}`,
+    `context: ${yamlString(task.context)}`,
+    `startDate: ${yamlString(task.startDate)}`,
+    `dueDate: ${yamlString(task.dueDate)}`,
+    `priority: ${yamlString(task.priority)}`,
+    `recurrence: ${yamlString(task.recurrence)}`,
+    `studentNumber: ${yamlString(task.studentNumber)}`,
+    `studentName: ${yamlString(task.studentName)}`,
+    ...Object.entries(extra).map(([key, value]) => `${key}: ${yamlString(value)}`),
+    `created: ${createdDate}`,
+    "tags:",
+    "  - class-management/task",
+    "---",
+    "",
+    `# ${title}`,
+    "",
+    task.detail.trim(),
+    ""
+  ].join("\n");
 }
