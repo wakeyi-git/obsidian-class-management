@@ -12,7 +12,7 @@ import { escapeTableCell, splitMarkdownTableRow, yamlString } from "./utils";
 import type { AcademicCalendar, BaseTimetable } from "./types";
 
 export const PROGRESS_TABLE_HEADER =
-  "| 고정 | 순 | 배정 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 통합 단원 | 과제 | 준비물 | 비고 |";
+  "| 고정 | 순 | 배정 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 프로젝트 | 과제 | 준비물 | 비고 |";
 export const PROGRESS_TABLE_SEPARATOR =
   "| --- | ---: | --- | --- | --- | ---: | --- | --- | --- | --- | --- |";
 
@@ -77,7 +77,7 @@ function columnIndexFromHeader(cells: string[]): ProgressColumnIndex | null {
     topic: find((cell) => cell === "학습 내용" || cell === "학습내용"),
     hours: find((cell) => cell === "시수"),
     standard: find((cell) => cell === "성취기준"),
-    unitLink: find((cell) => cell === "통합 단원"),
+    unitLink: find((cell) => cell === "프로젝트" || cell === "통합 단원"),
     assignment: find((cell) => cell.startsWith("과제")),
     materials: find((cell) => cell === "준비물"),
     note: find((cell) => cell === "비고")

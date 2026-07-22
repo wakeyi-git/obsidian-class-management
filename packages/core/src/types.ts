@@ -507,7 +507,7 @@ export interface ProgressRow {
   topic: string;
   hours: number;
   standard: string;
-  /** 연결된 통합 단원 위키링크 */
+  /** 프로젝트 열(통합 단원 연계) 위키링크 — 구명 "통합 단원" 헤더도 읽는다 */
   unitLink: string;
   /** 과제(평가) 노트 위키링크 */
   assignmentLink: string;

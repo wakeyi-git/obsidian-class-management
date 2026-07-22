@@ -1292,7 +1292,7 @@ export class ClassRepository {
     );
   }
 
-  /** 진도표의 한 행에 위키링크를 덧붙인다(이미 있으면 그대로). field: 비고·통합 단원·과제(평가). */
+  /** 진도표의 한 행에 위키링크를 덧붙인다(이미 있으면 그대로). field: 비고·프로젝트·과제. */
   async appendProgressRowLink(
     table: ProgressTable,
     order: number,

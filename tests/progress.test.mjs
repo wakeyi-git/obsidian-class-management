@@ -204,3 +204,20 @@ test("배정 결과 표기와 슬롯 맵을 만든다", () => {
   const map = slotContentMap(assignment);
   assert.equal(map.get("2026-08-19|3")?.topic, "분수의 의미");
 });
+
+test("진도표 헤더: 새 이름 프로젝트와 구명 통합 단원을 모두 읽는다", () => {
+  const rows = [makeRow(1, "차시", 1)];
+  const serialized = progressTableMarkdown("2026", "2학기", "과학", "우리 반", rows);
+  assert.match(serialized, /\| 프로젝트 \|/);
+  const parsedNew = parseProgressTable(file, {}, serialized);
+  assert.equal(parsedNew.rows.length, 1);
+
+  const legacy = serialized.replace("| 프로젝트 |", "| 통합 단원 |");
+  const parsedLegacy = parseProgressTable(file, {}, legacy);
+  assert.equal(parsedLegacy.rows.length, 1);
+  const withLink = legacy
+    .split("\n")
+    .map((line) => (line.startsWith("|  | 1 |") ? line.replace("차시 | 1 |  |  |", "차시 | 1 |  | [[프로젝트 P]] |") : line))
+    .join("\n");
+  assert.equal(parseProgressTable(file, {}, withLink).rows[0].unitLink, "[[프로젝트 P]]");
+});
