@@ -232,7 +232,7 @@ export class CurriculumView extends ItemView {
 
     if (lessons.length) {
       const list = card.createDiv({ cls: "class-management-curriculum-lessons" });
-      list.createEl("strong", { text: "차시 실행" });
+      list.createEl("strong", { text: "수업일지" });
       lessons.forEach((entry) => {
         const row = list.createEl("button");
         row.createEl("span", { text: `${entry.date} · ${entry.sequence}차시 · ${entry.objective}` });

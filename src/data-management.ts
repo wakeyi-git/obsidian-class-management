@@ -152,7 +152,7 @@ export async function runDataDiagnostics(
     if (!unitIds.has(lesson.unitId)) issues.push({
       level: "error",
       code: "broken-curriculum-unit-link",
-      message: `수업 실행 기록이 존재하지 않는 통합 단원 ID를 가리킵니다: ${lesson.unitId}`,
+      message: `수업일지가 존재하지 않는 단원 ID를 가리킵니다: ${lesson.unitId}`,
       source: lesson.file.path
     });
   });

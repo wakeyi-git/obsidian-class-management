@@ -17,6 +17,12 @@ const RULES = [
   { term: "수업 기록", standard: "수업일지" },
   { term: "차시 기록", standard: "수업일지" },
   { term: "이 교시 기록", standard: "수업일지" },
+  {
+    term: "수업 실행",
+    standard: "수업일지",
+    allow: [/실행 완료/] // 상태어(계획→실행 완료)는 §2 표준
+  },
+  { term: "차시 실행", standard: "수업일지", allow: [/실행 완료/] },
   { term: "과제(평가)", standard: "과제" },
   { term: "평가 과제", standard: "과제(assignment) 또는 수행과제(단원 설계)" },
   {

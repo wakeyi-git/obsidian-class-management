@@ -171,7 +171,7 @@ export class ClassManagementSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("교육과정 폴더")
-      .setDesc("통합 단원 설계와 차시별 수업 실행 기록을 저장합니다.")
+      .setDesc("단원 설계와 차시별 수업일지를 저장합니다.")
       .addText((text) =>
         text.setValue(this.plugin.settings.curriculumFolder).onChange(async (value) => {
           this.plugin.settings.curriculumFolder = value.trim() || "교육과정";

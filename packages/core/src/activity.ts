@@ -7,7 +7,7 @@ export const ACTIVITY_KIND_LABELS: Record<ActivityKind, string> = {
   task: "할 일",
   notice: "가정통신문",
   routine: "루틴",
-  curriculum: "수업 실행"
+  curriculum: "수업일지"
 };
 
 export const EMPTY_ACTIVITY_FILTERS: ActivityListFilters = {
