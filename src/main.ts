@@ -20,6 +20,7 @@ import { ProgressImportModal } from "./progress-import-modal";
 import { ProgressPinModal } from "./progress-pin-modal";
 import { UnitSuggestModal } from "./unit-suggest-modal";
 import { addDays, mondayOf, semesterForDate, semesterRange } from "./academic-calendar";
+import { collectTaughtSlots, distinctDates, taughtThroughDate } from "./taught-lesson";
 import { isRemovedSubject, resolveDay, subjectSlots } from "./timetable";
 import { assignProgress, buildAssignedSlotContents } from "./progress";
 import { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } from "./weekly-plan";
@@ -165,6 +166,8 @@ export default class ClassManagementPlugin extends Plugin {
       if (this.app.workspace.getLeavesOfType(TODAY_VIEW_TYPE).length === 0) {
         void this.openToday();
       }
+      // 밀린 날이 적을 때만 조용히 확정한다. 많이 밀렸으면 명령 실행을 안내만 한다.
+      window.setTimeout(() => void this.confirmTaughtLessons(true), 2000);
     });
     this.registerView(REPORT_VIEW_TYPE, (leaf) => new ReportView(leaf, this));
     this.registerView(
@@ -292,6 +295,16 @@ export default class ClassManagementPlugin extends Plugin {
       id: "create-bases-views",
       name: "일체화 Bases 보기 만들기",
       callback: () => void this.createBasesViews()
+    });
+    this.addCommand({
+      id: "create-event-notes",
+      name: "행사 노트 일괄 만들기",
+      callback: () => void this.createAllEventNotes()
+    });
+    this.addCommand({
+      id: "confirm-taught-lessons",
+      name: "실시 차시 확정 (어제까지)",
+      callback: () => void this.confirmTaughtLessons(false)
     });
     this.addCommand({
       id: "generate-weekly-plan",
@@ -1102,6 +1115,7 @@ export default class ClassManagementPlugin extends Plugin {
         const created = await this.repository.createCurriculumLesson(lesson);
         if (options?.afterCreate) await options.afterCreate(created);
       }
+      await this.refreshUnitProgress(unit, { id: lesson.id, hours: lesson.hours });
       this.activityIndex.invalidate();
       new Notice(`${unit.unitName} ${lesson.sequence}차시 기록을 저장했습니다.`);
       await this.refreshViews();
@@ -1190,6 +1204,99 @@ export default class ClassManagementPlugin extends Plugin {
       );
     } catch (error) {
       new Notice(error instanceof Error ? error.message : "Bases 보기 생성에 실패했습니다.");
+    }
+  }
+
+  async createAllEventNotes(): Promise<void> {
+    try {
+      const calendar = await this.repository.getAcademicCalendar();
+      if (!calendar) {
+        new Notice("학사일정 노트가 필요합니다.");
+        return;
+      }
+      const created = await this.repository.ensureAllEventNotes(calendar.events);
+      new Notice(
+        created.length > 0
+          ? `행사 노트 ${created.length}개를 만들었습니다. (전체 ${calendar.events.length}개)`
+          : `행사 노트가 이미 모두 있습니다. (${calendar.events.length}개)`
+      );
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "행사 노트 생성에 실패했습니다.");
+    }
+  }
+
+  /**
+   * 어제까지 실시된 차시를 불변 노트로 확정한다.
+   * auto=true(로드 시)는 밀린 날이 14일 이하일 때만 생성하고, 그보다 많으면 안내만 한다.
+   */
+  async confirmTaughtLessons(auto: boolean): Promise<void> {
+    try {
+      const calendar = await this.repository.getAcademicCalendar();
+      if (!calendar) {
+        if (!auto) new Notice("학사일정 노트가 필요합니다.");
+        return;
+      }
+      const through = taughtThroughDate(localDate());
+      const lessonLogs = new Map<string, string>();
+      for (const lesson of this.repository.getCurriculumLessons()) {
+        const period = Number.parseInt(lesson.period, 10);
+        if (!lesson.date || Number.isNaN(period)) continue;
+        lessonLogs.set(
+          `${lesson.date}|${period}`,
+          `[[${lesson.file.path.replace(/\.md$/i, "")}|수업일지]]`
+        );
+      }
+      const entries = [];
+      for (const semester of ["1학기", "2학기"]) {
+        const timetable = await this.repository.getBaseTimetable(semester);
+        if (!timetable) continue;
+        const tables = await this.repository.getProgressTables(semester);
+        const contents = buildAssignedSlotContents(
+          calendar,
+          { [semester]: timetable },
+          { [semester]: tables }
+        );
+        entries.push(
+          ...collectTaughtSlots(calendar, timetable, semester, contents, through, lessonLogs)
+        );
+      }
+      const missing = this.repository.filterMissingTaughtLessons(entries);
+      if (missing.length === 0) {
+        if (!auto) new Notice("확정할 새 실시 차시가 없습니다.");
+        return;
+      }
+      const days = distinctDates(missing);
+      if (auto && days > 14) {
+        new Notice(
+          `확정되지 않은 실시 차시가 ${days}일치(${missing.length}건) 있습니다. ` +
+            "`실시 차시 확정 (어제까지)` 명령으로 일괄 생성할 수 있습니다."
+        );
+        return;
+      }
+      const created = await this.repository.createTaughtLessonNotes(missing);
+      new Notice(`실시 차시 ${created}건을 확정했습니다. (${days}일치)`);
+    } catch (error) {
+      if (!auto) {
+        new Notice(error instanceof Error ? error.message : "실시 차시 확정에 실패했습니다.");
+      }
+    }
+  }
+
+  /** 수업일지 합계로 단원의 실시 시수(taughtHours)를 갱신한다 — 단원 노트 1개만 쓴다. */
+  async refreshUnitProgress(
+    unit: CurriculumUnit,
+    delta?: { id: string; hours: number }
+  ): Promise<void> {
+    try {
+      const total = this.repository
+        .getCurriculumLessons()
+        .filter((lesson) => lesson.unitId === unit.id && lesson.id !== delta?.id)
+        .reduce((sum, lesson) => sum + lesson.hours, 0) + (delta?.hours ?? 0);
+      await this.app.fileManager.processFrontMatter(unit.file, (frontmatter) => {
+        frontmatter.taughtHours = total;
+      });
+    } catch {
+      // 진행률 갱신 실패는 수업일지 저장을 막지 않는다.
     }
   }
 

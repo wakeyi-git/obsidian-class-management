@@ -9,6 +9,14 @@ import {
 } from "./routine";
 import { nextRecurringDate } from "./task";
 import {
+  BASES_VIEW_FILES,
+  schoolEventNoteFileName,
+  schoolEventNoteMarkdown,
+  taughtLessonFileName,
+  taughtLessonMarkdown,
+  taughtLessonSubfolder
+} from "./entity-notes";
+import {
   curriculumLessonMarkdown,
   curriculumUnitMarkdown,
   parseCurriculumLesson,
@@ -38,6 +46,7 @@ import type {
   ProgressRow,
   ProgressTable,
   SchoolEvent,
+  TaughtLessonEntry,
   TimetableOverride
 } from "./types";
 import type {
@@ -1300,174 +1309,73 @@ export class ClassRepository {
   async ensureEventNote(event: SchoolEvent): Promise<TFile> {
     this.assertWritableClass();
     await this.ensureFolder(this.eventsFolderPath);
-    const path = joinVaultPath(
-      this.eventsFolderPath,
-      `${safeFileSegment(event.date)} ${safeFileSegment(event.name)}.md`
-    );
+    const path = joinVaultPath(this.eventsFolderPath, schoolEventNoteFileName(event));
     const existing = this.app.vault.getAbstractFileByPath(path);
     if (existing instanceof TFile) return existing;
-    const settings = this.getSettings();
-    const content = [
-      "---",
-      "class-management: school-event",
-      `class: ${yamlString(settings.className)}`,
-      `eventName: ${yamlString(event.name)}`,
-      `date: ${yamlString(event.date)}`,
-      `eventType: ${yamlString(event.type)}`,
-      `periods: ${yamlString(event.periods.join(","))}`,
-      `subject: ${yamlString(event.subject)}`,
-      "tags:",
-      "  - class-management/school-event",
-      "---",
-      "",
-      `# ${event.date} · ${event.name}`,
-      "",
-      `- 유형: ${event.type}${event.periods.length ? ` · ${event.periods.join(",")}교시` : ""}${event.subject ? ` · ${event.subject}` : ""}`,
-      "",
-      "## 계획",
-      "",
-      "## 준비물",
-      "",
-      "## 연계 단원·프로젝트",
-      "",
-      "- ",
-      "",
-      "## 결과·성찰",
-      ""
-    ].join("\n");
-    return this.app.vault.create(path, content);
+    return this.app.vault.create(
+      path,
+      schoolEventNoteMarkdown(event, this.getSettings().className)
+    );
+  }
+
+  /** 학사일정의 모든 행사 노트를 일괄 생성한다(이미 있으면 건너뜀). */
+  async ensureAllEventNotes(events: SchoolEvent[]): Promise<string[]> {
+    const created: string[] = [];
+    for (const event of events) {
+      const path = joinVaultPath(this.eventsFolderPath, schoolEventNoteFileName(event));
+      if (this.app.vault.getAbstractFileByPath(path)) continue;
+      await this.ensureEventNote(event);
+      created.push(event.name);
+    }
+    return created;
+  }
+
+  get taughtLessonsFolderPath(): string {
+    return joinVaultPath(this.curriculumFolderPath, "실시 차시");
+  }
+
+  private taughtLessonPath(entry: TaughtLessonEntry): string {
+    return joinVaultPath(
+      this.taughtLessonsFolderPath,
+      taughtLessonSubfolder(entry),
+      taughtLessonFileName(entry)
+    );
+  }
+
+  filterMissingTaughtLessons(entries: TaughtLessonEntry[]): TaughtLessonEntry[] {
+    return entries.filter(
+      (entry) => !this.app.vault.getAbstractFileByPath(this.taughtLessonPath(entry))
+    );
+  }
+
+  /** 실시 차시 확정 노트를 월별 폴더에 생성한다. 기존 노트는 절대 다시 쓰지 않는다. */
+  async createTaughtLessonNotes(entries: TaughtLessonEntry[]): Promise<number> {
+    this.assertWritableClass();
+    const className = this.getSettings().className;
+    const folders = new Set(entries.map((entry) =>
+      joinVaultPath(this.taughtLessonsFolderPath, taughtLessonSubfolder(entry))
+    ));
+    for (const folder of folders) await this.ensureFolder(folder);
+    let created = 0;
+    for (const entry of entries) {
+      const path = this.taughtLessonPath(entry);
+      if (this.app.vault.getAbstractFileByPath(path)) continue;
+      await this.app.vault.create(path, taughtLessonMarkdown(entry, className));
+      created++;
+    }
+    return created;
   }
 
   get basesFolderPath(): string {
     return joinVaultPath(this.curriculumFolderPath, "뷰");
   }
 
-  /** 일체화 개체(단원·수업일지·과제·행사·학생부 근거)의 Bases 보기를 스캐폴드한다. */
+  /** 일체화 Bases 보기를 스캐폴드한다. 정의는 entity-notes.ts BASES_VIEW_FILES가 단일 진실. */
   async ensureBasesViews(): Promise<string[]> {
     this.assertWritableClass();
     await this.ensureFolder(this.basesFolderPath);
     const created: string[] = [];
-    const files: Array<[string, string]> = [
-      [
-        "통합 단원.base",
-        [
-          "filters:",
-          "  and:",
-          "    - 'file.hasTag(\"class-management/curriculum-unit\")'",
-          "views:",
-          "  - type: table",
-          '    name: "단원별"',
-          "    groupBy:",
-          "      property: subject",
-          "      direction: ASC",
-          "    order:",
-          "      - file.name",
-          "      - unitName",
-          "      - curriculumStatus",
-          "      - plannedHours",
-          "      - alignmentScore",
-          ""
-        ].join("\n")
-      ],
-      [
-        "수업일지.base",
-        [
-          "filters:",
-          "  and:",
-          "    - 'file.hasTag(\"class-management/curriculum-lesson\")'",
-          "views:",
-          "  - type: table",
-          '    name: "단원별 차시"',
-          "    groupBy:",
-          "      property: curriculumUnitTitle",
-          "      direction: ASC",
-          "    order:",
-          "      - file.name",
-          "      - date",
-          "      - subject",
-          "      - lessonStatus",
-          "      - conceptInquiryPhase",
-          ""
-        ].join("\n")
-      ],
-      [
-        "과제.base",
-        [
-          "filters:",
-          "  and:",
-          "    - 'file.hasTag(\"class-management/assignment\")'",
-          "views:",
-          "  - type: table",
-          '    name: "평가 과제"',
-          "    order:",
-          "      - file.name",
-          "      - date",
-          "      - curriculumUnitTitle",
-          "  - type: table",
-          '    name: "단원 연계만"',
-          "    filters:",
-          "      and:",
-          "        - '!curriculumUnitId.isEmpty()'",
-          "    groupBy:",
-          "      property: curriculumUnitTitle",
-          "      direction: ASC",
-          "    order:",
-          "      - file.name",
-          "      - date",
-          ""
-        ].join("\n")
-      ],
-      [
-        "행사.base",
-        [
-          "filters:",
-          "  and:",
-          "    - 'file.hasTag(\"class-management/school-event\")'",
-          "views:",
-          "  - type: table",
-          '    name: "행사 일지"',
-          "    order:",
-          "      - file.name",
-          "      - date",
-          "      - eventType",
-          "      - subject",
-          ""
-        ].join("\n")
-      ],
-      [
-        "학생부 근거.base",
-        [
-          "filters:",
-          "  and:",
-          "    - 'file.hasTag(\"class-management/record\")'",
-          "    - '!schoolRecordArea.isEmpty()'",
-          "views:",
-          "  - type: table",
-          '    name: "영역별"',
-          "    groupBy:",
-          "      property: schoolRecordArea",
-          "      direction: ASC",
-          "    order:",
-          "      - file.name",
-          "      - studentName",
-          "      - date",
-          "      - subject",
-          "      - reviewStatus",
-          "      - curriculumUnitTitle",
-          "  - type: table",
-          '    name: "검토 대기"',
-          "    filters:",
-          "      and:",
-          "        - 'reviewStatus == \"raw\"'",
-          "    order:",
-          "      - file.name",
-          "      - studentName",
-          "      - date",
-          ""
-        ].join("\n")
-      ]
-    ];
-    for (const [name, content] of files) {
+    for (const [name, content] of BASES_VIEW_FILES) {
       const path = joinVaultPath(this.basesFolderPath, name);
       if (this.app.vault.getAbstractFileByPath(path)) continue;
       await this.app.vault.create(path, content);

@@ -117,6 +117,21 @@ export interface AssignmentSummary {
   unitPath?: string;
 }
 
+export interface TaughtLessonEntry {
+  date: string;
+  period: number;
+  subject: string;
+  semester: string;
+  source: "base" | "override" | "event";
+  unit: string;
+  topic: string;
+  hours: number;
+  standard: string;
+  order: number;
+  /** 같은 날짜·교시의 수업일지 위키링크 (없으면 빈 문자열) */
+  lessonLog: string;
+}
+
 export interface CurriculumUnitLink {
   id: string;
   title: string;
