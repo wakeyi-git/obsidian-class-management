@@ -58,12 +58,6 @@
   font-weight: 700;
 }
 
-.class-management-curriculum-filters {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
 .class-management-curriculum-view {
   overflow-x: auto;
 }

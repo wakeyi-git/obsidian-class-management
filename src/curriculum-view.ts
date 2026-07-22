@@ -9,6 +9,7 @@ import {
   taughtHoursForUnit
 } from "@core/curriculum";
 import { localDate } from "@core/utils";
+import { filterLabel } from "@core/dom";
 import type ClassManagementPlugin from "./main";
 import type { CurriculumLesson, CurriculumUnit, CurriculumUnitStatus, RecordEntry } from "@core/types";
 
@@ -16,7 +17,9 @@ export const CURRICULUM_VIEW_TYPE = "class-management-curriculum";
 
 export class CurriculumView extends ItemView {
   private subjectFilter = "";
-  private statusFilter = "";
+  private query = "";
+  private typeFilter: "" | "regular" | "project" = "";
+  private incompleteOnly = false;
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: ClassManagementPlugin) {
     super(leaf);
@@ -52,7 +55,13 @@ export class CurriculumView extends ItemView {
     this.renderFilters(container);
     const filtered = units.filter((unit) =>
       (!this.subjectFilter || unit.subject === this.subjectFilter) &&
-      (!this.statusFilter || unit.status === this.statusFilter)
+      (!this.typeFilter ||
+        (this.typeFilter === "project") === unit.conceptInquiryEnabled) &&
+      (!this.incompleteOnly || auditCurriculumAlignment(unit).score < 100) &&
+      (!this.query.trim() ||
+        `${unit.subject} ${unit.unitName} ${unit.theme} ${unit.achievementStandards}`
+          .toLocaleLowerCase("ko")
+          .includes(this.query.trim().toLocaleLowerCase("ko")))
     );
     this.renderUnits(container, filtered, lessons, records);
   }
@@ -118,8 +127,19 @@ export class CurriculumView extends ItemView {
   }
 
   private renderFilters(container: HTMLElement): void {
-    const filters = container.createDiv({ cls: "class-management-curriculum-filters" });
-    const subject = filters.createEl("select");
+    const filters = container.createDiv({ cls: "class-management-filter-bar" });
+
+    const searchLabel = filterLabel(filters, "검색");
+    const search = searchLabel.createEl("input", { attr: { placeholder: "예: 곱셈, 4과05-01" } });
+    search.type = "search";
+    search.value = this.query;
+    search.addEventListener("input", () => {
+      this.query = search.value;
+      void this.refresh();
+    });
+
+    const subjectLabel = filterLabel(filters, "교과");
+    const subject = subjectLabel.createEl("select");
     subject.createEl("option", { text: "모든 교과", value: "" });
     this.plugin.settings.schoolSubjects.forEach((entry) => subject.createEl("option", { text: entry, value: entry }));
     subject.value = this.subjectFilter;
@@ -127,12 +147,24 @@ export class CurriculumView extends ItemView {
       this.subjectFilter = subject.value;
       void this.refresh();
     });
-    const status = filters.createEl("select");
-    status.createEl("option", { text: "모든 상태", value: "" });
-    Object.entries(CURRICULUM_UNIT_STATUS_LABELS).forEach(([value, label]) => status.createEl("option", { text: label, value }));
-    status.value = this.statusFilter;
-    status.addEventListener("change", () => {
-      this.statusFilter = status.value;
+
+    const typeLabel = filterLabel(filters, "구분");
+    const type = typeLabel.createEl("select");
+    type.createEl("option", { text: "전체", value: "" });
+    type.createEl("option", { text: "일반", value: "regular" });
+    type.createEl("option", { text: "프로젝트", value: "project" });
+    type.value = this.typeFilter;
+    type.addEventListener("change", () => {
+      this.typeFilter = type.value as "" | "regular" | "project";
+      void this.refresh();
+    });
+
+    const incompleteLabel = filterLabel(filters, "연결도 미완만");
+    const incomplete = incompleteLabel.createEl("input");
+    incomplete.type = "checkbox";
+    incomplete.checked = this.incompleteOnly;
+    incomplete.addEventListener("change", () => {
+      this.incompleteOnly = incomplete.checked;
       void this.refresh();
     });
   }
