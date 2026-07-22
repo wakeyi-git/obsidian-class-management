@@ -1,5 +1,6 @@
 import { ItemView, Modal, Notice, Setting, WorkspaceLeaf } from "obsidian";
 import { frequencyLabel } from "@core/routine";
+import { dayStatus } from "@core/academic-calendar";
 import type ClassManagementPlugin from "./main";
 import type { RoutineFrequency, RoutineInstance, RoutineTemplate } from "@core/types";
 import { localDate } from "@core/utils";
@@ -8,6 +9,7 @@ export const ROUTINE_VIEW_TYPE = "class-management-routine-view";
 
 export class RoutineView extends ItemView {
   private date = localDate();
+  private isClassDay: boolean | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -34,6 +36,8 @@ export class RoutineView extends ItemView {
 
   async refresh(): Promise<void> {
     const templates = await this.plugin.repository.getRoutineTemplates();
+    const calendar = await this.plugin.repository.getAcademicCalendar();
+    this.isClassDay = calendar ? dayStatus(calendar, this.date).kind === "class" : null;
     const existing = this.plugin.repository.getRoutineInstanceSummaries()
       .find((summary) => summary.date === this.date);
     const instance = existing
@@ -90,7 +94,9 @@ export class RoutineView extends ItemView {
       defaults.addEventListener("click", () => void this.createDefaults());
     } else if (!instance || instance.items.length === 0) {
       checklist.createEl("p", {
-        text: "이 날짜에 실행할 루틴이 없습니다.",
+        text: this.isClassDay === false
+          ? "주말·휴업일·방학에는 루틴을 만들지 않습니다."
+          : "이 날짜에 실행할 루틴이 없습니다.",
         cls: "setting-item-description"
       });
     } else {

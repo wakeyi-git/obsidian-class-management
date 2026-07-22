@@ -26,7 +26,7 @@ import {
   schoolRecordEvidenceBody,
   schoolRecordEvidenceFrontmatter
 } from "@core/school-record-evidence";
-import { academicCalendarMarkdown, parseAcademicCalendar } from "@core/academic-calendar";
+import { academicCalendarMarkdown, dayStatus, parseAcademicCalendar } from "@core/academic-calendar";
 import {
   baseTimetableMarkdown,
   parseBaseTimetable,
@@ -855,6 +855,10 @@ export class ClassRepository {
     if (existing instanceof TFile) return this.loadRoutineInstance(existing, date);
 
     this.assertWritableClass();
+
+    // 루틴은 수업일에만 자동 생성한다 — 주말·휴업일·방학 제외 (학사일정이 없으면 기존 동작 유지).
+    const calendar = await this.getAcademicCalendar();
+    if (calendar && dayStatus(calendar, date).kind !== "class") return null;
 
     const dateObject = new Date(`${date}T00:00:00`);
     const templates = (await this.getRoutineTemplates()).filter((template) =>
