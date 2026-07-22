@@ -597,17 +597,13 @@ export default class ClassManagementPlugin extends Plugin {
     ).open();
   }
 
-  async openLessonInspector(): Promise<void> {
+  async openLessonInspector(date?: string, period?: number): Promise<void> {
     const leaf = await this.ensureRightView(LESSON_INSPECTOR_VIEW_TYPE);
     if (!leaf) return;
     await this.app.workspace.revealLeaf(leaf);
-  }
-
-  /** 시간표 교시 클릭 시 호출 — 차시 인스펙터가 열려 있을 때만 조용히 갱신한다. */
-  updateLessonInspector(date: string, period: number): void {
-    const leaf = this.app.workspace.getLeavesOfType(LESSON_INSPECTOR_VIEW_TYPE)[0];
-    if (!leaf || !(leaf.view instanceof LessonInspectorView)) return;
-    void leaf.view.setSlot(date, period);
+    if (date && period !== undefined && leaf.view instanceof LessonInspectorView) {
+      await leaf.view.setSlot(date, period);
+    }
   }
 
   async openNavigator(): Promise<void> {

@@ -1,4 +1,4 @@
-import { Modal, Notice, Setting } from "obsidian";
+import { Menu, Modal, Notice, Setting } from "obsidian";
 import { REMOVED_PERIOD_SUBJECT } from "./timetable";
 import type ClassManagementPlugin from "./main";
 
@@ -11,6 +11,100 @@ export interface TimetableCellContext {
   isRemoved: boolean;
   subjects: string[];
   pinnedRowLabel: string;
+}
+
+/** 시간표 칸 우클릭 메뉴 — 과목 바로 변경·수업 삭제·변경 제거·진도 고정, 상세 입력은 편집 모달로. */
+export function showTimetableCellMenu(
+  plugin: ClassManagementPlugin,
+  event: MouseEvent,
+  context: TimetableCellContext
+): void {
+  const run = (promise: Promise<void>, fallback: string): void => {
+    promise.catch((error: unknown) =>
+      new Notice(error instanceof Error ? error.message : fallback)
+    );
+  };
+  const menu = new Menu();
+  const current = context.currentSubject.trim();
+  const subjects = [...context.subjects];
+  if (current && !subjects.includes(current)) subjects.unshift(current);
+  for (const subject of subjects) {
+    menu.addItem((item) =>
+      item
+        .setTitle(subject)
+        .setChecked(subject === current)
+        .onClick(() => {
+          if (subject === current) return;
+          run(
+            plugin.saveTimetableOverride({
+              date: context.date,
+              period: context.period,
+              subject,
+              reason: ""
+            }),
+            "시간표 변경 저장에 실패했습니다."
+          );
+        })
+    );
+  }
+  menu.addSeparator();
+  if (current && !context.isRemoved) {
+    menu.addItem((item) =>
+      item
+        .setTitle("수업 삭제 (이날만)")
+        .setIcon("trash-2")
+        .setWarning(true)
+        .onClick(() =>
+          run(
+            plugin.saveTimetableOverride({
+              date: context.date,
+              period: context.period,
+              subject: REMOVED_PERIOD_SUBJECT,
+              reason: "교시 삭제"
+            }),
+            "교시 삭제에 실패했습니다."
+          )
+        )
+    );
+  }
+  if (context.hasOverride) {
+    menu.addItem((item) =>
+      item
+        .setTitle("변경 제거 (원래대로)")
+        .setIcon("rotate-ccw")
+        .onClick(() =>
+          run(
+            plugin.removeTimetableOverrideAt(context.date, context.period),
+            "시간표 변경 제거에 실패했습니다."
+          )
+        )
+    );
+  }
+  if (current && !context.isRemoved) {
+    menu.addItem((item) =>
+      item
+        .setTitle(
+          context.pinnedRowLabel
+            ? `진도 고정 (📌 ${context.pinnedRowLabel})`
+            : "진도 고정"
+        )
+        .setIcon("pin")
+        .onClick(() =>
+          run(
+            plugin.pinProgressRowAt(context.date, context.period, current),
+            "진도 고정에 실패했습니다."
+          )
+        )
+    );
+  }
+  menu.addSeparator();
+  menu.addItem((item) =>
+    item
+      .setTitle("편집…")
+      .setIcon("pencil")
+      .onClick(() => new TimetableCellModal(plugin, context).open())
+  );
+  menu.showAtMouseEvent(event);
 }
 
 export class TimetableCellModal extends Modal {

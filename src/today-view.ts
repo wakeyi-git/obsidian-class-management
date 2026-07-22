@@ -3,7 +3,7 @@ import { dayStatus, semesterForDate, weekdayLabel } from "./academic-calendar";
 import { resolveDay } from "./timetable";
 import { buildAssignedSlotContents } from "./progress";
 import { collectSubjectOptions } from "./subject-options";
-import { TimetableCellModal } from "./timetable-cell-modal";
+import { showTimetableCellMenu, type TimetableCellContext } from "./timetable-cell-modal";
 import { localDate } from "./utils";
 import type ClassManagementPlugin from "./main";
 import type { AcademicCalendar, ProgressRow, SchoolEvent } from "./types";
@@ -134,26 +134,33 @@ export class TodayView extends ItemView {
         row.addClass("is-editable");
         row.setAttribute("role", "button");
         row.setAttribute("tabindex", "0");
-        row.setAttribute("aria-label", `${today} ${period.period}교시 ${period.subject} 편집`);
-        const open = (): void => {
-          this.plugin.updateLessonInspector(today, period.period);
-          new TimetableCellModal(this.plugin, {
-            date: today,
-            period: period.period,
-            currentSubject: period.subject,
-            hasOverride: period.source === "override",
-            isEvent: period.source === "event",
-            isRemoved: false,
-            subjects,
-            pinnedRowLabel: ""
-          }).open();
+        row.setAttribute(
+          "aria-label",
+          `${today} ${period.period}교시 ${period.subject} — 클릭: 차시 정보, 우클릭: 변경 메뉴`
+        );
+        const context: TimetableCellContext = {
+          date: today,
+          period: period.period,
+          currentSubject: period.subject,
+          hasOverride: period.source === "override",
+          isEvent: period.source === "event",
+          isRemoved: false,
+          subjects,
+          pinnedRowLabel: ""
         };
-        row.addEventListener("click", open);
+        const inspect = (): void => {
+          void this.plugin.openLessonInspector(today, period.period);
+        };
+        row.addEventListener("click", inspect);
         row.addEventListener("keydown", (event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            open();
+            inspect();
           }
+        });
+        row.addEventListener("contextmenu", (event) => {
+          event.preventDefault();
+          showTimetableCellMenu(this.plugin, event, context);
         });
       }
     }

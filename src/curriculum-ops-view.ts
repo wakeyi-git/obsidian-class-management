@@ -1,5 +1,5 @@
 import { ItemView, TFile, WorkspaceLeaf } from "obsidian";
-import { TimetableCellModal } from "./timetable-cell-modal";
+import { showTimetableCellMenu, type TimetableCellContext } from "./timetable-cell-modal";
 import {
   availableHours,
   countClassDays,
@@ -264,7 +264,7 @@ export class CurriculumOpsView extends ItemView {
                 isEvent: false,
                 isRemoved: true,
                 subjects,
-                label: `${day.date} ${period}교시 삭제됨 · 되돌리기`
+                label: `${day.date} ${period}교시 삭제됨 — 우클릭: 복원 메뉴`
               });
             } else {
               cell.addClass("is-empty");
@@ -277,7 +277,7 @@ export class CurriculumOpsView extends ItemView {
                 isEvent: false,
                 isRemoved: false,
                 subjects,
-                label: `${day.date} ${period}교시 수업 추가`
+                label: `${day.date} ${period}교시 — 우클릭: 수업 추가 메뉴`
               });
             }
           }
@@ -315,7 +315,7 @@ export class CurriculumOpsView extends ItemView {
             pinnedRowLabel: pinnedHere && content
               ? `${content.order}. ${content.topic}`
               : "",
-            label: `${day.date} ${period}교시 ${resolved.subject || "빈 교시"} 과목 변경`
+            label: `${day.date} ${period}교시 ${resolved.subject || "빈 교시"} — 클릭: 차시 정보, 우클릭: 변경 메뉴`
           });
         }
       });
@@ -340,25 +340,30 @@ export class CurriculumOpsView extends ItemView {
     cell.setAttribute("role", "button");
     cell.setAttribute("tabindex", "0");
     cell.setAttribute("aria-label", options.label);
-    const openEditor = (): void => {
-      this.plugin.updateLessonInspector(options.date, options.period);
-      new TimetableCellModal(this.plugin, {
-        date: options.date,
-        period: options.period,
-        currentSubject: options.currentSubject,
-        hasOverride: options.hasOverride,
-        isEvent: options.isEvent,
-        isRemoved: options.isRemoved,
-        subjects: options.subjects,
-        pinnedRowLabel: options.pinnedRowLabel ?? ""
-      }).open();
+    cell.setAttribute("title", options.label);
+    const context: TimetableCellContext = {
+      date: options.date,
+      period: options.period,
+      currentSubject: options.currentSubject,
+      hasOverride: options.hasOverride,
+      isEvent: options.isEvent,
+      isRemoved: options.isRemoved,
+      subjects: options.subjects,
+      pinnedRowLabel: options.pinnedRowLabel ?? ""
     };
-    cell.addEventListener("click", openEditor);
+    const inspect = (): void => {
+      void this.plugin.openLessonInspector(options.date, options.period);
+    };
+    cell.addEventListener("click", inspect);
     cell.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        openEditor();
+        inspect();
       }
+    });
+    cell.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      showTimetableCellMenu(this.plugin, event, context);
     });
   }
 
