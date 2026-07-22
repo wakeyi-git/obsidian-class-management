@@ -459,6 +459,8 @@ export interface AcademicCalendar {
 export interface HoursStandardEntry {
   subject: string;
   hours: number;
+  /** 구분(교과·창체 등) — 구형 2열 표는 이름으로 추정한다. */
+  category: string;
 }
 
 export interface HoursStandard {
@@ -545,12 +547,25 @@ export interface ProgressAssignment {
 }
 
 export interface HoursAuditRow {
+  /** subject=개별 행, subtotal=구분 소계, total=총계. */
+  kind: "subject" | "subtotal" | "total";
   subject: string;
+  /** 기준 시수 노트의 구분(교과·창체 등). */
+  category: string;
   standardHours: number;
+  planned1: number;
+  taught1: number;
+  planned2: number;
+  taught2: number;
   plannedHours: number;
   taughtHours: number;
   deltaPercent: number;
   status: "ok" | "over" | "under" | "missing";
+}
+
+export interface SemesterHours {
+  planned: Record<string, number>;
+  taught: Record<string, number>;
 }
 
 export interface WeeklyPlanCell {

@@ -1904,6 +1904,13 @@
 }
 
 /* 시수 점검: 교과·영역 열만 넓게, 숫자 열은 균등 */
+.class-management-ops-audit-table tr.is-subtotal td,
+.class-management-ops-audit-table tr.is-total td {
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  font-weight: 600;
+}
+
 .class-management-ops-audit-table th:first-child,
 .class-management-ops-audit-table td:first-child {
   width: 26%;

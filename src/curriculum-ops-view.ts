@@ -22,8 +22,8 @@ import type {
   HoursAuditRow,
   HoursStandard,
   ProgressRow,
-  ProgressTable
-} from "@core/types";
+  ProgressTable,
+  SemesterHours } from "@core/types";
 
 export const CURRICULUM_OPS_VIEW_TYPE = "class-management-curriculum-ops";
 
@@ -393,8 +393,10 @@ export class CurriculumOpsView extends ItemView {
       return;
     }
 
-    const planned: Record<string, number> = {};
-    const elapsed: Record<string, number> = {};
+    const semesterHours: Record<string, SemesterHours> = {
+      "1학기": { planned: {}, taught: {} },
+      "2학기": { planned: {}, taught: {} }
+    };
     const today = localDate();
     const missingSemesters: string[] = [];
     for (const semester of ["1학기", "2학기"]) {
@@ -405,43 +407,42 @@ export class CurriculumOpsView extends ItemView {
         missingSemesters.push(semester);
         continue;
       }
-      const hours = plannedHoursBySubject(calendar, semesterTimetable, range.from, range.to);
-      for (const [subject, count] of Object.entries(hours)) {
-        planned[subject] = (planned[subject] ?? 0) + count;
-      }
+      const bucket = semesterHours[semester];
+      if (!bucket) continue;
+      bucket.planned = plannedHoursBySubject(calendar, semesterTimetable, range.from, range.to);
       if (today >= range.from) {
         const elapsedTo = today < range.to ? today : range.to;
-        const done = plannedHoursBySubject(calendar, semesterTimetable, range.from, elapsedTo);
-        for (const [subject, count] of Object.entries(done)) {
-          elapsed[subject] = (elapsed[subject] ?? 0) + count;
-        }
+        bucket.taught = plannedHoursBySubject(calendar, semesterTimetable, range.from, elapsedTo);
       }
     }
 
     section.createEl("p", {
       cls: "class-management-ops-hint",
-      text: "실행은 오늘까지 시간표 기준으로 운영된 시수입니다. 시간표 변경·행사·교시 삭제가 반영됩니다."
+      text: "실행은 오늘까지 시간표 기준으로 운영된 시수입니다. 시간표 변경·행사·교시 삭제가 반영됩니다. 행 순서·구분(소계 묶음)은 기준 시수 노트의 표를 따릅니다."
     });
-    const rows = buildHoursAudit(standard, planned, elapsed);
+    const rows = buildHoursAudit(standard, semesterHours["1학기"], semesterHours["2학기"]);
     if (missingSemesters.length > 0) {
       section.createEl("p", {
         cls: "class-management-ops-hint",
-        text: `${missingSemesters.join("·")} 기초시간표가 없어 해당 학기 편성분은 제외된 연간 집계입니다.`
+        text: `${missingSemesters.join("·")} 기초시간표가 없어 해당 학기 편성·실행은 0으로 표시됩니다.`
       });
     }
 
     const table = section.createEl("table", { cls: "class-management-ops-audit-table" });
     const head = table.createEl("thead").createEl("tr");
-    for (const label of ["교과·영역", "기준", "편성", "실행(오늘까지)", "증감", "상태"]) {
+    for (const label of ["교과·영역", "기준", "1학기 편성", "1학기 실행", "2학기 편성", "2학기 실행", "편성 합", "증감", "상태"]) {
       head.createEl("th", { text: label });
     }
     const body = table.createEl("tbody");
     for (const row of rows) {
-      const line = body.createEl("tr", { cls: `is-${row.status}` });
+      const line = body.createEl("tr", { cls: `is-${row.status} is-${row.kind}` });
       line.createEl("td", { text: row.subject });
       line.createEl("td", { text: row.standardHours ? String(row.standardHours) : "—" });
+      line.createEl("td", { text: String(row.planned1) });
+      line.createEl("td", { text: String(row.taught1) });
+      line.createEl("td", { text: String(row.planned2) });
+      line.createEl("td", { text: String(row.taught2) });
       line.createEl("td", { text: String(row.plannedHours) });
-      line.createEl("td", { text: String(row.taughtHours) });
       line.createEl("td", {
         text: row.standardHours ? `${row.deltaPercent > 0 ? "+" : ""}${row.deltaPercent}%` : "—"
       });
