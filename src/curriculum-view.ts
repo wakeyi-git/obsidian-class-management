@@ -20,6 +20,12 @@ export class CurriculumView extends ItemView {
   private query = "";
   private typeFilter: "" | "regular" | "project" = "";
   private incompleteOnly = false;
+  private boardHost: HTMLElement | null = null;
+  private data: {
+    units: CurriculumUnit[];
+    lessons: CurriculumLesson[];
+    records: RecordEntry[];
+  } | null = null;
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: ClassManagementPlugin) {
     super(leaf);
@@ -53,6 +59,17 @@ export class CurriculumView extends ItemView {
     this.renderSummary(container, units, lessons, records);
     this.renderCycle(container, units);
     this.renderFilters(container);
+    // 필터 변경 시 입력창(한글 조합·포커스)을 보존하려고 보드 영역만 다시 그린다.
+    this.boardHost = container.createDiv();
+    this.data = { units, lessons, records };
+    this.renderBoard();
+  }
+
+  private renderBoard(): void {
+    if (!this.boardHost || !this.data) return;
+    this.boardHost.empty();
+    const { units, lessons, records } = this.data;
+    const container = this.boardHost;
     const filtered = units.filter((unit) =>
       (!this.subjectFilter || unit.subject === this.subjectFilter) &&
       (!this.typeFilter ||
@@ -135,7 +152,7 @@ export class CurriculumView extends ItemView {
     search.value = this.query;
     search.addEventListener("input", () => {
       this.query = search.value;
-      void this.refresh();
+      this.renderBoard();
     });
 
     const subjectLabel = filterLabel(filters, "교과");
@@ -145,7 +162,7 @@ export class CurriculumView extends ItemView {
     subject.value = this.subjectFilter;
     subject.addEventListener("change", () => {
       this.subjectFilter = subject.value;
-      void this.refresh();
+      this.renderBoard();
     });
 
     const typeLabel = filterLabel(filters, "구분");
@@ -156,7 +173,7 @@ export class CurriculumView extends ItemView {
     type.value = this.typeFilter;
     type.addEventListener("change", () => {
       this.typeFilter = type.value as "" | "regular" | "project";
-      void this.refresh();
+      this.renderBoard();
     });
 
     const incompleteLabel = filterLabel(filters, "연결도 미완만");
@@ -165,7 +182,7 @@ export class CurriculumView extends ItemView {
     incomplete.checked = this.incompleteOnly;
     incomplete.addEventListener("change", () => {
       this.incompleteOnly = incomplete.checked;
-      void this.refresh();
+      this.renderBoard();
     });
   }
 

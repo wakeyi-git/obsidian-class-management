@@ -19,6 +19,8 @@ export class TaskView extends ItemView {
   private query = "";
   private project = "";
   private context = "";
+  private boardHost: HTMLElement | null = null;
+  private data: { tasks: TaskEntry[]; notices: NoticeSheet[] } | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -63,6 +65,16 @@ export class TaskView extends ItemView {
     add.addEventListener("click", () => this.plugin.openTaskModal());
 
     this.renderFilters(tasks, notices);
+    // 필터 변경 시 입력창(한글 조합·포커스)을 보존하려고 보드 영역만 다시 그린다.
+    this.boardHost = this.contentEl.createDiv();
+    this.data = { tasks, notices };
+    this.renderBoard();
+  }
+
+  private renderBoard(): void {
+    if (!this.boardHost || !this.data) return;
+    this.boardHost.empty();
+    const { tasks, notices } = this.data;
     const normalized = this.query.trim().toLocaleLowerCase("ko");
     const filtered = tasks.filter((task) =>
       (!normalized || `${task.title} ${task.project} ${task.context} ${task.studentName}`
@@ -75,14 +87,14 @@ export class TaskView extends ItemView {
       notice.marks.some((mark) => mark.status !== "회신 완료")
     );
     if (filtered.length === 0 && pendingNotices.length === 0) {
-      this.contentEl.createEl("p", {
+      this.boardHost.createEl("p", {
         cls: "class-management-today-hint",
         text: tasks.length === 0
           ? "할 일이 없습니다. 오른쪽 위 `할 일 수집`으로 첫 항목을 추가하세요."
           : "필터에 맞는 할 일이 없습니다. 검색어나 필터를 지워 보세요."
       });
     }
-    const board = this.contentEl.createDiv({ cls: "class-management-task-board" });
+    const board = this.boardHost.createDiv({ cls: "class-management-task-board" });
     TASK_COLUMNS.forEach((column) => {
       const columnEl = board.createDiv({ cls: `class-management-task-column is-${column.status}` });
       const matching = filtered.filter((task) => task.status === column.status);
@@ -112,7 +124,7 @@ export class TaskView extends ItemView {
     search.value = this.query;
     search.addEventListener("input", () => {
       this.query = search.value;
-      this.render(tasks, notices);
+      this.renderBoard();
     });
     const projectLabel = filterLabel(filters, "프로젝트");
     const project = projectLabel.createEl("select");
@@ -121,7 +133,7 @@ export class TaskView extends ItemView {
     project.value = this.project;
     project.addEventListener("change", () => {
       this.project = project.value;
-      this.render(tasks, notices);
+      this.renderBoard();
     });
     const contextLabel = filterLabel(filters, "컨텍스트");
     const context = contextLabel.createEl("select");
@@ -130,7 +142,7 @@ export class TaskView extends ItemView {
     context.value = this.context;
     context.addEventListener("change", () => {
       this.context = context.value;
-      this.render(tasks, notices);
+      this.renderBoard();
     });
   }
 
