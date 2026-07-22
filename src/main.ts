@@ -28,9 +28,11 @@ import { emptyCurriculumUnit, taughtHoursForUnit } from "@core/curriculum";
 import {
   achievementStandardMarkdown,
   extractStandardCodes,
+  linkifyStandardCell,
   resolveAssessmentDate,
   unitScaffoldsFromProgress
 } from "@core/planning";
+import { createTargetedSnapshot } from "./maintenance";
 import { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } from "@core/weekly-plan";
 import { localDate } from "@core/utils";
 import {
@@ -1080,21 +1082,32 @@ export default class ClassManagementPlugin extends Plugin {
   async linkifyProgressStandardCodes(): Promise<void> {
     if (!this.canWriteActiveClass()) return;
     try {
-      let changedRows = 0;
-      let changedTables = 0;
+      const targets: ProgressTable[] = [];
       for (const semester of ["1학기", "2학기"]) {
         for (const table of await this.repository.getProgressTables(semester)) {
-          const changed = await this.repository.linkifyProgressStandards(table);
-          if (changed > 0) {
-            changedRows += changed;
-            changedTables += 1;
+          if (table.rows.some((row) => linkifyStandardCell(row.standard) !== row.standard)) {
+            targets.push(table);
           }
         }
       }
+      if (targets.length === 0) {
+        new Notice("바꿀 성취기준 표기가 없습니다. 이미 모두 위키링크입니다.");
+        return;
+      }
+      // 표 전체를 다시 쓰므로 변경 전 원본을 자동 스냅숏으로 남긴다 (UIUX §5).
+      await createTargetedSnapshot(
+        this.app,
+        this.repository,
+        this.settings,
+        targets.map((table) => table.file),
+        "진도표 성취기준 링크화"
+      );
+      let changedRows = 0;
+      for (const table of targets) {
+        changedRows += await this.repository.linkifyProgressStandards(table);
+      }
       new Notice(
-        changedRows > 0
-          ? `진도표 ${changedTables}개에서 ${changedRows}행의 성취기준을 위키링크로 바꿨습니다.`
-          : "바꿀 성취기준 표기가 없습니다. 이미 모두 위키링크입니다."
+        `진도표 ${targets.length}개에서 ${changedRows}행의 성취기준을 위키링크로 바꿨습니다 · 변경 전 스냅숏 저장.`
       );
     } catch (error) {
       new Notice(error instanceof Error ? error.message : "성취기준 링크화에 실패했습니다.");
@@ -1262,6 +1275,14 @@ export default class ClassManagementPlugin extends Plugin {
         new Notice("학사일정 노트의 학기 시작·종료일을 확인하세요.");
         return;
       }
+      // 수백 행을 다시 쓰므로 변경 전 원본을 자동 스냅숏으로 남긴다 (UIUX §5).
+      await createTargetedSnapshot(
+        this.app,
+        this.repository,
+        this.settings,
+        tables.map((table) => table.file),
+        "진도 자동 배정"
+      );
       const issues: string[] = [];
       for (const table of tables) {
         const slots = subjectSlots(calendar, timetable, range.from, range.to, table.subject);
@@ -1271,8 +1292,8 @@ export default class ClassManagementPlugin extends Plugin {
       }
       new Notice(
         issues.length > 0
-          ? `${this.settings.semester} 진도 배정 완료. 확인할 항목 ${issues.length}건은 각 진도표의 배정 열을 확인하세요.`
-          : `${this.settings.semester} 진도표 ${tables.length}개의 배정을 완료했습니다.`
+          ? `${this.settings.semester} 진도 배정 완료 · 변경 전 스냅숏 저장. 확인할 항목 ${issues.length}건은 각 진도표의 배정 열을 확인하세요.`
+          : `${this.settings.semester} 진도표 ${tables.length}개의 배정을 완료했습니다 · 변경 전 스냅숏 저장.`
       );
       await this.refreshViews();
     } catch (error) {
