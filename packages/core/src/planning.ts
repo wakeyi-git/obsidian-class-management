@@ -52,6 +52,23 @@ export function wikiLinkTarget(link: string): string {
   return (pipe >= 0 ? inner.slice(0, pipe) : inner).trim();
 }
 
+export interface PdfPageLink {
+  /** "과학3-2_지도서.pdf#page=5" 형태 — openLinkText에 그대로 쓴다. */
+  target: string;
+  label: string;
+}
+
+/** 텍스트에서 PDF 쪽 딥링크([[…\.pdf#page=N\|라벨]])를 순서대로 추출한다(중복 제거). */
+export function pdfPageLinks(text: string): PdfPageLink[] {
+  const links: PdfPageLink[] = [];
+  for (const match of text.matchAll(/\[\[([^\]|]+\.pdf#page=\d+)(?:\\?\|([^\]]+))?\]\]/g)) {
+    const target = (match[1] ?? "").trim();
+    if (links.some((link) => link.target === target)) continue;
+    links.push({ target, label: (match[2] ?? "").trim() || "지도서" });
+  }
+  return links;
+}
+
 /** 진도표를 과목·단원별로 묶어 단원 노트 초안 재료를 만든다. 단원명이 빈 행은 제외. */
 export function unitScaffoldsFromProgress(table: Pick<ProgressTable, "rows">): UnitScaffold[] {
   const groups = new Map<string, ProgressRow[]>();

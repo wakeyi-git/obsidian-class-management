@@ -3,7 +3,7 @@ import { ItemView, Notice, WorkspaceLeaf, setIcon } from "obsidian";
 import { eventsOn, semesterForDate, weekdayLabel } from "@core/academic-calendar";
 import { resolveDay } from "@core/timetable";
 import { buildAssignedSlotContents } from "@core/progress";
-import { wikiLinkTarget, wikiLinkText } from "@core/planning";
+import { extractStandardCodes, pdfPageLinks, wikiLinkTarget, wikiLinkText } from "@core/planning";
 import { collectSubjectOptions } from "@core/subject-options";
 import { TimetableCellModal } from "./timetable-cell-modal";
 import type ClassManagementPlugin from "./main";
@@ -120,7 +120,6 @@ export class LessonInspectorView extends ItemView {
       });
       const details: Array<[string, string]> = [
         ["시수", String(row.hours)],
-        ["성취기준", row.standard],
         ["준비물", row.materials],
         ["배정", row.assigned],
         ["비고", row.note]
@@ -131,7 +130,8 @@ export class LessonInspectorView extends ItemView {
         line.createSpan({ text: label, cls: "class-management-today-badge" });
         line.createSpan({ text: value, cls: "class-management-inspector-value" });
       }
-      this.renderRowLinks(progress, row);
+      this.renderStandards(progress, row.standard);
+      this.renderRowLinks(progress, row, subject);
     }
 
     const units = repository
@@ -199,8 +199,26 @@ export class LessonInspectorView extends ItemView {
     }
   }
 
-  /** 배정 차시의 프로젝트·과제 링크를 열기 항목으로 보여 준다. */
-  private renderRowLinks(container: HTMLElement, row: ProgressRow): void {
+  /** 성취기준 코드를 클릭하면 성취기준 노트를 연다. */
+  private renderStandards(container: HTMLElement, standardCell: string): void {
+    const codes = extractStandardCodes(standardCell);
+    if (codes.length === 0) return;
+    const line = container.createDiv({ cls: "class-management-today-item is-static" });
+    line.createSpan({ text: "성취기준", cls: "class-management-today-badge" });
+    const list = line.createSpan({ cls: "class-management-inspector-value" });
+    codes.forEach((code, index) => {
+      if (index > 0) list.createSpan({ text: " " });
+      const chip = list.createSpan({ text: `[${code}]`, cls: "class-management-standard-chip" });
+      this.openable(chip, `${code} 성취기준 노트 열기`, () => {
+        const file = this.app.metadataCache.getFirstLinkpathDest(code, "");
+        if (file) void this.plugin.openFile(file);
+        else new Notice(`성취기준 노트가 없습니다. \`성취기준 노트 생성\` 명령으로 만들 수 있습니다.`);
+      });
+    });
+  }
+
+  /** 배정 차시의 프로젝트·과제·지도서 링크를 열기 항목으로 보여 준다. */
+  private renderRowLinks(container: HTMLElement, row: ProgressRow, subject: string): void {
     const links: Array<{ marker: string; cls: string; label: string; target: string }> = [];
     if (row.unitLink.trim()) {
       links.push({
@@ -228,6 +246,22 @@ export class LessonInspectorView extends ItemView {
         if (file) void this.plugin.openFile(file);
         else new Notice(`노트를 찾지 못했습니다: ${link.target}`);
       });
+    }
+
+    // 지도서 — 이 차시가 속한 단원 노트의 딥링크(단원 시작 쪽)로 연다. 차시 단위 쪽 데이터는 목차에 없다.
+    const unit = this.plugin.repository
+      .getCurriculumUnits()
+      .find((item) => item.subject === subject && item.unitName === row.unit.trim());
+    if (unit) {
+      for (const pdf of pdfPageLinks(`${unit.theme}\n${unit.unitOverview}`)) {
+        const item = container.createDiv({ cls: "class-management-today-item" });
+        const label = item.createSpan({ cls: "class-management-nav-label" });
+        label.createSpan({ text: "📖 " });
+        label.createSpan({ text: pdf.label });
+        this.openable(item, `${pdf.label} 열기 (단원 시작 쪽)`, () =>
+          void this.app.workspace.openLinkText(pdf.target, "")
+        );
+      }
     }
   }
 

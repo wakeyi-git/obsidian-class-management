@@ -1904,6 +1904,17 @@
   justify-content: center;
 }
 
+.class-management-standard-chip {
+  color: var(--text-accent);
+  cursor: pointer;
+}
+
+.class-management-standard-chip:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
 .class-management-slot-markers .is-project,
 .class-management-slot-marker-text.is-project {
   color: var(--interactive-accent);

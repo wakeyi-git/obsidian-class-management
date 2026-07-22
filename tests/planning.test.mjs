@@ -7,6 +7,7 @@ const {
   extractStandardCodes,
   linkifyStandardCell,
   parseAssessmentPlanImport,
+  pdfPageLinks,
   resolveAssessmentDate,
   standardGradeBand,
   standardSubject,
@@ -64,6 +65,17 @@ test("unitScaffoldsFromProgress: 단원 묶음·시수·기간·전개를 만든
   assert.equal(second.startDate, "");
   assert.match(second.summary, /\(배정 전\)/);
   assert.match(second.learningPlan, /미배정/);
+});
+
+test("pdfPageLinks: 지도서 딥링크를 라벨과 함께 추출한다", () => {
+  const text = "일반 단원 ([[과학3-2_지도서.pdf#page=5\\|지도서 pp.5–76]]) · 11차시\\n중복 ([[과학3-2_지도서.pdf#page=5\\|지도서 pp.5–76]])";
+  assert.deepEqual(pdfPageLinks(text), [
+    { target: "과학3-2_지도서.pdf#page=5", label: "지도서 pp.5–76" }
+  ]);
+  assert.deepEqual(pdfPageLinks("[[수학3-2_지도서.pdf#page=12]]"), [
+    { target: "수학3-2_지도서.pdf#page=12", label: "지도서" }
+  ]);
+  assert.deepEqual(pdfPageLinks("링크 없음"), []);
 });
 
 test("wikiLinkTarget: 링크 대상 경로를 얻는다", () => {
