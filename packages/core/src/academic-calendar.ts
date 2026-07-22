@@ -4,8 +4,8 @@ import type {
   ClosedDay,
   ClosedDayCategory,
   SchoolEvent,
-  SchoolEventType
-} from "./types";
+  SchoolEventType,
+  VacationRange } from "./types";
 import { splitMarkdownTableRow, unescapeTableCell, yamlString } from "./utils";
 
 export const CLOSED_DAY_CATEGORIES: readonly ClosedDayCategory[] = ["공휴일", "재량휴업일", "기타"];
@@ -48,6 +48,10 @@ export function listDates(from: string, to: string): string[] {
 export function dayStatus(calendar: AcademicCalendar, date: string): DayStatus {
   const weekday = weekdayIndex(date);
   if (weekday >= 5) return { kind: "weekend", name: "" };
+
+  // 방학 구간이 등록돼 있으면 학기 범위 안이어도 비수업일이다(행정 학기 지원).
+  const vacation = (calendar.vacations ?? []).find((range) => date >= range.from && date <= range.to);
+  if (vacation) return { kind: "vacation", name: vacation.name };
 
   const closed = calendar.closedDays.find((day) => day.date === date);
   if (closed) return { kind: "closed", name: closed.name || closed.category };
@@ -128,8 +132,21 @@ export function parseAcademicCalendar(
     semester2End: stringValue(frontmatter.semester2End),
     weekdayPeriods: parseWeekdayPeriods(frontmatter.weekdayPeriods),
     closedDays: parseClosedDays(content),
+    vacations: parseVacations(content),
     events: parseEvents(content)
   };
+}
+
+/** `## 방학` 표(시작|종료|이름) — 행정 학기(방학 포함)와 함께 쓰면 방학이 비수업일로 판정된다. */
+function parseVacations(content: string): VacationRange[] {
+  return sectionTableRows(content, "방학")
+    .map((cells): VacationRange | null => {
+      const from = normalizeDate(cells[0] ?? "");
+      const to = normalizeDate(cells[1] ?? "");
+      if (!from || !to) return null;
+      return { from, to, name: (cells[2] ?? "").trim() || "방학" };
+    })
+    .filter((range): range is VacationRange => range !== null);
 }
 
 export function parseWeekdayPeriods(value: unknown): number[] {
@@ -246,6 +263,15 @@ export function academicCalendarMarkdown(schoolYear: string, className: string):
     `# ${year} 학사일정`,
     "",
     "학기 시작·종료일과 요일별 기준 교시 수는 위 속성에서 수정합니다.",
+    "",
+    "## 방학",
+    "",
+    "행정 학기(방학 포함)로 학기 시작·종료를 적었다면 방학 구간을 여기에 등록하세요 — 시간표·시수·수업일수에서 제외됩니다.",
+    "",
+    "| 시작 | 종료 | 이름 |",
+    "| --- | --- | --- |",
+    "|  |  | 여름방학 |",
+    "|  |  | 겨울방학 |",
     "",
     "## 휴업일",
     "",

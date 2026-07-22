@@ -453,7 +453,15 @@ export interface AcademicCalendar {
   semester2End: string;
   weekdayPeriods: number[];
   closedDays: ClosedDay[];
+  /** 방학 구간(행정 학기 안의 비수업 기간) — `## 방학` 표에서 읽는다. */
+  vacations: VacationRange[];
   events: SchoolEvent[];
+}
+
+export interface VacationRange {
+  from: string;
+  to: string;
+  name: string;
 }
 
 export interface HoursStandardEntry {

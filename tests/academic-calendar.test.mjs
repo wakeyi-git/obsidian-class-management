@@ -114,3 +114,46 @@ test("weekdayPeriods: 쉼표 문자열과 숫자 배열 모두 파싱된다", ()
   assert.deepEqual(parseWeekdayPeriods("5, 6, 5, 6, 5"), [5, 6, 5, 6, 5]);
   assert.deepEqual(parseWeekdayPeriods([5, 6, 5, 5, 5]), [5, 6, 5, 5, 5]);
 });
+
+test("방학 구간: 행정 학기 안이라도 방학 표 기간은 비수업일", () => {
+  const content = [
+    "## 방학",
+    "| 시작 | 종료 | 이름 |",
+    "| --- | --- | --- |",
+    "| 2026-07-21 | 2026-08-18 | 여름방학 |",
+    ""
+  ].join("\n");
+  const calendar = parseAcademicCalendar(
+    { path: "c.md", basename: "c", stat: { ctime: 1 } },
+    {
+      schoolYear: "2026",
+      semester1Start: "2026-03-01",
+      semester1End: "2026-08-18",
+      semester2Start: "2026-08-19",
+      semester2End: "2027-02-28",
+      weekdayPeriods: "5, 6, 5, 5, 5"
+    },
+    content
+  );
+  assert.deepEqual(calendar.vacations, [
+    { from: "2026-07-21", to: "2026-08-18", name: "여름방학" }
+  ]);
+  assert.equal(dayStatus(calendar, "2026-07-22").kind, "vacation"); // 학기 범위 안 방학
+  assert.equal(dayStatus(calendar, "2026-07-20").kind, "class"); // 방학 전 수업일
+  assert.equal(dayStatus(calendar, "2026-08-19").kind, "class"); // 개학일
+});
+
+test("방학 표가 없으면 기존 파생 방학(학기 사이)이 유지된다", () => {
+  const calendar = parseAcademicCalendar(
+    { path: "c.md", basename: "c", stat: { ctime: 1 } },
+    {
+      semester1Start: "2026-03-02",
+      semester1End: "2026-07-20",
+      semester2Start: "2026-08-19",
+      semester2End: "2027-01-08"
+    },
+    ""
+  );
+  assert.equal(calendar.vacations.length, 0);
+  assert.equal(dayStatus(calendar, "2026-07-22").kind, "vacation");
+});

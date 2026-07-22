@@ -21,7 +21,7 @@ import { ProgressImportModal } from "./progress-import-modal";
 import { UnitScaffoldModal } from "./unit-scaffold-modal";
 import { AssessmentImportModal } from "./assessment-import-modal";
 import { ProgressPinModal } from "./progress-pin-modal";
-import { addDays, mondayOf, semesterForDate, semesterRange } from "@core/academic-calendar";
+import { addDays, dayStatus, mondayOf, semesterForDate, semesterRange } from "@core/academic-calendar";
 import { isRemovedSubject, resolveDay, subjectSlots } from "@core/timetable";
 import { assignProgress, buildAssignedSlotContents } from "@core/progress";
 import { emptyCurriculumUnit, taughtHoursForUnit } from "@core/curriculum";
@@ -1134,6 +1134,8 @@ export default class ClassManagementPlugin extends Plugin {
     try {
       const calendar = await this.repository.getAcademicCalendar();
       if (!calendar) return;
+      // 방학·휴업일에는 제안하지 않는다 — 행정 학기에서는 방학도 학기 범위 안이라 오탐이 된다.
+      if (dayStatus(calendar, localDate()).kind !== "class") return;
       const current = semesterForDate(calendar, localDate());
       if (!current || current === this.settings.semester) return;
       new Notice(
