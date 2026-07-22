@@ -18,11 +18,19 @@ import { TodayView, TODAY_VIEW_TYPE } from "./today-view";
 import { StudentInspectorView, STUDENT_INSPECTOR_VIEW_TYPE } from "./student-inspector-view";
 import { LessonInspectorView, LESSON_INSPECTOR_VIEW_TYPE } from "./lesson-inspector-view";
 import { ProgressImportModal } from "./progress-import-modal";
+import { UnitScaffoldModal } from "./unit-scaffold-modal";
+import { AssessmentImportModal } from "./assessment-import-modal";
 import { ProgressPinModal } from "./progress-pin-modal";
 import { addDays, mondayOf, semesterForDate, semesterRange } from "@core/academic-calendar";
 import { isRemovedSubject, resolveDay, subjectSlots } from "@core/timetable";
 import { assignProgress, buildAssignedSlotContents } from "@core/progress";
-import { taughtHoursForUnit } from "@core/curriculum";
+import { emptyCurriculumUnit, taughtHoursForUnit } from "@core/curriculum";
+import {
+  achievementStandardMarkdown,
+  extractStandardCodes,
+  resolveAssessmentDate,
+  unitScaffoldsFromProgress
+} from "@core/planning";
 import { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } from "@core/weekly-plan";
 import { localDate } from "@core/utils";
 import {
@@ -295,6 +303,26 @@ export default class ClassManagementPlugin extends Plugin {
       id: "assign-progress",
       name: "진도 자동 배정",
       callback: () => void this.runProgressAssignment()
+    });
+    this.addCommand({
+      id: "scaffold-regular-units",
+      name: "일반 단원 일괄 생성",
+      callback: () => this.openUnitScaffoldModal()
+    });
+    this.addCommand({
+      id: "import-assessment-plan",
+      name: "평가 계획 가져오기",
+      callback: () => this.openAssessmentImportModal()
+    });
+    this.addCommand({
+      id: "scaffold-standard-notes",
+      name: "성취기준 노트 생성",
+      callback: () => void this.scaffoldStandardNotes()
+    });
+    this.addCommand({
+      id: "linkify-progress-standards",
+      name: "진도표 성취기준 링크화",
+      callback: () => void this.linkifyProgressStandardCodes()
     });
     this.addCommand({
       id: "open-curriculum-gantt",
@@ -864,6 +892,213 @@ export default class ClassManagementPlugin extends Plugin {
   openProgressImportModal(): void {
     if (!this.canWriteActiveClass()) return;
     new ProgressImportModal(this).open();
+  }
+
+  openUnitScaffoldModal(): void {
+    if (!this.canWriteActiveClass()) return;
+    new UnitScaffoldModal(this).open();
+  }
+
+  openAssessmentImportModal(): void {
+    if (!this.canWriteActiveClass()) return;
+    new AssessmentImportModal(this).open();
+  }
+
+  /** R0-1 일반 단원 스캐폴드 — 진도표 단원 묶음으로 단원 노트 초안을 만든다(기존 이름은 건너뜀). */
+  async scaffoldRegularUnits(
+    semester: string,
+    subjects: string[]
+  ): Promise<{ created: string[]; skipped: string[] }> {
+    const existing = this.repository.getCurriculumUnits();
+    const tables = await this.repository.getProgressTables(semester);
+    const created: string[] = [];
+    const skipped: string[] = [];
+    for (const subject of subjects) {
+      const table = tables.find((item) => item.subject === subject);
+      if (!table) continue;
+      for (const scaffold of unitScaffoldsFromProgress(table)) {
+        const duplicate = existing.some(
+          (unit) =>
+            unit.subject === subject &&
+            unit.semester === semester &&
+            unit.unitName === scaffold.unitName
+        );
+        if (duplicate) {
+          skipped.push(`${subject} ${scaffold.unitName}`);
+          continue;
+        }
+        await this.repository.createCurriculumUnit({
+          ...emptyCurriculumUnit(this.settings),
+          subject,
+          semester,
+          unitName: scaffold.unitName,
+          theme: scaffold.summary,
+          designApproach: "within-subject",
+          startDate: scaffold.startDate,
+          endDate: scaffold.endDate,
+          plannedHours: scaffold.plannedHours,
+          achievementStandards: scaffold.standards.join("\n"),
+          learningPlan: scaffold.learningPlan,
+          unitOverview: scaffold.summary
+        });
+        created.push(`${subject} ${scaffold.unitName}`);
+      }
+    }
+    return { created, skipped };
+  }
+
+  /** R0-2 평가 계획 가져오기 — 항목별로 날짜를 정하고 과제 노트 생성·단원 연계·진도표 기입까지. */
+  async importAssessmentPlan(
+    subject: string,
+    semester: string,
+    items: Array<{ timing: string; unit: string; element: string; criteria: string; method: string }>
+  ): Promise<{ created: number; skipped: number; issues: string[] }> {
+    const calendar = await this.repository.getAcademicCalendar();
+    const range = calendar ? semesterRange(calendar, semester) : { from: "", to: "" };
+    const tables = await this.repository.getProgressTables(semester);
+    const table = tables.find((item) => item.subject === subject) ?? null;
+    const units = this.repository
+      .getCurriculumUnits()
+      .filter((unit) => unit.subject === subject && unit.semester === semester);
+    const students = this.repository.getStudents();
+    const normalize = (value: string): string => value.replace(/[\d.\s()·\-~]/g, "");
+
+    let created = 0;
+    let skipped = 0;
+    const issues: string[] = [];
+    for (const item of items) {
+      const resolved = resolveAssessmentDate(item.timing, item.unit, {
+        semesterFrom: range.from ?? "",
+        semesterTo: range.to ?? "",
+        rows: table?.rows ?? []
+      });
+      if (!resolved.date) {
+        issues.push(`"${item.element}": ${resolved.issue ?? "시기를 해석하지 못했습니다."}`);
+        continue;
+      }
+      const unit =
+        units.find(
+          (candidate) =>
+            item.unit &&
+            normalize(candidate.unitName) &&
+            (normalize(candidate.unitName).includes(normalize(item.unit)) ||
+              normalize(item.unit).includes(normalize(candidate.unitName)))
+        ) ??
+        units.find(
+          (candidate) =>
+            candidate.startDate &&
+            candidate.endDate &&
+            resolved.date >= candidate.startDate &&
+            resolved.date <= candidate.endDate
+        ) ?? null;
+      const unitLink = unit
+        ? { id: unit.id, title: unit.unitName, path: unit.file.path }
+        : null;
+      const title = `${subject} 수행평가 - ${item.element}`;
+      const marks = students.map((student) => ({
+        studentNumber: student.number,
+        studentName: student.name,
+        status: "미제출" as const,
+        note: ""
+      }));
+      const tailSections = [
+        "",
+        "## 평가 정보",
+        "",
+        `- 시기: ${item.timing || "미입력"} → ${resolved.date} (${resolved.source})`,
+        `- 단원: ${item.unit || "미입력"}`,
+        `- 평가 방법: ${item.method || "미입력"}`,
+        "",
+        "## 평가 기준",
+        "",
+        `> ${item.criteria || "미입력"}`
+      ];
+      try {
+        const file = await this.repository.saveAssignment(
+          resolved.date,
+          title,
+          marks,
+          unitLink,
+          undefined,
+          tailSections
+        );
+        await this.linkAssignmentToProgress(resolved.date, title, unitLink, file);
+        created += 1;
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("이미 있습니다")) skipped += 1;
+        else issues.push(`"${item.element}": ${error instanceof Error ? error.message : "저장 실패"}`);
+      }
+    }
+    await this.refreshViews();
+    return { created, skipped, issues };
+  }
+
+  /** R0-3 성취기준 노트 생성 — 진도표·단원 노트의 코드를 모아 없는 노트만 만든다. */
+  async scaffoldStandardNotes(): Promise<void> {
+    if (!this.canWriteActiveClass()) return;
+    try {
+      const sources = new Map<string, Set<string>>();
+      for (const semester of ["1학기", "2학기"]) {
+        for (const table of await this.repository.getProgressTables(semester)) {
+          for (const row of table.rows) {
+            for (const code of extractStandardCodes(row.standard)) {
+              const set = sources.get(code) ?? new Set<string>();
+              set.add(table.file.basename);
+              sources.set(code, set);
+            }
+          }
+        }
+      }
+      for (const unit of this.repository.getCurriculumUnits()) {
+        for (const code of extractStandardCodes(unit.achievementStandards)) {
+          if (!sources.has(code)) sources.set(code, new Set<string>());
+        }
+      }
+      if (sources.size === 0) {
+        new Notice("진도표·단원 노트에서 성취기준 코드를 찾지 못했습니다.");
+        return;
+      }
+      let created = 0;
+      let existing = 0;
+      for (const [code, links] of [...sources.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+        const result = await this.repository.ensureAchievementStandardNote(
+          code,
+          achievementStandardMarkdown({ code, statement: "", progressLinks: [...links].sort() })
+        );
+        if (result.created) created += 1;
+        else existing += 1;
+      }
+      new Notice(
+        `성취기준 노트 ${created}개를 만들었습니다. 기존 ${existing}개는 그대로 두었습니다. 전문은 노트에서 채워 주세요.`
+      );
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "성취기준 노트 생성에 실패했습니다.");
+    }
+  }
+
+  /** R0-3 진도표 성취기준 링크화 — 두 학기 진도표의 코드 표기를 [[코드]]로 바꾼다(멱등). */
+  async linkifyProgressStandardCodes(): Promise<void> {
+    if (!this.canWriteActiveClass()) return;
+    try {
+      let changedRows = 0;
+      let changedTables = 0;
+      for (const semester of ["1학기", "2학기"]) {
+        for (const table of await this.repository.getProgressTables(semester)) {
+          const changed = await this.repository.linkifyProgressStandards(table);
+          if (changed > 0) {
+            changedRows += changed;
+            changedTables += 1;
+          }
+        }
+      }
+      new Notice(
+        changedRows > 0
+          ? `진도표 ${changedTables}개에서 ${changedRows}행의 성취기준을 위키링크로 바꿨습니다.`
+          : "바꿀 성취기준 표기가 없습니다. 이미 모두 위키링크입니다."
+      );
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "성취기준 링크화에 실패했습니다.");
+    }
   }
 
   private async resolveSlotSubject(

@@ -291,7 +291,7 @@ function isHeaderRow(cells: string[]): boolean {
   return /단원|학습\s*내용|차시|시수|영역/.test(joined) && !/\d{4}-\d{2}-\d{2}/.test(joined);
 }
 
-function splitDelimited(line: string): string[] {
+export function splitDelimited(line: string): string[] {
   if (line.includes("\t")) return line.split("\t");
   const cells: string[] = [];
   let current = "";

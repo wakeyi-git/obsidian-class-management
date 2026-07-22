@@ -13,6 +13,7 @@ export * from "./hours-audit";
 export * from "./migration";
 export * from "./notice";
 export * from "./progress";
+export * from "./planning";
 export * from "./report";
 export * from "./routine";
 export * from "./school-record";

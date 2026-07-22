@@ -2,6 +2,7 @@ import { App, TAbstractFile, TFile, TFolder } from "obsidian";
 import { formatAttendanceTableRow, parseAttendanceMetadata } from "@core/attendance";
 import { formatAssignmentTableRow, parseAssignmentTable } from "@core/assignment";
 import { formatNoticeTableRow, parseNoticeTable } from "@core/notice";
+import { linkifyStandardCell } from "@core/planning";
 import {
   parseRoutineInstanceItems,
   parseRoutineItems,
@@ -544,7 +545,8 @@ export class ClassRepository {
     title: string,
     marks: AssignmentMark[],
     unitLink: CurriculumUnitLink | null,
-    existingFile?: TFile
+    existingFile?: TFile,
+    tailSections: string[] = []
   ): Promise<TFile> {
     this.assertWritableClass();
     await this.ensureWorkspace();
@@ -610,7 +612,8 @@ export class ClassRepository {
       return existingFile;
     }
 
-    return this.app.vault.create(path, content);
+    const tail = tailSections.length > 0 ? `${tailSections.join("\n")}\n` : "";
+    return this.app.vault.create(path, content + tail);
   }
 
   getTasks(): TaskEntry[] {
@@ -1308,6 +1311,43 @@ export class ClassRepository {
       table.file,
       progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)
     );
+  }
+
+  get standardsFolderPath(): string {
+    return joinVaultPath(this.curriculumFolderPath, "성취기준");
+  }
+
+  /** 성취기준 노트를 만든다 — 이미 있으면 내용을 건드리지 않고 그대로 둔다(멱등). */
+  async ensureAchievementStandardNote(
+    code: string,
+    markdown: string
+  ): Promise<{ file: TFile; created: boolean }> {
+    this.assertWritableClass();
+    await this.ensureFolder(this.standardsFolderPath);
+    const path = joinVaultPath(this.standardsFolderPath, `${safeFileSegment(code)}.md`);
+    const existing = this.app.vault.getAbstractFileByPath(path);
+    if (existing instanceof TFile) return { file: existing, created: false };
+    return { file: await this.app.vault.create(path, markdown), created: true };
+  }
+
+  /** 진도표 성취기준 셀의 코드들을 위키링크로 바꾼다. 바뀐 행 수를 돌려준다. */
+  async linkifyProgressStandards(table: ProgressTable): Promise<number> {
+    this.assertWritableClass();
+    const settings = this.getSettings();
+    let changed = 0;
+    const rows = table.rows.map((row) => {
+      const next = linkifyStandardCell(row.standard);
+      if (next === row.standard) return row;
+      changed += 1;
+      return { ...row, standard: next };
+    });
+    if (changed > 0) {
+      await this.app.vault.modify(
+        table.file,
+        progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)
+      );
+    }
+    return changed;
   }
 
   get eventsFolderPath(): string {
