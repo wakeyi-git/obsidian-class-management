@@ -12,6 +12,7 @@ import { CurriculumLessonModal } from "./curriculum-lesson-modal";
 import { CurriculumUnitModal } from "./curriculum-unit-modal";
 import { CurriculumView, CURRICULUM_VIEW_TYPE } from "./curriculum-view";
 import { CurriculumOpsView, CURRICULUM_OPS_VIEW_TYPE } from "./curriculum-ops-view";
+import { CurriculumGanttView, CURRICULUM_GANTT_VIEW_TYPE } from "./curriculum-gantt-view";
 import { NavigatorView, NAVIGATOR_VIEW_TYPE } from "./navigator-view";
 import { TodayView, TODAY_VIEW_TYPE } from "./today-view";
 import { StudentInspectorView, STUDENT_INSPECTOR_VIEW_TYPE } from "./student-inspector-view";
@@ -148,6 +149,10 @@ export default class ClassManagementPlugin extends Plugin {
     this.registerView(
       CURRICULUM_OPS_VIEW_TYPE,
       (leaf) => new CurriculumOpsView(leaf, this)
+    );
+    this.registerView(
+      CURRICULUM_GANTT_VIEW_TYPE,
+      (leaf) => new CurriculumGanttView(leaf, this)
     );
     this.registerView(NAVIGATOR_VIEW_TYPE, (leaf) => new NavigatorView(leaf, this));
     this.registerView(TODAY_VIEW_TYPE, (leaf) => new TodayView(leaf, this));
@@ -290,6 +295,11 @@ export default class ClassManagementPlugin extends Plugin {
       id: "assign-progress",
       name: "진도 자동 배정",
       callback: () => void this.runProgressAssignment()
+    });
+    this.addCommand({
+      id: "open-curriculum-gantt",
+      name: "일체화 간트 열기",
+      callback: () => void this.openCurriculumGantt()
     });
     this.addCommand({
       id: "create-bases-views",
@@ -807,6 +817,13 @@ export default class ClassManagementPlugin extends Plugin {
     const existing = this.app.workspace.getLeavesOfType(CURRICULUM_VIEW_TYPE)[0];
     const leaf = existing ?? this.app.workspace.getLeaf(true);
     if (!existing) await leaf.setViewState({ type: CURRICULUM_VIEW_TYPE, active: true });
+    await this.app.workspace.revealLeaf(leaf);
+  }
+
+  async openCurriculumGantt(): Promise<void> {
+    const existing = this.app.workspace.getLeavesOfType(CURRICULUM_GANTT_VIEW_TYPE)[0];
+    const leaf = existing ?? this.app.workspace.getLeaf(true);
+    if (!existing) await leaf.setViewState({ type: CURRICULUM_GANTT_VIEW_TYPE, active: true });
     await this.app.workspace.revealLeaf(leaf);
   }
 
@@ -1585,6 +1602,11 @@ export default class ClassManagementPlugin extends Plugin {
       .getLeavesOfType(CALENDAR_VIEW_TYPE)
       .map((leaf) => leaf.view)
       .filter((view): view is ClassCalendarView => view instanceof ClassCalendarView);
+    const ganttViews = this.app.workspace
+      .getLeavesOfType(CURRICULUM_GANTT_VIEW_TYPE)
+      .map((leaf) => leaf.view)
+      .filter((view): view is CurriculumGanttView => view instanceof CurriculumGanttView);
+    for (const view of ganttViews) await view.refresh();
     const taskViews = this.app.workspace
       .getLeavesOfType(TASK_VIEW_TYPE)
       .map((leaf) => leaf.view)

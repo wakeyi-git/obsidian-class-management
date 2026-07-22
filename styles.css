@@ -2318,3 +2318,146 @@
   padding: 4px;
   flex-wrap: wrap;
 }
+
+/* ── 일체화 간트 ── */
+.class-management-gantt-view {
+  padding: 12px 16px;
+  overflow: auto;
+}
+.class-management-gantt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.class-management-gantt-toolbar button.is-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.class-management-gantt-legend {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  font-size: 0.8em;
+  color: var(--text-muted);
+}
+.class-management-gantt-legend .legend-integrated::before,
+.class-management-gantt-legend .legend-regular::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 8px;
+  border-radius: 3px;
+  margin-right: 4px;
+}
+.class-management-gantt-legend .legend-integrated::before { background: var(--interactive-accent); }
+.class-management-gantt-legend .legend-regular::before { background: var(--background-modifier-border-hover); }
+.class-management-gantt-body {
+  position: relative;
+  min-width: 640px;
+}
+.class-management-gantt-row {
+  display: flex;
+  align-items: center;
+  min-height: 26px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.class-management-gantt-row.is-header { border-bottom: none; min-height: 22px; }
+.class-management-gantt-label {
+  flex: 0 0 190px;
+  padding: 2px 8px 2px 2px;
+  font-size: 0.82em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.class-management-gantt-label:hover { color: var(--text-accent); }
+.class-management-gantt-subject {
+  font-weight: 600;
+  font-size: 0.85em;
+  padding: 8px 2px 2px;
+  color: var(--text-muted);
+}
+.class-management-gantt-track {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  min-height: 26px;
+}
+.class-management-gantt-week {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--background-modifier-border);
+  opacity: 0.6;
+}
+.class-management-gantt-month {
+  position: absolute;
+  top: 0;
+  font-size: 0.75em;
+  color: var(--text-muted);
+  transform: translateX(2px);
+}
+.class-management-gantt-bar {
+  position: absolute;
+  top: 5px;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--background-modifier-border-hover);
+  cursor: pointer;
+  overflow: hidden;
+  font-size: 0.72em;
+  line-height: 16px;
+  padding-left: 6px;
+  color: var(--text-muted);
+  box-sizing: border-box;
+}
+.class-management-gantt-bar.is-integrated {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.class-management-gantt-bar:hover { filter: brightness(1.1); }
+.class-management-gantt-elapsed {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.14);
+  pointer-events: none;
+}
+.class-management-gantt-assessment {
+  position: absolute;
+  top: 7px;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-5px) rotate(45deg);
+  background: var(--color-orange);
+  border: 1px solid var(--background-primary);
+  cursor: pointer;
+  z-index: 2;
+}
+.class-management-gantt-event {
+  position: absolute;
+  top: 8px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translateX(-4px);
+  background: var(--color-purple);
+  cursor: pointer;
+}
+.class-management-gantt-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(190px + (100% - 190px) * var(--gantt-today) / 100);
+  width: 2px;
+  background: var(--color-red);
+  opacity: 0.65;
+  pointer-events: none;
+}

@@ -1,6 +1,7 @@
 import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
 import { DASHBOARD_VIEW_TYPE } from "./dashboard-view";
 import { CURRICULUM_OPS_VIEW_TYPE } from "./curriculum-ops-view";
+import { CURRICULUM_GANTT_VIEW_TYPE } from "./curriculum-gantt-view";
 import { CALENDAR_VIEW_TYPE } from "./calendar-view";
 import { ACTIVITY_LIST_VIEW_TYPE } from "./activity-list-view";
 import { STUDENT_TIMELINE_VIEW_TYPE } from "./student-timeline-view";
@@ -66,6 +67,7 @@ export class NavigatorView extends ItemView {
       { type: TASK_VIEW_TYPE, label: "GTD 할 일", icon: "list-todo", open: () => void plugin.openTasks() },
       { type: ROUTINE_VIEW_TYPE, label: "루틴 체크리스트", icon: "repeat", open: () => void plugin.openRoutines() },
       { type: CURRICULUM_VIEW_TYPE, label: "교육과정 일체화", icon: "book-open-check", open: () => void plugin.openCurriculum() },
+      { type: CURRICULUM_GANTT_VIEW_TYPE, label: "일체화 간트", icon: "gantt-chart", open: () => void plugin.openCurriculumGantt() },
       { type: REPORT_VIEW_TYPE, label: "분석·보고서", icon: "bar-chart-2", open: () => void plugin.openReports() },
       { type: DATA_MANAGEMENT_VIEW_TYPE, label: "학급·데이터", icon: "database", open: () => void plugin.openDataManagement() },
       { type: MAINTENANCE_VIEW_TYPE, label: "백업·유지관리", icon: "archive", open: () => void plugin.openMaintenance() }
