@@ -58,7 +58,7 @@ src/
 | hours-standard | 교육과정/ | 기준 시수 | 시수 점검 |
 | timetable | 교육과정/시간표/ | 기초시간표+시간표 변경(오버라이드) 원장 | resolveDay 단일 진실 |
 | subject-progress | 교육과정/진도표/ | 차시 원장(11열: …성취기준·프로젝트·과제…) | 배정·고정(📌)·링크 열 |
-| curriculum-unit | 교육과정/단원/ | **단원**(일반 within-subject / 통합 concept-inquiry) | 성취기준·차시·평가·근거의 허브 |
+| curriculum-unit | 교육과정/단원/ | **단원**(일반 within-subject / 통합 concept-inquiry) | 성취기준·차시·평가·근거의 허브 · **시수 원장 규칙: 일반=자체 운영분(이관 제외)·프로젝트=이관행 시수 합 → 일반+프로젝트=시간표 편성** |
 | curriculum-lesson | 교육과정/수업일지/ | **수업일지** = 차시의 기록 허브(단원 연계 선택) | 진도표 비고 역링크 |
 | school-event | 교육과정/행사/ | 행사 계획·성찰 | 학사일정 행사와 1:1 |
 | weekly-plan | 교육과정/주간학습안내/ | 주간안내 스냅숏 | 생성물(재생성 가능) |

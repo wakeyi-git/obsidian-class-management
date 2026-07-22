@@ -951,7 +951,9 @@ export default class ClassManagementPlugin extends Plugin {
           designApproach: "within-subject",
           startDate: scaffold.startDate,
           endDate: scaffold.endDate,
-          plannedHours: scaffold.plannedHours,
+          // 원장 규칙: 일반 단원 시수는 자체 운영분 — 통합 이관 시수는 프로젝트 단원이 계상해
+          // 일반 합 + 프로젝트 합 = 시간표 편성이 되게 한다.
+          plannedHours: scaffold.plannedHours - scaffold.integratedHours,
           achievementStandards: scaffold.standards.join("\n"),
           learningPlan: scaffold.learningPlan,
           unitOverview: scaffold.summary
