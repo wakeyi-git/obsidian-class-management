@@ -1,6 +1,6 @@
 import { ItemView, Menu, WorkspaceLeaf, setIcon } from "obsidian";
 import { registerLongPress } from "@core/dom";
-import { listDates, semesterRange } from "@core/academic-calendar";
+import { dayStatus, listDates, semesterForDate, semesterRange } from "@core/academic-calendar";
 import { localDate } from "@core/utils";
 import type ClassManagementPlugin from "./main";
 import type { AcademicCalendar, AssignmentSummary, CurriculumUnit } from "@core/types";
@@ -16,6 +16,7 @@ export class CurriculumGanttView extends ItemView {
   private integratedOnly = false;
   private rangeFrom = "";
   private rangeTo = "";
+  private todaySuffix = "";
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: ClassManagementPlugin) {
     super(leaf);
@@ -63,6 +64,18 @@ export class CurriculumGanttView extends ItemView {
       return (listDates(range.from, date).length - 1) / (total - 1) * 100;
     };
 
+    {
+      const today = localDate();
+      const status = dayStatus(calendar, today);
+      const todaySemester = semesterForDate(calendar, today);
+      if (today >= this.rangeFrom && today <= this.rangeTo) {
+        this.todaySuffix = status.kind === "vacation" ? ` · ${status.name}` : "";
+      } else if (todaySemester) {
+        this.todaySuffix = ` · ${todaySemester}${status.kind === "vacation" ? `(${status.name})` : ""}`;
+      } else {
+        this.todaySuffix = " · 학기 범위 밖";
+      }
+    }
     this.renderToolbar(container);
 
     const units = this.plugin.repository
@@ -156,11 +169,9 @@ export class CurriculumGanttView extends ItemView {
       this.integratedOnly = !this.integratedOnly;
       void this.refresh();
     });
-    const today = localDate();
-    const inRange = today >= this.rangeFrom && today <= this.rangeTo;
     bar.createSpan({
       cls: "class-management-gantt-todaychip",
-      text: `오늘 ${today}${inRange ? "" : " · 학기 범위 밖(방학)"}`
+      text: `오늘 ${localDate()}${this.todaySuffix}`
     });
     const legend = bar.createDiv({ cls: "class-management-gantt-legend" });
     legend.createSpan({ cls: "legend-integrated", text: "통합" });
