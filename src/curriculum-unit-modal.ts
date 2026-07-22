@@ -103,7 +103,7 @@ export class CurriculumUnitModal extends Modal {
     });
 
     this.heading("3. 수용할 만한 증거와 평가 계획");
-    this.addTextArea("수행·평가 과제", "학생이 무엇을 하거나 만들어 목표 도달을 증명하는지", this.draft.assessmentTask, (value) => {
+    this.addTextArea("수행과제", "학생이 무엇을 하거나 만들어 목표 도달을 증명하는지", this.draft.assessmentTask, (value) => {
       this.draft.assessmentTask = value;
     });
     this.addTextArea("평가요소·준거", "성취기준에서 도출한 관찰 가능한 평가요소와 성공 기준", this.draft.evaluationCriteria, (value) => {

@@ -164,7 +164,7 @@ function classifyStructuredEvidence(
   }
   const isPrimary = isDirect && evidence.reviewStatus === "reviewed";
   const warning = evidence.reviewStatus === "raw"
-    ? "교사 검토 전 RAW 근거입니다. 원본의 사실과 영역을 확인하세요."
+    ? "교사 검토 전 학생부 근거(RAW)입니다. 원본의 사실과 영역을 확인하세요."
     : !isDirect
       ? "직접 관찰·평가가 아닌 보조 자료이므로 교사 관찰 근거와 대조하세요."
       : undefined;
@@ -175,7 +175,7 @@ function classifyStructuredEvidence(
     isPrimary
       ? "교사가 검토 완료한 구조화된 직접 관찰·평가 근거입니다."
       : evidence.reviewStatus === "raw"
-        ? "구조화되었지만 아직 교사 검토가 완료되지 않은 RAW 근거입니다."
+        ? "구조화되었지만 아직 교사 검토가 완료되지 않은 학생부 근거(RAW)입니다."
         : "상담·자기평가·상호평가·외부 자료 등 추가 확인이 필요한 보조 근거입니다.",
     warning
   );

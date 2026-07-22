@@ -751,7 +751,7 @@ export default class ClassManagementPlugin extends Plugin {
           await this.repository.createRecord(student, record);
         }
         this.activityIndex.invalidate();
-        new Notice(`학생부 RAW 근거 ${records.length}건을 일괄 저장했습니다.`);
+        new Notice(`학생부 근거 ${records.length}건을 일괄 저장했습니다 (RAW).`);
         await this.refreshViews();
       },
       initialArea,
@@ -1760,7 +1760,7 @@ export default class ClassManagementPlugin extends Plugin {
       async (record) => {
         await this.repository.createRecord(student, record);
         this.activityIndex.invalidate();
-        new Notice(`${student.number}번 ${student.name} 학생부 RAW 근거를 저장했습니다.`);
+        new Notice(`${student.number}번 ${student.name} 학생부 근거를 저장했습니다 (RAW).`);
         await this.refreshViews();
       },
       initialDate,

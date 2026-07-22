@@ -167,7 +167,7 @@ export function buildAiDraftMarkdown(
     "",
     ...sections,
     "",
-    "## RAW 근거",
+    "## 학생부 근거 (RAW)",
     "",
     ...evidence,
     "",

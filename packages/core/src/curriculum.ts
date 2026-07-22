@@ -353,7 +353,7 @@ export function curriculumUnitMarkdown(
     "",
     "## 3. 수용할 만한 증거와 평가",
     "",
-    `- 수행·평가 과제: ${unit.assessmentTask || "미입력"}`,
+    `- 수행과제: ${unit.assessmentTask || "미입력"}`,
     `- 평가요소·준거: ${unit.evaluationCriteria || "미입력"}`,
     `- 평가방법: ${unit.evaluationMethods.join(", ") || "미입력"}`,
     "",

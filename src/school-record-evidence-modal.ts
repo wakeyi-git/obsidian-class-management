@@ -388,7 +388,7 @@ export class SchoolRecordEvidenceModal extends Modal {
   private changed(): void {
     this.warningsConfirmed = false;
     this.validationEl?.empty();
-    this.saveButton?.setButtonText("RAW 근거 저장");
+    this.saveButton?.setButtonText("학생부 근거 저장 (RAW)");
   }
 
   private async save(): Promise<void> {
@@ -419,7 +419,7 @@ export class SchoolRecordEvidenceModal extends Modal {
       this.close();
     } catch (error) {
       this.saving = false;
-      this.saveButton?.setDisabled(false).setButtonText("RAW 근거 저장");
+      this.saveButton?.setDisabled(false).setButtonText("학생부 근거 저장 (RAW)");
       new Notice(error instanceof Error ? error.message : "학교생활기록부 근거를 저장하지 못했습니다.");
     }
   }

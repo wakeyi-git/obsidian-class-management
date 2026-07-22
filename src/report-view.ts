@@ -189,7 +189,7 @@ export class ReportView extends ItemView {
     const text = heading.createDiv();
     text.createEl("h3", { text: "학교생활기록부 근거 누락 점검" });
     text.createEl("p", {
-      text: `${this.plugin.settings.grade}학년 · ${this.plugin.settings.schoolRecordGuidelineYear} 기재요령 · 검토 제외가 아닌 구조화된 RAW 근거 기준`
+      text: `${this.plugin.settings.grade}학년 · ${this.plugin.settings.schoolRecordGuidelineYear} 기재요령 · 검토 제외가 아닌 구조화된 학생부 근거(RAW) 기준`
     });
     const coverageActions = heading.createDiv({ cls: "class-management-coverage-actions" });
     const add = coverageActions.createEl("button", { text: "개별 근거 기록", cls: "mod-cta" });
