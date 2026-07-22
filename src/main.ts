@@ -337,7 +337,7 @@ export default class ClassManagementPlugin extends Plugin {
     });
     this.addCommand({
       id: "open-curriculum-gantt",
-      name: "일체화 간트 열기",
+      name: "일체화 로드맵 열기",
       callback: () => void this.openCurriculumGantt()
     });
     this.addCommand({

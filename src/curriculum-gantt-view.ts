@@ -8,7 +8,7 @@ import type { AcademicCalendar, AssignmentSummary, CurriculumUnit } from "@core/
 export const CURRICULUM_GANTT_VIEW_TYPE = "class-management-curriculum-gantt";
 
 /**
- * 일체화 간트 — 학기 시간축 위에 단원(일반·통합) 막대, 수행평가·행사 마커를 겹쳐
+ * 일체화 로드맵 — 학기 시간축 위에 단원(일반·통합) 막대, 수행평가·행사 마커를 겹쳐
  * 교육과정-수업-평가의 흐름을 한눈에 보여 준다. 막대·마커 클릭으로 해당 노트로 이동.
  */
 export class CurriculumGanttView extends ItemView {
@@ -27,7 +27,7 @@ export class CurriculumGanttView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "일체화 간트";
+    return "일체화 로드맵";
   }
 
   getIcon(): string {

@@ -407,7 +407,7 @@ actions.createEl("button", { text: "보조 행동" });
 | 수업일지 | Lucide `notebook-pen` |
 | 단원 | Lucide `book-open-check` |
 | 통합 단원 | Lucide `sparkles`, 강조색 |
-| 일체화 간트 | Lucide `gantt-chart` |
+| 일체화 로드맵 | Lucide `gantt-chart` |
 | 고정 차시 | 텍스트 `📌` |
 | 과제 | 주황색 `◆` |
 | 행사 | 보라색 `●` |

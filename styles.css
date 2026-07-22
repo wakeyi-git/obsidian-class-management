@@ -175,7 +175,9 @@
   text-decoration-line: var(--link-decoration-hover, underline);
 }
 
-.class-management-curriculum-title-button {
+.class-management-curriculum-title-button,
+.class-management-curriculum-title-button:hover,
+.class-management-curriculum-title-button:active {
   display: block;
   height: auto;
   margin: 4px 0;
@@ -1184,7 +1186,10 @@
   white-space: normal;
 }
 
-.class-management-task-card-title button:hover {
+.class-management-task-card-title button:hover,
+.class-management-task-card-title button:active {
+  background: transparent;
+  box-shadow: none;
   color: var(--link-color-hover, var(--text-accent-hover, var(--text-accent)));
   text-decoration-line: var(--link-decoration-hover, underline);
 }
