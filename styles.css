@@ -13,7 +13,7 @@
 .class-management-curriculum-cycle {
   display: grid;
   grid-template-columns: repeat(4, minmax(170px, 1fr));
-  gap: 10px;
+  gap: 8px;
   margin: 0 0 18px;
 }
 
@@ -21,7 +21,7 @@
   display: grid;
   grid-template-columns: 30px 1fr auto;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   padding: 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 12px;
@@ -67,7 +67,7 @@
 .class-management-curriculum-units {
   display: grid;
   grid-template-columns: repeat(2, minmax(320px, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 .class-management-curriculum-unit {
@@ -82,7 +82,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
 }
 
 .class-management-curriculum-unit h3 {
@@ -147,7 +147,7 @@
 
 .class-management-concept-inquiry-fields {
   margin: 0 0 18px;
-  padding: 14px;
+  padding: 12px;
   border: 1px solid color-mix(in srgb, var(--interactive-accent) 25%, var(--background-modifier-border));
   border-radius: 12px;
   background: color-mix(in srgb, var(--interactive-accent) 4%, var(--background-secondary));
@@ -213,7 +213,7 @@
 
 .class-management-curriculum-lessons {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   margin-top: 14px;
   padding-top: 12px;
   flex-direction: column;
@@ -226,7 +226,7 @@
   min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 9px;
+  gap: 8px;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -252,7 +252,7 @@
 
 .class-management-curriculum-modal h3 {
   margin: 24px 0 6px;
-  padding-bottom: 5px;
+  padding-bottom: 4px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
@@ -278,7 +278,7 @@
 
 .class-management-curriculum-validation {
   margin: 18px 0 8px;
-  padding: 12px 14px;
+  padding: 12px 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 10px;
   background: var(--background-secondary);
@@ -333,8 +333,8 @@
 .class-management-summary-card {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 16px 18px;
+  gap: 4px;
+  padding: 16px;
 }
 
 .class-management-summary-card span {
@@ -354,7 +354,7 @@
 
 .class-management-panel {
   min-width: 0;
-  padding: 18px;
+  padding: 16px;
 }
 
 .class-management-panel h3 {
@@ -378,19 +378,29 @@
   text-align: left;
 }
 
+.class-management-record-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+}
+
 .class-management-student-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 3px;
+  gap: 8px;
+  padding: 4px;
 }
 
 .class-management-student-note {
   display: flex;
   flex: 1;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 8px;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -398,13 +408,13 @@
 }
 
 .class-management-timeline-button {
-  opacity: 0;
+  color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
 
 .class-management-student-row:hover .class-management-timeline-button,
 .class-management-timeline-button:focus-visible {
-  opacity: 1;
+  color: var(--text-normal);
 }
 
 .class-management-student-note:hover,
@@ -436,7 +446,7 @@
 }
 
 .class-management-empty {
-  padding: 22px 10px;
+  padding: 22px 8px;
   color: var(--text-muted);
   text-align: center;
 }
@@ -472,7 +482,7 @@
 .class-management-batch-preview {
   min-height: 42px;
   margin: 10px 0;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 9px;
   background: var(--background-secondary);
 }
@@ -488,7 +498,7 @@
 }
 
 .class-management-csv-error {
-  padding: 12px 14px;
+  padding: 12px 12px;
   border-radius: 10px;
   color: var(--text-error);
   background: color-mix(in srgb, var(--background-modifier-error) 18%, transparent);
@@ -572,7 +582,7 @@
 
 .class-management-assignment-heading {
   margin-bottom: 14px;
-  padding: 12px 14px;
+  padding: 12px 12px;
   border-radius: 10px;
   background: var(--background-secondary);
 }
@@ -657,7 +667,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 7px;
+  gap: 8px;
 }
 
 .class-management-view-heading p {
@@ -669,8 +679,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: end;
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 12px;
+  margin-bottom: 16px;
   padding: 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 12px;
@@ -682,7 +692,7 @@
   flex: 1 1 130px;
   min-width: 120px;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
@@ -717,7 +727,7 @@
 
 .class-management-activity-table th,
 .class-management-activity-table td {
-  padding: 9px 11px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--background-modifier-border);
   text-align: left;
   vertical-align: top;
@@ -782,7 +792,7 @@
   position: relative;
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
@@ -805,7 +815,7 @@
 }
 
 .class-management-timeline-body {
-  padding: 11px 13px;
+  padding: 12px 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 11px;
   background: var(--background-secondary);
@@ -867,7 +877,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: end;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
@@ -906,7 +916,7 @@
 
 .class-management-calendar-day {
   min-height: 122px;
-  padding: 7px;
+  padding: 6px;
   background: var(--background-primary);
 }
 
@@ -951,7 +961,7 @@
   width: 100%;
   min-height: 0;
   margin-bottom: 4px;
-  padding: 5px 7px;
+  padding: 4px 6px;
   overflow: hidden;
   flex-direction: column;
   position: relative;
@@ -1043,7 +1053,7 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(190px, 1fr));
   min-width: 980px;
-  gap: 10px;
+  gap: 8px;
 }
 
 .class-management-task-view {
@@ -1066,9 +1076,9 @@
 .class-management-task-card {
   display: flex;
   margin-bottom: 8px;
-  padding: 10px;
+  padding: 8px;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 9px;
   background: var(--background-primary);
@@ -1077,7 +1087,7 @@
 .class-management-task-card-title {
   display: flex;
   align-items: flex-start;
-  gap: 7px;
+  gap: 6px;
 }
 
 .class-management-task-card-title button {
@@ -1098,7 +1108,7 @@
 
 .class-management-task-card.is-notice {
   position: relative;
-  padding-left: 18px;
+  padding-left: 16px;
 }
 
 .class-management-task-card.is-notice::before {
@@ -1147,7 +1157,7 @@
 
 .class-management-notice-roster th,
 .class-management-notice-roster td {
-  padding: 7px;
+  padding: 6px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
@@ -1158,14 +1168,14 @@
 .class-management-routine-navigation {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   margin-bottom: 14px;
 }
 
 .class-management-routine-layout {
   display: grid;
   grid-template-columns: minmax(320px, 1.4fr) minmax(260px, 0.8fr);
-  gap: 14px;
+  gap: 12px;
 }
 
 .class-management-routine-checklist {
@@ -1179,8 +1189,8 @@
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 9px;
-  padding: 10px;
+  gap: 8px;
+  padding: 8px;
   border-radius: 8px;
   background: var(--background-primary);
 }
@@ -1195,7 +1205,7 @@
   width: 100%;
   height: auto;
   margin-bottom: 6px;
-  padding: 9px;
+  padding: 8px;
   flex-direction: column;
   align-items: flex-start;
   border: 0;
@@ -1219,7 +1229,7 @@
 .class-management-report-presets {
   display: flex;
   align-items: flex-end;
-  gap: 5px;
+  gap: 4px;
 }
 
 .class-management-ai-setup-modal {
@@ -1228,7 +1238,7 @@
 
 .class-management-ai-setup-modal blockquote {
   margin: 12px 0;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   background: var(--background-secondary);
@@ -1240,7 +1250,7 @@
 
 .class-management-school-record-modal blockquote {
   margin: 12px 0 16px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   background: var(--background-secondary);
@@ -1257,7 +1267,7 @@
   min-width: 0;
   flex-direction: column;
   gap: 8px;
-  padding: 14px;
+  padding: 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 10px;
   background: var(--background-primary-alt);
@@ -1292,7 +1302,7 @@
 
 .class-management-school-evidence-modal blockquote {
   margin: 10px 0 16px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   background: var(--background-secondary);
@@ -1319,7 +1329,7 @@
 
 .class-management-school-evidence-validation {
   margin-top: 10px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   background: var(--background-secondary);
 }
@@ -1343,7 +1353,7 @@
 .class-management-school-batch-common {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 18px;
+  gap: 0 16px;
 }
 
 .class-management-school-batch-roster {
@@ -1383,14 +1393,14 @@
 .class-management-coverage-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
   margin: 12px 0;
 }
 
 .class-management-coverage-card {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   padding: 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 9px;
@@ -1427,7 +1437,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 7px 0;
+  padding: 6px 0;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
@@ -1435,7 +1445,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .class-management-coverage-legacy p {
@@ -1460,7 +1470,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
@@ -1481,7 +1491,7 @@
 
 .class-management-legacy-record-list > div > div:last-child {
   display: flex;
-  gap: 5px;
+  gap: 4px;
 }
 
 .class-management-school-review-modal {
@@ -1502,7 +1512,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 9px 11px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
@@ -1527,7 +1537,7 @@
 
 .class-management-ai-paths {
   max-height: 180px;
-  padding: 10px 10px 10px 34px;
+  padding: 8px 8px 8px 34px;
   overflow: auto;
   border-radius: 8px;
   background: var(--background-secondary);
@@ -1541,7 +1551,7 @@
 .class-management-data-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(260px, 1fr));
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 14px;
 }
 
@@ -1550,9 +1560,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 6px;
-  padding: 9px;
+  padding: 8px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   background: var(--background-primary);
@@ -1580,14 +1590,14 @@
 .class-management-data-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 6px;
 }
 
 .class-management-diagnostic-row {
   display: grid;
   grid-template-columns: 58px 1fr;
-  gap: 4px 10px;
-  padding: 8px 10px;
+  gap: 4px 8px;
+  padding: 8px 8px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
@@ -1627,8 +1637,8 @@
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 9px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 8px 8px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
@@ -1652,7 +1662,7 @@
 .class-management-maintenance-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(280px, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 @media (max-width: 700px) {
@@ -1671,11 +1681,11 @@
   .class-management-report-view,
   .class-management-data-view,
   .class-management-curriculum-view {
-    padding: 14px;
+    padding: 12px;
   }
 
   .class-management-maintenance-view {
-    padding: 14px;
+    padding: 12px;
   }
 
   .class-management-notice-modal {
@@ -1814,7 +1824,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px 16px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   background: var(--background-secondary);
@@ -1852,7 +1862,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 1px solid var(--class-management-card-border);
   border-radius: 8px;
   background: var(--background-primary);
@@ -1862,7 +1872,7 @@
 .class-management-ops-week-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -2034,7 +2044,7 @@
 .class-management-pinned-note {
   color: var(--text-accent);
   font-weight: 600;
-  padding: 6px 10px;
+  padding: 6px 8px;
   background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
   border-radius: 6px;
 }
@@ -2061,7 +2071,7 @@
 
 .class-management-nav-section + .class-management-nav-section {
   border-top: 1px solid var(--background-modifier-border);
-  padding-top: 10px;
+  padding-top: 8px;
 }
 
 .class-management-nav-title {
@@ -2134,11 +2144,11 @@
 /* ===== 오늘 패널 ===== */
 
 .class-management-today-view {
-  padding: 10px 8px;
+  padding: 8px 8px;
 }
 
 .class-management-today-header {
-  padding: 2px 8px 10px;
+  padding: 2px 8px 8px;
   border-bottom: 1px solid var(--background-modifier-border);
   margin-bottom: 10px;
 }
@@ -2239,7 +2249,7 @@
 
 .class-management-today-section button {
   font-size: 0.85em;
-  padding: 3px 10px;
+  padding: 3px 8px;
 }
 
 .class-management-today-item {
@@ -2287,7 +2297,7 @@
 }
 
 .class-management-inspector-buttons button {
-  padding: 3px 7px;
+  padding: 3px 6px;
   display: flex;
   align-items: center;
 }
@@ -2307,7 +2317,7 @@
 .class-management-inspector-card {
   display: flex;
   flex-direction: column;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border: 1px solid var(--class-management-card-border);
   border-radius: 8px;
   background: var(--background-primary);
@@ -2361,7 +2371,7 @@
 .class-management-gantt-legend {
   margin-left: auto;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   font-size: 0.8em;
   color: var(--text-muted);
 }
@@ -2495,7 +2505,7 @@
 @media (max-width: 700px) {
   .class-management-gantt-view {
     --class-management-gantt-label: 120px;
-    padding: 14px;
+    padding: 12px;
   }
 
   .class-management-gantt-row {
