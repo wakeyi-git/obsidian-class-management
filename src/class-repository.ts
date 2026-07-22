@@ -11,10 +11,7 @@ import { nextRecurringDate } from "./task";
 import {
   BASES_VIEW_FILES,
   schoolEventNoteFileName,
-  schoolEventNoteMarkdown,
-  taughtLessonFileName,
-  taughtLessonMarkdown,
-  taughtLessonSubfolder
+  schoolEventNoteMarkdown
 } from "./entity-notes";
 import {
   curriculumLessonMarkdown,
@@ -46,7 +43,6 @@ import type {
   ProgressRow,
   ProgressTable,
   SchoolEvent,
-  TaughtLessonEntry,
   TimetableOverride
 } from "./types";
 import type {
@@ -1326,42 +1322,6 @@ export class ClassRepository {
       if (this.app.vault.getAbstractFileByPath(path)) continue;
       await this.ensureEventNote(event);
       created.push(event.name);
-    }
-    return created;
-  }
-
-  get taughtLessonsFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "실시 차시");
-  }
-
-  private taughtLessonPath(entry: TaughtLessonEntry): string {
-    return joinVaultPath(
-      this.taughtLessonsFolderPath,
-      taughtLessonSubfolder(entry),
-      taughtLessonFileName(entry)
-    );
-  }
-
-  filterMissingTaughtLessons(entries: TaughtLessonEntry[]): TaughtLessonEntry[] {
-    return entries.filter(
-      (entry) => !this.app.vault.getAbstractFileByPath(this.taughtLessonPath(entry))
-    );
-  }
-
-  /** 실시 차시 확정 노트를 월별 폴더에 생성한다. 기존 노트는 절대 다시 쓰지 않는다. */
-  async createTaughtLessonNotes(entries: TaughtLessonEntry[]): Promise<number> {
-    this.assertWritableClass();
-    const className = this.getSettings().className;
-    const folders = new Set(entries.map((entry) =>
-      joinVaultPath(this.taughtLessonsFolderPath, taughtLessonSubfolder(entry))
-    ));
-    for (const folder of folders) await this.ensureFolder(folder);
-    let created = 0;
-    for (const entry of entries) {
-      const path = this.taughtLessonPath(entry);
-      if (this.app.vault.getAbstractFileByPath(path)) continue;
-      await this.app.vault.create(path, taughtLessonMarkdown(entry, className));
-      created++;
     }
     return created;
   }

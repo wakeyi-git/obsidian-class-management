@@ -173,3 +173,40 @@ test("차시 Markdown과 되읽기, 실행 시수 집계가 맞는다", () => {
   assert.match(parsedLesson?.transferEvidence ?? "", /피자/);
   assert.equal(taughtHoursForUnit("unit-1", [parsedLesson]), 2);
 });
+
+test("단원 없는 수업 기록(허브)도 저장·되읽기·본문 축약이 된다", () => {
+  const draft = emptyCurriculumLesson(null);
+  Object.assign(draft, {
+    id: "lesson-hub-1",
+    date: "2026-09-02",
+    period: "3교시",
+    subject: "국어",
+    activities: "발표 연습 관찰 메모"
+  });
+  const markdown = curriculumLessonMarkdown(draft, curriculumSettings);
+  assert.match(markdown, /curriculumUnitPath: ""/);
+  assert.match(markdown, /recordStatus: ""/);
+  assert.doesNotMatch(markdown, /통합 단원: \[\[/);
+  assert.doesNotMatch(markdown, /## 수업 목표/); // 빈 섹션은 렌더링하지 않는다
+  assert.match(markdown, /## 학생 중심 학습 활동/);
+
+  const parsed = parseCurriculumLesson(
+    { path: "학급운영/교육과정/수업일지/허브.md", basename: "허브", stat: { ctime: 12 } },
+    {
+      "class-management": "curriculum-lesson",
+      curriculumLessonId: "lesson-hub-1",
+      subject: "국어",
+      date: "2026-09-02",
+      period: "3교시",
+      recordStatus: "raw"
+    }
+  );
+  assert.equal(parsed?.unitId, "");
+  assert.equal(parsed?.recordStatus, "raw");
+  // raw 상태는 다시 저장해도 frontmatter에 보존된다
+  assert.match(curriculumLessonMarkdown(parsed, curriculumSettings), /recordStatus: "raw"/);
+  // 완전히 빈 기록은 메모용 기록 섹션만 남는다
+  const bare = emptyCurriculumLesson(null);
+  Object.assign(bare, { id: "lesson-hub-2", date: "2026-09-03", subject: "수학" });
+  assert.match(curriculumLessonMarkdown(bare, curriculumSettings), /## 기록/);
+});

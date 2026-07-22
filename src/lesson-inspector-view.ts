@@ -166,10 +166,13 @@ export class LessonInspectorView extends ItemView {
       });
     });
     if (subject) {
-      const promote = actions.createEl("button", { text: "수업일지 만들기" });
-      promote.addEventListener(
+      const lesson = this.plugin.findLessonAt(date, period);
+      const record = actions.createEl("button", {
+        text: lesson ? "수업 기록 열기" : "이 교시 기록"
+      });
+      record.addEventListener(
         "click",
-        () => void this.plugin.promoteProgressLesson(date, period)
+        () => void this.plugin.recordLessonAt(date, period)
       );
     }
     const table = tables.find((item) => item.subject === subject);

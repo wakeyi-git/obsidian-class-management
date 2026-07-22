@@ -117,21 +117,6 @@ export interface AssignmentSummary {
   unitPath?: string;
 }
 
-export interface TaughtLessonEntry {
-  date: string;
-  period: number;
-  subject: string;
-  semester: string;
-  source: "base" | "override" | "event";
-  unit: string;
-  topic: string;
-  hours: number;
-  standard: string;
-  order: number;
-  /** 같은 날짜·교시의 수업일지 위키링크 (없으면 빈 문자열) */
-  lessonLog: string;
-}
-
 export interface CurriculumUnitLink {
   id: string;
   title: string;
@@ -353,6 +338,8 @@ export interface CurriculumLesson {
   studentGeneralization: string;
   transferEvidence: string;
   status: CurriculumLessonStatus;
+  /** 날짜가 지나면 플러그인이 "raw"를 스탬프하고 이후 건드리지 않는다. */
+  recordStatus: string;
   createdAt: number;
 }
 

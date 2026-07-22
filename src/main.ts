@@ -18,11 +18,10 @@ import { StudentInspectorView, STUDENT_INSPECTOR_VIEW_TYPE } from "./student-ins
 import { LessonInspectorView, LESSON_INSPECTOR_VIEW_TYPE } from "./lesson-inspector-view";
 import { ProgressImportModal } from "./progress-import-modal";
 import { ProgressPinModal } from "./progress-pin-modal";
-import { UnitSuggestModal } from "./unit-suggest-modal";
 import { addDays, mondayOf, semesterForDate, semesterRange } from "./academic-calendar";
-import { collectTaughtSlots, distinctDates, taughtThroughDate } from "./taught-lesson";
 import { isRemovedSubject, resolveDay, subjectSlots } from "./timetable";
 import { assignProgress, buildAssignedSlotContents } from "./progress";
+import { taughtHoursForUnit } from "./curriculum";
 import { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } from "./weekly-plan";
 import { localDate } from "./utils";
 import {
@@ -166,8 +165,8 @@ export default class ClassManagementPlugin extends Plugin {
       if (this.app.workspace.getLeavesOfType(TODAY_VIEW_TYPE).length === 0) {
         void this.openToday();
       }
-      // 밀린 날이 적을 때만 조용히 확정한다. 많이 밀렸으면 명령 실행을 안내만 한다.
-      window.setTimeout(() => void this.confirmTaughtLessons(true), 2000);
+      // 날짜가 지난 수업 기록에 raw를 스탬프한다(이후 플러그인은 건드리지 않음).
+      window.setTimeout(() => void this.stampRawLessonRecords(), 2000);
     });
     this.registerView(REPORT_VIEW_TYPE, (leaf) => new ReportView(leaf, this));
     this.registerView(
@@ -300,11 +299,6 @@ export default class ClassManagementPlugin extends Plugin {
       id: "create-event-notes",
       name: "행사 노트 일괄 만들기",
       callback: () => void this.createAllEventNotes()
-    });
-    this.addCommand({
-      id: "confirm-taught-lessons",
-      name: "실시 차시 확정 (어제까지)",
-      callback: () => void this.confirmTaughtLessons(false)
     });
     this.addCommand({
       id: "generate-weekly-plan",
@@ -1100,7 +1094,7 @@ export default class ClassManagementPlugin extends Plugin {
   }
 
   openCurriculumLessonModal(
-    unit: CurriculumUnit,
+    unit: CurriculumUnit | null,
     existing?: CurriculumLesson,
     options?: {
       prefill?: Partial<NewCurriculumLesson>;
@@ -1108,23 +1102,44 @@ export default class ClassManagementPlugin extends Plugin {
     }
   ): void {
     if (!this.canWriteActiveClass()) return;
-    new CurriculumLessonModal(this.app, unit, async (lesson, current) => {
+    const units = this.repository.getCurriculumUnits();
+    new CurriculumLessonModal(this.app, unit, units, async (lesson, current) => {
       if (current) {
         await this.repository.updateCurriculumLesson(current.file, lesson);
       } else {
         const created = await this.repository.createCurriculumLesson(lesson);
         if (options?.afterCreate) await options.afterCreate(created);
       }
-      await this.refreshUnitProgress(unit, { id: lesson.id, hours: lesson.hours });
+      // 연결된 단원(변경 전·후 모두)의 실시 시수를 갱신한다.
+      await this.refreshUnitProgress(lesson.unitId);
+      if (current && current.unitId && current.unitId !== lesson.unitId) {
+        await this.refreshUnitProgress(current.unitId);
+      }
       this.activityIndex.invalidate();
-      new Notice(`${unit.unitName} ${lesson.sequence}차시 기록을 저장했습니다.`);
+      new Notice(`${lesson.date} ${lesson.subject} 수업 기록을 저장했습니다.`);
       await this.refreshViews();
     }, existing, options?.prefill).open();
   }
 
-  /** 진도표 차시를 수업일지 노트로 승격하고 진도표 비고에 위키링크를 남긴다. */
-  async promoteProgressLesson(date: string, period: number): Promise<void> {
+  /** 수업일지를 날짜·교시로 찾는다 (교시 문자열은 "3교시" 형태에서 숫자만 비교). */
+  findLessonAt(date: string, period: number): CurriculumLesson | undefined {
+    return this.repository.getCurriculumLessons().find(
+      (lesson) =>
+        lesson.date === date && Number.parseInt(lesson.period, 10) === period
+    );
+  }
+
+  /**
+   * 이 교시의 수업 기록(허브 노트)을 연다 — 있으면 노트를 열고,
+   * 없으면 진도 맥락을 미리 채운 수업 기록 모달을 연다. 단원 연계는 선택.
+   */
+  async recordLessonAt(date: string, period: number): Promise<void> {
     try {
+      const existing = this.findLessonAt(date, period);
+      if (existing) {
+        await this.openFile(existing.file);
+        return;
+      }
       const calendar = await this.repository.getAcademicCalendar();
       if (!calendar) {
         new Notice("학사일정 노트가 필요합니다.");
@@ -1152,36 +1167,40 @@ export default class ClassManagementPlugin extends Plugin {
       );
       const row = contents.get(`${date}|${period}`);
 
-      const units = this.repository.getCurriculumUnits();
-      const candidates = units.filter((unit) => unit.subject === subject);
-      const pool = candidates.length > 0 ? candidates : units;
-      if (pool.length === 0) {
-        new Notice("통합 단원이 없습니다. 먼저 통합 단원을 설계해 주세요.");
-        this.openCurriculumUnitModal();
-        return;
-      }
-      new UnitSuggestModal(this.app, pool, (unit) => {
-        this.openCurriculumLessonModal(unit, undefined, {
-          prefill: {
-            date,
-            period: `${period}교시`,
-            hours: row?.hours ?? 1,
-            objective: row?.topic ?? "",
-            activities: row ? [row.unit, row.topic].filter(Boolean).join(" · ") : ""
-          },
-          afterCreate: async (created) => {
-            if (table && row) {
-              await this.repository.updateProgressRowNote(
-                table,
-                row.order,
-                `[[${created.file.path.replace(/\.md$/i, "")}|수업일지]]`
-              );
-            }
+      // 과목·기간이 맞는 단원이 하나로 좁혀지면 미리 연결해 준다(모달에서 바꿀 수 있음).
+      const candidates = this.repository
+        .getCurriculumUnits()
+        .filter((unit) => unit.subject === subject);
+      const dated = candidates.filter(
+        (unit) => unit.startDate && unit.endDate && unit.startDate <= date && date <= unit.endDate
+      );
+      const preselect = dated.length === 1
+        ? dated[0]
+        : candidates.length === 1
+          ? candidates[0]
+          : null;
+
+      this.openCurriculumLessonModal(preselect ?? null, undefined, {
+        prefill: {
+          date,
+          period: `${period}교시`,
+          subject,
+          hours: row?.hours ?? 1,
+          objective: row?.topic ?? "",
+          activities: row ? [row.unit, row.topic].filter(Boolean).join(" · ") : ""
+        },
+        afterCreate: async (created) => {
+          if (table && row) {
+            await this.repository.updateProgressRowNote(
+              table,
+              row.order,
+              `[[${created.file.path.replace(/\.md$/i, "")}|수업일지]]`
+            );
           }
-        });
-      }, `${date} ${period}교시(${subject}) 차시를 연결할 단원 선택`).open();
+        }
+      });
     } catch (error) {
-      new Notice(error instanceof Error ? error.message : "수업일지 승격에 실패했습니다.");
+      new Notice(error instanceof Error ? error.message : "수업 기록을 열지 못했습니다.");
     }
   }
 
@@ -1225,78 +1244,38 @@ export default class ClassManagementPlugin extends Plugin {
     }
   }
 
-  /**
-   * 어제까지 실시된 차시를 불변 노트로 확정한다.
-   * auto=true(로드 시)는 밀린 날이 14일 이하일 때만 생성하고, 그보다 많으면 안내만 한다.
-   */
-  async confirmTaughtLessons(auto: boolean): Promise<void> {
+  /** 실행 완료 수업일지 합계로 단원의 실시 시수(taughtHours)를 갱신한다 — 단원 노트 1개만 쓴다. */
+  async refreshUnitProgress(unitId: string): Promise<void> {
+    if (!unitId) return;
     try {
-      const calendar = await this.repository.getAcademicCalendar();
-      if (!calendar) {
-        if (!auto) new Notice("학사일정 노트가 필요합니다.");
-        return;
-      }
-      const through = taughtThroughDate(localDate());
-      const lessonLogs = new Map<string, string>();
-      for (const lesson of this.repository.getCurriculumLessons()) {
-        const period = Number.parseInt(lesson.period, 10);
-        if (!lesson.date || Number.isNaN(period)) continue;
-        lessonLogs.set(
-          `${lesson.date}|${period}`,
-          `[[${lesson.file.path.replace(/\.md$/i, "")}|수업일지]]`
-        );
-      }
-      const entries = [];
-      for (const semester of ["1학기", "2학기"]) {
-        const timetable = await this.repository.getBaseTimetable(semester);
-        if (!timetable) continue;
-        const tables = await this.repository.getProgressTables(semester);
-        const contents = buildAssignedSlotContents(
-          calendar,
-          { [semester]: timetable },
-          { [semester]: tables }
-        );
-        entries.push(
-          ...collectTaughtSlots(calendar, timetable, semester, contents, through, lessonLogs)
-        );
-      }
-      const missing = this.repository.filterMissingTaughtLessons(entries);
-      if (missing.length === 0) {
-        if (!auto) new Notice("확정할 새 실시 차시가 없습니다.");
-        return;
-      }
-      const days = distinctDates(missing);
-      if (auto && days > 14) {
-        new Notice(
-          `확정되지 않은 실시 차시가 ${days}일치(${missing.length}건) 있습니다. ` +
-            "`실시 차시 확정 (어제까지)` 명령으로 일괄 생성할 수 있습니다."
-        );
-        return;
-      }
-      const created = await this.repository.createTaughtLessonNotes(missing);
-      new Notice(`실시 차시 ${created}건을 확정했습니다. (${days}일치)`);
-    } catch (error) {
-      if (!auto) {
-        new Notice(error instanceof Error ? error.message : "실시 차시 확정에 실패했습니다.");
-      }
-    }
-  }
-
-  /** 수업일지 합계로 단원의 실시 시수(taughtHours)를 갱신한다 — 단원 노트 1개만 쓴다. */
-  async refreshUnitProgress(
-    unit: CurriculumUnit,
-    delta?: { id: string; hours: number }
-  ): Promise<void> {
-    try {
-      const total = this.repository
-        .getCurriculumLessons()
-        .filter((lesson) => lesson.unitId === unit.id && lesson.id !== delta?.id)
-        .reduce((sum, lesson) => sum + lesson.hours, 0) + (delta?.hours ?? 0);
+      const unit = this.repository.getCurriculumUnits().find((item) => item.id === unitId);
+      if (!unit) return;
+      const total = taughtHoursForUnit(unitId, this.repository.getCurriculumLessons());
       await this.app.fileManager.processFrontMatter(unit.file, (frontmatter) => {
         frontmatter.taughtHours = total;
       });
     } catch {
       // 진행률 갱신 실패는 수업일지 저장을 막지 않는다.
+    }
+  }
+
+  /** 어제 이전의 수업 기록에 recordStatus: raw를 스탬프한다. 한 번 raw가 되면 다시 쓰지 않는다. */
+  async stampRawLessonRecords(): Promise<void> {
+    try {
+      const today = localDate();
+      const targets = this.repository
+        .getCurriculumLessons()
+        .filter((lesson) => lesson.date && lesson.date < today && !lesson.recordStatus);
+      for (const lesson of targets) {
+        await this.app.fileManager.processFrontMatter(lesson.file, (frontmatter) => {
+          if (!frontmatter.recordStatus) frontmatter.recordStatus = "raw";
+        });
+      }
+      if (targets.length > 0) {
+        new Notice(`지난 수업 기록 ${targets.length}건을 RAW로 확정했습니다.`);
+      }
+    } catch {
+      // 스탬프 실패는 다음 로드에서 재시도된다.
     }
   }
 

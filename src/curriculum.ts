@@ -125,13 +125,13 @@ export function emptyCurriculumUnit(settings: ClassManagementSettings): NewCurri
   };
 }
 
-export function emptyCurriculumLesson(unit: CurriculumUnit): NewCurriculumLesson {
+export function emptyCurriculumLesson(unit: CurriculumUnit | null): NewCurriculumLesson {
   return {
     id: createCurriculumId("lesson"),
-    unitId: unit.id,
-    unitTitle: unit.unitName,
-    unitPath: unit.file.path.replace(/\.md$/i, ""),
-    subject: unit.subject,
+    unitId: unit?.id ?? "",
+    unitTitle: unit?.unitName ?? "",
+    unitPath: unit ? unit.file.path.replace(/\.md$/i, "") : "",
+    subject: unit?.subject ?? "",
     date: "",
     period: "",
     sequence: 1,
@@ -142,12 +142,13 @@ export function emptyCurriculumLesson(unit: CurriculumUnit): NewCurriculumLesson
     assessmentEvidence: "",
     feedback: "",
     reflection: "",
-    conceptInquiryPhase: unit.conceptInquiryEnabled ? "engage" : "",
-    conceptInquiryStrandId: unit.conceptInquiryStrands[0]?.id ?? "",
-    conceptInquiryStrandTitle: unit.conceptInquiryStrands[0]?.title ?? "",
+    conceptInquiryPhase: unit?.conceptInquiryEnabled ? "engage" : "",
+    conceptInquiryStrandId: unit?.conceptInquiryStrands[0]?.id ?? "",
+    conceptInquiryStrandTitle: unit?.conceptInquiryStrands[0]?.title ?? "",
     studentGeneralization: "",
     transferEvidence: "",
-    status: "planned"
+    status: "planned",
+    recordStatus: ""
   };
 }
 
@@ -383,13 +384,34 @@ export function curriculumLessonMarkdown(
   lesson: NewCurriculumLesson | CurriculumLesson,
   settings: ClassManagementSettings
 ): string {
+  const section = (title: string, body: string): string[] =>
+    body.trim() ? [`## ${title}`, "", body, ""] : [];
+  const generalizationLines = [
+    ...(lesson.studentGeneralization.trim()
+      ? [`- 학생 일반화: ${lesson.studentGeneralization}`]
+      : []),
+    ...(lesson.transferEvidence.trim()
+      ? [`- 새로운 맥락으로의 전이: ${lesson.transferEvidence}`]
+      : [])
+  ];
+  const sections = [
+    ...section("수업 목표", lesson.objective),
+    ...section("학생 중심 학습 활동", lesson.activities),
+    ...section("과정중심 평가 증거", lesson.assessmentEvidence),
+    ...section("학생 참여와 배움", lesson.studentParticipation),
+    ...section("피드백", lesson.feedback),
+    ...(generalizationLines.length
+      ? ["## 학생이 형성한 일반화와 전이 증거", "", ...generalizationLines, ""]
+      : []),
+    ...section("교사 성찰", lesson.reflection)
+  ];
   return [
     "---",
     "class-management: curriculum-lesson",
     `curriculumLessonId: ${yamlString(lesson.id)}`,
     `curriculumUnitId: ${yamlString(lesson.unitId)}`,
     `curriculumUnitTitle: ${yamlString(lesson.unitTitle)}`,
-    `curriculumUnitPath: ${yamlString(`[[${lesson.unitPath}]]`)}`,
+    `curriculumUnitPath: ${yamlString(lesson.unitPath ? `[[${lesson.unitPath}]]` : "")}`,
     `class: ${yamlString(settings.className)}`,
     `schoolYear: ${yamlString(settings.schoolYear)}`,
     `semester: ${yamlString(settings.semester)}`,
@@ -410,47 +432,20 @@ export function curriculumLessonMarkdown(
     `studentGeneralization: ${yamlString(lesson.studentGeneralization)}`,
     `transferEvidence: ${yamlString(lesson.transferEvidence)}`,
     `lessonStatus: ${yamlString(lesson.status)}`,
+    `recordStatus: ${yamlString(lesson.recordStatus)}`,
     "tags:",
     "  - class-management/curriculum-lesson",
     "---",
     "",
     `# ${lesson.date || "날짜 미정"} · ${lesson.subject} ${lesson.sequence}차시`,
     "",
-    `- 통합 단원: [[${lesson.unitPath}|${lesson.unitTitle}]]`,
+    ...(lesson.unitPath ? [`- 통합 단원: [[${lesson.unitPath}|${lesson.unitTitle}]]`] : []),
     `- 교시: ${lesson.period || "미정"}`,
     `- 상태: ${CURRICULUM_LESSON_STATUS_LABELS[lesson.status]}`,
     ...(lesson.conceptInquiryPhase ? [`- 탐구 단계: ${CONCEPT_INQUIRY_PHASE_LABELS[lesson.conceptInquiryPhase]}`] : []),
     ...(lesson.conceptInquiryStrandTitle ? [`- 스트랜드: ${lesson.conceptInquiryStrandTitle}`] : []),
     "",
-    "## 수업 목표",
-    "",
-    lesson.objective || "미입력",
-    "",
-    "## 학생 중심 학습 활동",
-    "",
-    lesson.activities || "미입력",
-    "",
-    "## 과정중심 평가 증거",
-    "",
-    lesson.assessmentEvidence || "미입력",
-    "",
-    "## 학생 참여와 배움",
-    "",
-    lesson.studentParticipation || "수업 후 입력",
-    "",
-    "## 피드백",
-    "",
-    lesson.feedback || "수업 후 입력",
-    "",
-    "## 학생이 형성한 일반화와 전이 증거",
-    "",
-    `- 학생 일반화: ${lesson.studentGeneralization || "수업 후 입력"}`,
-    `- 새로운 맥락으로의 전이: ${lesson.transferEvidence || "수업 후 입력"}`,
-    "",
-    "## 교사 성찰",
-    "",
-    lesson.reflection || "수업 후 입력",
-    ""
+    ...(sections.length ? sections : ["## 기록", ""])
   ].join("\n");
 }
 
@@ -536,6 +531,7 @@ export function parseCurriculumLesson(
     studentGeneralization: stringValue(frontmatter.studentGeneralization),
     transferEvidence: stringValue(frontmatter.transferEvidence),
     status: status in CURRICULUM_LESSON_STATUS_LABELS ? status : "planned",
+    recordStatus: stringValue(frontmatter.recordStatus),
     createdAt: file.stat.ctime
   };
 }
