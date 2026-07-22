@@ -2,7 +2,7 @@
 
 학급 명단과 관찰·상담·칭찬 기록을 Obsidian의 Markdown 파일로 관리하는 커뮤니티 플러그인입니다.
 
-> **설계 문서**: [제품 정의서](docs/PRODUCT.md) · [화면 지도와 작업 흐름](docs/UX-FLOWS.md) · [UI/UX 원칙](docs/UIUX-PRINCIPLES.md) — 새 기능은 이 세 문서에 맞춰 설계합니다. 순수 도메인 로직은 [`packages/core`](packages/core)에 플랫폼 독립으로 분리되어 있습니다.
+> **설계 문서**: [제품 정의서](docs/PRODUCT.md) · [화면 지도와 작업 흐름](docs/UX-FLOWS.md) · [디자인 가이드](docs/DESIGN.md) · [UI/UX 원칙](docs/UIUX-PRINCIPLES.md) — 새 기능은 이 문서들에 맞춰 설계합니다. 순수 도메인 로직은 [`packages/core`](packages/core)에 플랫폼 독립으로 분리되어 있습니다.
 
 ## 현재 제공하는 기능
 

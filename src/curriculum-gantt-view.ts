@@ -118,6 +118,20 @@ export class CurriculumGanttView extends ItemView {
     }
   }
 
+  /** 클릭 가능한 요소에 키보드 동등 동작을 부여한다 (DESIGN §7.4). */
+  private actionable(el: HTMLElement, label: string, run: () => void): void {
+    el.setAttribute("role", "button");
+    el.setAttribute("tabindex", "0");
+    el.setAttribute("aria-label", label);
+    el.addEventListener("click", run);
+    el.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        run();
+      }
+    });
+  }
+
   private renderToolbar(container: HTMLElement): void {
     const bar = container.createDiv({ cls: "class-management-gantt-toolbar" });
     for (const semester of ["1학기", "2학기"]) {
@@ -187,7 +201,7 @@ export class CurriculumGanttView extends ItemView {
       const dot = track.createDiv({ cls: "class-management-gantt-event" });
       dot.style.left = `${pos(event.date)}%`;
       dot.setAttribute("title", `${event.date} ${event.name}`);
-      dot.addEventListener("click", () => void this.plugin.openEventNote(event));
+      this.actionable(dot, `${event.date} ${event.name} 행사 노트 열기`, () => void this.plugin.openEventNote(event));
     }
   }
 
@@ -205,7 +219,7 @@ export class CurriculumGanttView extends ItemView {
     }
     label.createSpan({ text: unit.unitName });
     label.setAttribute("title", `${unit.subject} · ${unit.unitName} (${unit.startDate}~${unit.endDate}, ${unit.plannedHours}시수)`);
-    label.addEventListener("click", () => void this.plugin.openFile(unit.file));
+    this.actionable(label, `${unit.unitName} 단원 노트 열기`, () => void this.plugin.openFile(unit.file));
 
     const track = row.createDiv({ cls: "class-management-gantt-track" });
     const left = pos(unit.startDate);
@@ -216,7 +230,7 @@ export class CurriculumGanttView extends ItemView {
     bar.style.left = `${left}%`;
     bar.style.width = `${width}%`;
     bar.setAttribute("title", `${unit.unitName} · ${unit.startDate}~${unit.endDate} · ${unit.plannedHours}시수`);
-    bar.addEventListener("click", () => void this.plugin.openFile(unit.file));
+    this.actionable(bar, `${unit.unitName} (${unit.startDate}~${unit.endDate}) 단원 노트 열기`, () => void this.plugin.openFile(unit.file));
     if (width > 7) bar.createSpan({ text: `${unit.plannedHours}시수` });
 
     const today = localDate();
@@ -240,7 +254,7 @@ export class CurriculumGanttView extends ItemView {
       const mark = track.createDiv({ cls: "class-management-gantt-assessment" });
       mark.style.left = `${pos(item.date)}%`;
       mark.setAttribute("title", `${item.date} ${item.title}`);
-      mark.addEventListener("click", () => void this.plugin.openFile(item.file));
+      this.actionable(mark, `${item.date} ${item.title} 열기`, () => void this.plugin.openFile(item.file));
     }
   }
 }

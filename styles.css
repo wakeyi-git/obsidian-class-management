@@ -1,15 +1,13 @@
 .class-management-dashboard {
   --class-management-card-border: color-mix(in srgb, var(--background-modifier-border) 82%, transparent);
   padding: 24px;
-  background:
-    radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--interactive-accent) 10%, transparent), transparent 30%),
-    var(--background-primary);
+  background: var(--background-primary);
 }
 
 /* Curriculum-instruction-assessment-record integration */
 .class-management-curriculum-view {
   padding: 24px;
-  background: radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--interactive-accent) 9%, transparent), transparent 32%), var(--background-primary);
+  background: var(--background-primary);
 }
 
 .class-management-curriculum-cycle {
@@ -78,7 +76,6 @@
   border: 1px solid var(--background-modifier-border);
   border-radius: 14px;
   background: var(--background-secondary);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.04);
 }
 
 .class-management-curriculum-unit-top {
@@ -331,7 +328,6 @@
   border: 1px solid var(--class-management-card-border);
   border-radius: 14px;
   background: var(--background-secondary);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.04);
 }
 
 .class-management-summary-card {
@@ -924,7 +920,9 @@
 }
 
 .class-management-calendar-day.is-today {
-  box-shadow: inset 0 0 0 2px var(--interactive-accent);
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
 }
 
 .class-management-calendar-day-header {
@@ -956,33 +954,45 @@
   padding: 5px 7px;
   overflow: hidden;
   flex-direction: column;
-  border: 0;
-  border-left: 3px solid var(--interactive-accent);
+  position: relative;
+  border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
   background: var(--background-secondary);
   box-shadow: none;
+  padding-left: 16px;
   font-size: var(--font-ui-smaller);
   text-align: left;
 }
 
-.class-management-calendar-event.is-attendance {
-  border-left-color: var(--color-orange);
+.class-management-calendar-event::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 9px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--interactive-accent);
 }
 
-.class-management-calendar-event.is-assignment {
-  border-left-color: var(--color-purple);
+.class-management-calendar-event.is-attendance::before {
+  background: var(--color-orange);
 }
 
-.class-management-calendar-event.is-task {
-  border-left-color: var(--color-blue);
+.class-management-calendar-event.is-assignment::before {
+  background: var(--color-purple);
 }
 
-.class-management-calendar-event.is-notice {
-  border-left-color: var(--color-green);
+.class-management-calendar-event.is-task::before {
+  background: var(--color-blue);
 }
 
-.class-management-calendar-event.is-routine {
-  border-left-color: var(--color-cyan);
+.class-management-calendar-event.is-notice::before {
+  background: var(--color-green);
+}
+
+.class-management-calendar-event.is-routine::before {
+  background: var(--color-cyan);
 }
 
 .class-management-calendar-event strong,
@@ -1087,7 +1097,19 @@
 }
 
 .class-management-task-card.is-notice {
-  border-left: 3px solid var(--color-green);
+  position: relative;
+  padding-left: 18px;
+}
+
+.class-management-task-card.is-notice::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 14px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-green);
 }
 
 .class-management-task-card.is-notice > button {
@@ -1207,7 +1229,8 @@
 .class-management-ai-setup-modal blockquote {
   margin: 12px 0;
   padding: 10px 14px;
-  border-left: 3px solid var(--color-orange);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
   background: var(--background-secondary);
 }
 
@@ -1218,7 +1241,8 @@
 .class-management-school-record-modal blockquote {
   margin: 12px 0 16px;
   padding: 10px 14px;
-  border-left: 3px solid var(--color-orange);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
   background: var(--background-secondary);
 }
 
@@ -1269,7 +1293,8 @@
 .class-management-school-evidence-modal blockquote {
   margin: 10px 0 16px;
   padding: 10px 14px;
-  border-left: 3px solid var(--interactive-accent);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
   background: var(--background-secondary);
 }
 
@@ -1893,7 +1918,7 @@
 }
 
 .class-management-ops-week-table td.is-override {
-  background: color-mix(in srgb, var(--color-yellow, #e5c07b) 16%, transparent);
+  background: color-mix(in srgb, var(--color-yellow) 16%, transparent);
 }
 
 .class-management-ops-day-status {
@@ -1913,7 +1938,7 @@
 }
 
 .class-management-ops-audit-table tr.is-under td {
-  color: var(--color-orange, #d19a66);
+  color: var(--color-orange);
 }
 
 .class-management-ops-audit-table tr.is-missing td {
@@ -2010,9 +2035,8 @@
   color: var(--text-accent);
   font-weight: 600;
   padding: 6px 10px;
-  border-left: 3px solid var(--interactive-accent);
   background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 .suggestion-item.class-management-pin-here {
@@ -2076,7 +2100,6 @@
   background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
   color: var(--text-accent);
   font-weight: 600;
-  box-shadow: inset 2.5px 0 0 var(--interactive-accent);
 }
 
 .class-management-nav-icon {
@@ -2210,7 +2233,7 @@
 }
 
 .class-management-today-hint.is-warning {
-  color: var(--color-orange, #d19a66);
+  color: var(--color-orange);
   font-weight: 600;
 }
 
@@ -2241,7 +2264,7 @@
 }
 
 .class-management-today-badge.is-warning {
-  color: var(--color-orange, #d19a66);
+  color: var(--color-orange);
 }
 
 /* ===== 인스펙터 ===== */
@@ -2321,6 +2344,7 @@
 
 /* ── 일체화 간트 ── */
 .class-management-gantt-view {
+  --class-management-gantt-label: 190px;
   padding: 12px 16px;
   overflow: auto;
 }
@@ -2364,7 +2388,7 @@
 }
 .class-management-gantt-row.is-header { border-bottom: none; min-height: 22px; }
 .class-management-gantt-label {
-  flex: 0 0 190px;
+  flex: 0 0 var(--class-management-gantt-label);
   padding: 2px 8px 2px 2px;
   font-size: 0.82em;
   white-space: nowrap;
@@ -2427,7 +2451,7 @@
   left: 0;
   top: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.14);
+  background: color-mix(in srgb, var(--text-normal) 12%, transparent);
   pointer-events: none;
 }
 .class-management-gantt-assessment {
@@ -2455,11 +2479,42 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 190px;
+  left: var(--class-management-gantt-label);
   right: 0;
   pointer-events: none;
   z-index: 3;
 }
+.class-management-gantt-bar:focus-visible,
+.class-management-gantt-assessment:focus-visible,
+.class-management-gantt-event:focus-visible,
+.class-management-gantt-label:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+
+@media (max-width: 700px) {
+  .class-management-gantt-view {
+    --class-management-gantt-label: 120px;
+    padding: 14px;
+  }
+
+  .class-management-gantt-row {
+    min-height: 40px;
+  }
+
+  .class-management-gantt-bar {
+    top: 12px;
+  }
+
+  .class-management-gantt-assessment {
+    top: 14px;
+  }
+
+  .class-management-gantt-event {
+    top: 15px;
+  }
+}
+
 .class-management-gantt-today {
   position: absolute;
   top: 0;

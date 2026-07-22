@@ -150,7 +150,10 @@ export class NavigatorView extends ItemView {
     active = false
   ): void {
     const row = parent.createDiv({ cls: "class-management-nav-item" });
-    if (active) row.addClass("is-active");
+    if (active) {
+      row.addClass("is-active");
+      row.setAttribute("aria-current", "page");
+    }
     row.setAttribute("role", "button");
     row.setAttribute("tabindex", "0");
     row.setAttribute("aria-label", item.label);

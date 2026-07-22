@@ -6,7 +6,8 @@ Classroom Manager 옵시디언 플러그인 저장소. 실사용 볼트는 `~/Do
 
 1. [docs/PRODUCT.md](docs/PRODUCT.md) — 목표·비목표·아키텍처 3원칙(노트=진실/원장=계산/과거=불변)·데이터 모델(kind 22종)·LLM 협업 모델(§9-1)·로드맵(§10, R0가 최우선)
 2. [docs/UX-FLOWS.md](docs/UX-FLOWS.md) — 뷰 지도·워크플로 0~6·진입 규약(좌클릭=보기/우클릭=편집)
-3. [docs/UIUX-PRINCIPLES.md](docs/UIUX-PRINCIPLES.md) — 상호작용 규약·**용어 사전(§2: 수업일지/과제/단원/학생부 근거 — 유의어 금지)**·알림 문형·LLM 협업 규약(§6-1)·리팩토링 백로그(§7)
+3. [docs/DESIGN.md](docs/DESIGN.md) — AI 에이전트용 시각 언어·토큰·레이아웃·컴포넌트·반응형·접근성 구현 규격
+4. [docs/UIUX-PRINCIPLES.md](docs/UIUX-PRINCIPLES.md) — 상호작용 규약·**용어 사전(§2: 수업일지/과제/단원/학생부 근거 — 유의어 금지)**·알림 문형·LLM 협업 규약(§6-1)·리팩토링 백로그(§7)
 
 ## 코드 경계 (테스트로 강제됨)
 
