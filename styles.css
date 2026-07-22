@@ -1883,6 +1883,24 @@
 }
 
 .class-management-ops-week-table,
+.class-management-slot-markers {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  font-size: var(--font-ui-smaller);
+}
+
+.class-management-slot-markers .is-project {
+  color: var(--interactive-accent);
+  font-weight: 600;
+}
+
+.class-management-slot-markers .is-assignment {
+  color: var(--color-orange);
+  font-weight: 600;
+}
+
 .class-management-ops-audit-table {
   width: 100%;
   border-collapse: collapse;

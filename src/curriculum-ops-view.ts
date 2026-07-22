@@ -11,6 +11,7 @@ import {
 } from "@core/academic-calendar";
 import { isRemovedSubject, plannedHoursBySubject, resolveDay } from "@core/timetable";
 import { buildAssignedSlotContents } from "@core/progress";
+import { wikiLinkText } from "@core/planning";
 import { collectSubjectOptions } from "@core/subject-options";
 import { buildHoursAudit } from "@core/hours-audit";
 import { addDays } from "@core/academic-calendar";
@@ -24,6 +25,27 @@ import type {
   ProgressRow,
   ProgressTable,
   SemesterHours } from "@core/types";
+
+/**
+ * 배정 차시의 프로젝트(✦ 강조색)·과제(◆ 주황) 연계를 칸에 표시한다 (§4 시각 언어).
+ * 표식은 정보 표시이며 이동은 차시 인스펙터가 담당한다.
+ */
+export function appendSlotMarkers(container: HTMLElement, row: ProgressRow): void {
+  const project = row.unitLink.trim();
+  const assignments = [...row.assignmentLink.matchAll(/\[\[(?:[^\]]|\\\])*?\]\]/g)].map((m) => m[0]);
+  if (!project && assignments.length === 0) return;
+  const markers = container.createDiv({ cls: "class-management-slot-markers" });
+  if (project) {
+    const name = wikiLinkText(project);
+    const chip = markers.createSpan({ cls: "is-project", text: `✦ ${name}` });
+    chip.setAttribute("title", `프로젝트: ${name}`);
+  }
+  if (assignments.length > 0) {
+    const names = assignments.map((link) => wikiLinkText(link)).join(", ");
+    const chip = markers.createSpan({ cls: "is-assignment", text: "◆ 과제" });
+    chip.setAttribute("title", `과제: ${names}`);
+  }
+}
 
 export const CURRICULUM_OPS_VIEW_TYPE = "class-management-curriculum-ops";
 
@@ -303,6 +325,7 @@ export class CurriculumOpsView extends ItemView {
               content.fixedPeriod > 0 ? "이 날짜·교시에 고정된 차시" : "이 날짜에 고정된 차시"
             );
           }
+          appendSlotMarkers(cell, content);
         }
         if (cellEditable) {
           this.attachCellEditor(cell, {
@@ -316,7 +339,9 @@ export class CurriculumOpsView extends ItemView {
             pinnedRowLabel: pinnedHere && content
               ? `${content.order}. ${content.topic}`
               : "",
-            label: `${day.date} ${period}교시 ${resolved.subject || "빈 교시"} — 클릭: 차시 정보, 우클릭: 변경 메뉴`
+            label: `${day.date} ${period}교시 ${resolved.subject || "빈 교시"}${
+              content?.unitLink.trim() ? ` · 프로젝트 ${wikiLinkText(content.unitLink)}` : ""
+            }${content?.assignmentLink.trim() ? " · 과제 있음" : ""} — 클릭: 차시 정보, 우클릭: 변경 메뉴`
           });
         }
       });

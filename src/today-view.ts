@@ -3,6 +3,7 @@ import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
 import { dayStatus, semesterForDate, weekdayLabel } from "@core/academic-calendar";
 import { resolveDay } from "@core/timetable";
 import { buildAssignedSlotContents } from "@core/progress";
+import { appendSlotMarkers } from "./curriculum-ops-view";
 import { collectSubjectOptions } from "@core/subject-options";
 import { showTimetableCellMenu, type TimetableCellContext } from "./timetable-cell-modal";
 import { localDate } from "@core/utils";
@@ -130,6 +131,7 @@ export class TodayView extends ItemView {
           text: `${pinned ? "📌 " : ""}${[content.unit, content.topic].filter(Boolean).join(" · ")}`,
           cls: "class-management-today-topic"
         });
+        appendSlotMarkers(body, content);
       }
       if (semester && timetable) {
         row.addClass("is-editable");
