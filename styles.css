@@ -91,7 +91,8 @@
   padding: 16px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 14px;
-  background: var(--background-secondary);
+  /* 칸반 열(secondary) 위에서 구분되도록 카드면은 primary — GTD 카드와 같은 대비 규약 */
+  background: var(--background-primary);
 }
 
 .class-management-curriculum-unit-top {
