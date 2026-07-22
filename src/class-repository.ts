@@ -1284,14 +1284,21 @@ export class ClassRepository {
     );
   }
 
-  async updateProgressRowNote(table: ProgressTable, order: number, link: string): Promise<void> {
+  /** 진도표의 한 행에 위키링크를 덧붙인다(이미 있으면 그대로). field: 비고·통합 단원·과제(평가). */
+  async appendProgressRowLink(
+    table: ProgressTable,
+    order: number,
+    field: "note" | "unitLink" | "assignmentLink",
+    link: string
+  ): Promise<void> {
     this.assertWritableClass();
     const settings = this.getSettings();
-    const rows = table.rows.map((row) =>
-      row.order === order
-        ? { ...row, note: row.note.includes(link) ? row.note : `${row.note ? `${row.note} ` : ""}${link}` }
-        : row
-    );
+    const rows = table.rows.map((row) => {
+      if (row.order !== order) return row;
+      const current = row[field];
+      if (current.includes(link)) return row;
+      return { ...row, [field]: `${current ? `${current} ` : ""}${link}` };
+    });
     await this.app.vault.modify(
       table.file,
       progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)

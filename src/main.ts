@@ -56,6 +56,7 @@ import type {
   ClassManagementSettings,
   CurriculumLesson,
   CurriculumUnit,
+  CurriculumUnitLink,
   NoticeSheet,
   ProgressRow,
   SchoolRecordArea,
@@ -1121,6 +1122,34 @@ export default class ClassManagementPlugin extends Plugin {
     }, existing, options?.prefill).open();
   }
 
+  /** 단원 연계 과제를 그 날짜에 배정된 해당 과목 진도표 행의 과제(평가) 칸에 링크한다. */
+  private async linkAssignmentToProgress(
+    date: string,
+    title: string,
+    unitLink: CurriculumUnitLink | null,
+    file: TFile
+  ): Promise<void> {
+    if (!unitLink || !date) return;
+    try {
+      const unit = this.repository.getCurriculumUnits().find((item) => item.id === unitLink.id);
+      if (!unit) return;
+      const calendar = await this.repository.getAcademicCalendar();
+      if (!calendar) return;
+      const semester = semesterForDate(calendar, date);
+      if (!semester) return;
+      const tables = await this.repository.getProgressTables(semester);
+      const table = tables.find((item) => item.subject === unit.subject);
+      if (!table) return;
+      const link = `[[${file.path.replace(/\.md$/i, "")}|${title}]]`;
+      for (const row of table.rows) {
+        if (!row.assigned.includes(date)) continue;
+        await this.repository.appendProgressRowLink(table, row.order, "assignmentLink", link);
+      }
+    } catch {
+      // 진도표 기입 실패는 과제 저장을 막지 않는다.
+    }
+  }
+
   /** 수업일지를 날짜·교시로 찾는다 (교시 문자열은 "3교시" 형태에서 숫자만 비교). */
   findLessonAt(date: string, period: number): CurriculumLesson | undefined {
     return this.repository.getCurriculumLessons().find(
@@ -1191,9 +1220,10 @@ export default class ClassManagementPlugin extends Plugin {
         },
         afterCreate: async (created) => {
           if (table && row) {
-            await this.repository.updateProgressRowNote(
+            await this.repository.appendProgressRowLink(
               table,
               row.order,
+              "note",
               `[[${created.file.path.replace(/\.md$/i, "")}|수업일지]]`
             );
           }
@@ -1459,7 +1489,8 @@ export default class ClassManagementPlugin extends Plugin {
       existing,
       this.repository.getCurriculumUnits(),
       async (date, title, marks, unitLink, existingFile) => {
-        await this.repository.saveAssignment(date, title, marks, unitLink, existingFile);
+        const file = await this.repository.saveAssignment(date, title, marks, unitLink, existingFile);
+        await this.linkAssignmentToProgress(date, title, unitLink, file);
         new Notice(
           `${title} 과제 체크를 저장했습니다.${unitLink ? ` (단원 연계: ${unitLink.title})` : ""}`
         );

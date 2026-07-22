@@ -12,9 +12,9 @@ import { escapeTableCell, splitMarkdownTableRow, yamlString } from "./utils";
 import type { AcademicCalendar, BaseTimetable } from "./types";
 
 export const PROGRESS_TABLE_HEADER =
-  "| 고정 | 순 | 배정 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 준비물 | 비고 |";
+  "| 고정 | 순 | 배정 | 단원·영역 | 학습 내용 | 시수 | 성취기준 | 통합 단원 | 과제(평가) | 준비물 | 비고 |";
 export const PROGRESS_TABLE_SEPARATOR =
-  "| --- | ---: | --- | --- | --- | ---: | --- | --- | --- |";
+  "| --- | ---: | --- | --- | --- | ---: | --- | --- | --- | --- | --- |";
 
 type ProgressColumnIndex = {
   fixed: number;
@@ -24,20 +24,30 @@ type ProgressColumnIndex = {
   topic: number;
   hours: number;
   standard: number;
+  unitLink: number;
+  assignment: number;
   materials: number;
   note: number;
 };
 
 const CURRENT_COLUMN_INDEX: ProgressColumnIndex = {
-  fixed: 0, order: 1, assigned: 2, unit: 3, topic: 4, hours: 5, standard: 6, materials: 7, note: 8
+  fixed: 0, order: 1, assigned: 2, unit: 3, topic: 4, hours: 5,
+  standard: 6, unitLink: 7, assignment: 8, materials: 9, note: 10
+};
+const V1_17_COLUMN_INDEX: ProgressColumnIndex = {
+  fixed: 0, order: 1, assigned: 2, unit: 3, topic: 4, hours: 5,
+  standard: 6, unitLink: -1, assignment: -1, materials: 7, note: 8
 };
 const V1_10_COLUMN_INDEX: ProgressColumnIndex = {
-  order: 0, fixed: 1, assigned: 2, unit: 3, topic: 4, hours: 5, standard: 6, materials: 7, note: 8
+  order: 0, fixed: 1, assigned: 2, unit: 3, topic: 4, hours: 5,
+  standard: 6, unitLink: -1, assignment: -1, materials: 7, note: 8
 };
 const LEGACY_COLUMN_INDEX: ProgressColumnIndex = {
-  order: 0, unit: 1, topic: 2, hours: 3, standard: 4, materials: 5, fixed: 6, assigned: 7, note: 8
+  order: 0, unit: 1, topic: 2, hours: 3, standard: 4, materials: 5,
+  fixed: 6, assigned: 7, unitLink: -1, assignment: -1, note: 8
 };
 
+/** 헤더 이름으로 열 위치를 찾고, 이름 매칭이 안 되면 구버전 고정 배치로 되돌아간다. */
 function progressColumnIndex(content: string): ProgressColumnIndex {
   const lines = content.split(/\r?\n/);
   const start = lines.findIndex((line) => /^#{2,3}\s+진도표/.test(line.trim()));
@@ -47,11 +57,34 @@ function progressColumnIndex(content: string): ProgressColumnIndex {
     if (/^#{1,6}\s/.test(line)) break;
     const cells = splitMarkdownTableRow(line);
     if (cells.length === 0) continue;
-    if ((cells[0] ?? "").includes("고정")) return CURRENT_COLUMN_INDEX;
+    const named = columnIndexFromHeader(cells);
+    if (named) return named;
+    if ((cells[0] ?? "").includes("고정")) return V1_17_COLUMN_INDEX;
     if ((cells[1] ?? "").includes("고정")) return V1_10_COLUMN_INDEX;
     return LEGACY_COLUMN_INDEX;
   }
   return CURRENT_COLUMN_INDEX;
+}
+
+function columnIndexFromHeader(cells: string[]): ProgressColumnIndex | null {
+  const find = (matcher: (cell: string) => boolean): number =>
+    cells.findIndex((cell) => matcher(cell.trim()));
+  const index: ProgressColumnIndex = {
+    fixed: find((cell) => cell.startsWith("고정")),
+    order: find((cell) => cell === "순"),
+    assigned: find((cell) => cell === "배정"),
+    unit: find((cell) => cell.startsWith("단원")),
+    topic: find((cell) => cell === "학습 내용" || cell === "학습내용"),
+    hours: find((cell) => cell === "시수"),
+    standard: find((cell) => cell === "성취기준"),
+    unitLink: find((cell) => cell === "통합 단원"),
+    assignment: find((cell) => cell.startsWith("과제")),
+    materials: find((cell) => cell === "준비물"),
+    note: find((cell) => cell === "비고")
+  };
+  const core = [index.order, index.unit, index.topic, index.hours];
+  if (core.some((position) => position < 0)) return null;
+  return index;
 }
 
 export function parseProgressTable(
@@ -75,6 +108,8 @@ export function parseProgressTable(
         topic,
         hours: Number.isFinite(hours) && hours > 0 ? Math.floor(hours) : 1,
         standard: (cells[columns.standard] ?? "").trim(),
+        unitLink: columns.unitLink >= 0 ? (cells[columns.unitLink] ?? "").trim() : "",
+        assignmentLink: columns.assignment >= 0 ? (cells[columns.assignment] ?? "").trim() : "",
         materials: (cells[columns.materials] ?? "").trim(),
         fixedDate: fixed.date,
         fixedPeriod: fixed.period,
@@ -162,6 +197,10 @@ export function progressRowLine(row: ProgressRow): string {
     "|",
     escapeTableCell(row.standard),
     "|",
+    escapeTableCell(row.unitLink ?? ""),
+    "|",
+    escapeTableCell(row.assignmentLink ?? ""),
+    "|",
     escapeTableCell(row.materials),
     "|",
     escapeTableCell(row.note),
@@ -234,6 +273,8 @@ export function parseProgressImport(text: string, startOrder: number): ProgressI
       topic,
       hours: Number.isFinite(hours) && hours > 0 ? Math.floor(hours) : 1,
       standard: (cells[3] ?? "").trim(),
+      unitLink: "",
+      assignmentLink: "",
       materials: (cells[4] ?? "").trim(),
       fixedDate: "",
       fixedPeriod: 0,

@@ -507,6 +507,10 @@ export interface ProgressRow {
   topic: string;
   hours: number;
   standard: string;
+  /** 연결된 통합 단원 위키링크 */
+  unitLink: string;
+  /** 과제(평가) 노트 위키링크 */
+  assignmentLink: string;
   materials: string;
   fixedDate: string;
   /** 고정 교시 (0이면 날짜만 고정). 표기: `2026-10-15(3)` */
