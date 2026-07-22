@@ -162,6 +162,17 @@
   margin: 12px 0;
 }
 
+/* 지표 칸(기간·시수·차시·학생 근거) — primary 카드면 위에서 구분되는 칸 */
+.class-management-curriculum-metrics > div {
+  display: flex;
+  padding: 6px 8px;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+}
+
 .class-management-concept-inquiry-fields {
   margin: 0 0 16px;
   padding: 12px;

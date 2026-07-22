@@ -176,12 +176,13 @@ export class CurriculumView extends ItemView {
       this.renderBoard();
     });
 
-    const incompleteLabel = filterLabel(filters, "연결도 미완만");
-    const incomplete = incompleteLabel.createEl("input");
-    incomplete.type = "checkbox";
-    incomplete.checked = this.incompleteOnly;
+    const incompleteLabel = filterLabel(filters, "연결도");
+    const incomplete = incompleteLabel.createEl("select");
+    incomplete.createEl("option", { text: "전체", value: "" });
+    incomplete.createEl("option", { text: "미완만 (100% 미만)", value: "incomplete" });
+    incomplete.value = this.incompleteOnly ? "incomplete" : "";
     incomplete.addEventListener("change", () => {
-      this.incompleteOnly = incomplete.checked;
+      this.incompleteOnly = incomplete.value === "incomplete";
       this.renderBoard();
     });
   }
