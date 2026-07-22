@@ -246,7 +246,12 @@ export class CurriculumView extends ItemView {
     if (unit.conceptInquiryEnabled) {
       heading.createEl("span", { text: "개념기반 탐구", cls: "class-management-curriculum-badge is-concept" });
     }
-    heading.createEl("h3", { text: unit.unitName });
+    const titleButton = heading.createEl("button", {
+      text: unit.unitName,
+      cls: "class-management-curriculum-title-button",
+      attr: { "aria-label": `${unit.unitName} 단원 노트 열기` }
+    });
+    titleButton.addEventListener("click", () => void this.plugin.openFile(unit.file));
     heading.createEl("p", { text: unit.theme || CURRICULUM_DESIGN_APPROACH_LABELS[unit.designApproach] });
     const score = top.createDiv({ cls: `class-management-alignment-score ${audit.score === 100 ? "is-complete" : ""}` });
     score.createEl("strong", { text: `${audit.score}%` });
@@ -277,8 +282,6 @@ export class CurriculumView extends ItemView {
     evidenceButton.addEventListener("click", () => this.plugin.openCurriculumEvidenceFlow(unit));
     const batchEvidenceButton = actions.createEl("button", { text: "학급 근거" });
     batchEvidenceButton.addEventListener("click", () => this.plugin.openSchoolRecordBatch("subject-development", unit));
-    const note = actions.createEl("button", { text: "노트 열기" });
-    note.addEventListener("click", () => void this.plugin.openFile(unit.file));
 
     if (lessons.length) {
       const list = card.createDiv({ cls: "class-management-curriculum-lessons" });
@@ -299,6 +302,8 @@ export class CurriculumView extends ItemView {
 }
 
 function dateRange(start: string, end: string): string {
-  if (start && end) return `${start} ~ ${end}`;
-  return start || end || "미정";
+  const short = (date: string): string =>
+    date ? `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}` : "";
+  if (start && end) return `${short(start)}~${short(end)}`;
+  return short(start) || short(end) || "미정";
 }
