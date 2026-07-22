@@ -1,5 +1,5 @@
 import { App, ItemView, Modal, Notice, Setting, WorkspaceLeaf } from "obsidian";
-import { addOption } from "@core/dom";
+import { addOption, filterLabel } from "@core/dom";
 import {
   ACTIVITY_KIND_LABELS,
   EMPTY_ACTIVITY_FILTERS,
@@ -492,11 +492,6 @@ class SaveActivityViewModal extends Modal {
   }
 }
 
-function filterLabel(container: HTMLElement, text: string): HTMLLabelElement {
-  const label = container.createEl("label");
-  label.createEl("span", { text });
-  return label;
-}
 
 
 function appendHighlightedText(

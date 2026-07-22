@@ -1061,7 +1061,7 @@
 }
 
 .class-management-task-column {
-  min-height: 320px;
+  min-height: 160px;
   padding: 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 12px;

@@ -1,5 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
-import { addOption } from "@core/dom";
+import { addOption, filterLabel } from "@core/dom";
 import type ClassManagementPlugin from "./main";
 import { taskRecurrenceLabel } from "@core/task";
 import type { NoticeSheet, TaskEntry, TaskStatus } from "@core/types";
@@ -71,10 +71,18 @@ export class TaskView extends ItemView {
       (!this.context || task.context === this.context)
     );
 
-    const board = this.contentEl.createDiv({ cls: "class-management-task-board" });
     const pendingNotices = notices.filter((notice) =>
       notice.marks.some((mark) => mark.status !== "회신 완료")
     );
+    if (filtered.length === 0 && pendingNotices.length === 0) {
+      this.contentEl.createEl("p", {
+        cls: "class-management-today-hint",
+        text: tasks.length === 0
+          ? "할 일이 없습니다. 오른쪽 위 `할 일 수집`으로 첫 항목을 추가하세요."
+          : "필터에 맞는 할 일이 없습니다. 검색어나 필터를 지워 보세요."
+      });
+    }
+    const board = this.contentEl.createDiv({ cls: "class-management-task-board" });
     TASK_COLUMNS.forEach((column) => {
       const columnEl = board.createDiv({ cls: `class-management-task-column is-${column.status}` });
       const matching = filtered.filter((task) => task.status === column.status);
@@ -97,15 +105,17 @@ export class TaskView extends ItemView {
   }
 
   private renderFilters(tasks: TaskEntry[], notices: NoticeSheet[]): void {
-    const filters = this.contentEl.createDiv({ cls: "class-management-list-filters" });
-    const search = filters.createEl("input", { attr: { placeholder: "할 일 검색" } });
+    const filters = this.contentEl.createDiv({ cls: "class-management-filter-bar" });
+    const searchLabel = filterLabel(filters, "검색");
+    const search = searchLabel.createEl("input", { attr: { placeholder: "예: 상담 준비" } });
     search.type = "search";
     search.value = this.query;
     search.addEventListener("input", () => {
       this.query = search.value;
       this.render(tasks, notices);
     });
-    const project = filters.createEl("select", { attr: { "aria-label": "프로젝트 필터" } });
+    const projectLabel = filterLabel(filters, "프로젝트");
+    const project = projectLabel.createEl("select");
     addOption(project, "", "전체 프로젝트");
     unique(tasks.map((task) => task.project)).forEach((value) => addOption(project, value, value));
     project.value = this.project;
@@ -113,7 +123,8 @@ export class TaskView extends ItemView {
       this.project = project.value;
       this.render(tasks, notices);
     });
-    const context = filters.createEl("select", { attr: { "aria-label": "컨텍스트 필터" } });
+    const contextLabel = filterLabel(filters, "컨텍스트");
+    const context = contextLabel.createEl("select");
     addOption(context, "", "전체 컨텍스트");
     unique(tasks.map((task) => task.context)).forEach((value) => addOption(context, value, value));
     context.value = this.context;
