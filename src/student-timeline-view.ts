@@ -88,7 +88,7 @@ export class StudentTimelineView extends ItemView {
     ).length;
     const summary = this.contentEl.createDiv({ cls: "class-management-summary" });
     [
-      ["생활 기록", `${records}건`],
+      ["학생 기록", `${records}건`],
       ["출결 예외", `${attendanceExceptions}건`],
       ["과제 확인", `${incompleteAssignments}건`]
     ].forEach(([label, value]) => {

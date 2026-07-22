@@ -108,7 +108,7 @@ export function buildReportMarkdown(
     "",
     "## 학생별 현황",
     "",
-    "| 학생 | 생활 기록 | 출결 예외 | 과제 예외 | 회신 예외 |",
+    "| 학생 | 학생 기록 | 출결 예외 | 과제 예외 | 회신 예외 |",
     "| --- | ---: | ---: | ---: | ---: |",
     ...(studentRows.length ? studentRows : ["| 해당 없음 | 0 | 0 | 0 | 0 |"]),
     "",
@@ -188,7 +188,7 @@ function buildTrendSummary(
   const early = activities.filter((activity) => new Date(`${activity.date}T12:00:00`).getTime() <= midpoint);
   const late = activities.filter((activity) => new Date(`${activity.date}T12:00:00`).getTime() > midpoint);
   return [
-    `- 생활 기록: 기간 전반 ${count(early, "record")}건 → 후반 ${count(late, "record")}건`,
+    `- 학생 기록: 기간 전반 ${count(early, "record")}건 → 후반 ${count(late, "record")}건`,
     `- 출결·과제·회신 예외: 기간 전반 ${early.filter(isException).length}건 → 후반 ${late.filter(isException).length}건`,
     "- 건수 변화는 경향을 확정하지 않습니다. 원본 근거와 학급 일정 맥락을 함께 확인하세요."
   ];

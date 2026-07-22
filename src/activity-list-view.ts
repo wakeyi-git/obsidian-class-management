@@ -432,7 +432,7 @@ class StaleStudentsModal extends Modal {
   }
 
   onOpen(): void {
-    this.setTitle("최근 30일 생활 기록 없음");
+    this.setTitle("최근 30일 학생 기록 없음");
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
     const cutoffDate = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
@@ -445,7 +445,7 @@ class StaleStudentsModal extends Modal {
       (student) => !recorded.has(student.number)
     );
     this.contentEl.createEl("p", {
-      text: `${cutoffDate} 이후 생활 기록이 없는 재적 학생 ${students.length}명입니다.`
+      text: `${cutoffDate} 이후 학생 기록이 없는 재적 학생 ${students.length}명입니다.`
     });
     students.forEach((student) => {
       const row = this.contentEl.createDiv({ cls: "class-management-data-student-row" });

@@ -234,7 +234,7 @@ export class ReportView extends ItemView {
     legacyInfo.createEl("p", {
       text: coverage.legacyUnclassified
         ? `기존 자유서술 기록 ${coverage.legacyUnclassified}건은 누락 충족 자료로 자동 인정하지 않습니다. 초안 분류에서는 키워드 기반 보조 자료로만 제안됩니다.`
-        : "모든 생활 기록이 구조화 여부에 따라 점검되었습니다.",
+        : "모든 학생 기록이 구조화 여부에 따라 점검되었습니다.",
       cls: "setting-item-description"
     });
     if (coverage.legacyUnclassified) {

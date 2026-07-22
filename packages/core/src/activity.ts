@@ -1,7 +1,7 @@
 import type { ActivityEntry, ActivityKind, ActivityListFilters } from "./types";
 
 export const ACTIVITY_KIND_LABELS: Record<ActivityKind, string> = {
-  record: "생활 기록",
+  record: "학생 기록",
   attendance: "출결",
   assignment: "과제",
   task: "할 일",

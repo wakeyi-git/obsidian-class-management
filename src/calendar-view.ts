@@ -258,7 +258,7 @@ class CalendarDateActionModal extends Modal {
   onOpen(): void {
     this.setTitle(`${this.date} 빠른 추가`);
     new Setting(this.contentEl)
-      .setName("생활 기록")
+      .setName("학생 기록")
       .setDesc("학생을 선택해 관찰·상담·칭찬 기록을 작성합니다.")
       .addButton((button) =>
         button.setButtonText("작성").onClick(() => {

@@ -104,7 +104,7 @@ export async function runDataDiagnostics(
       issues.push({
         level: "warning",
         code: "missing-student-link",
-        message: "생활 기록의 studentPath가 위키링크가 아닙니다.",
+        message: "학생 기록의 studentPath가 위키링크가 아닙니다.",
         source: record.file.path
       });
       return;
