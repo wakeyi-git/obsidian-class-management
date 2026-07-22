@@ -508,7 +508,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   margin: 14px 0 10px;
   color: var(--text-muted);
 }
@@ -594,6 +594,7 @@
 
 .class-management-assignment-toolbar {
   margin: 12px 0 10px;
+  gap: 8px;
 }
 
 .class-management-assignment-roster {
@@ -861,7 +862,7 @@
 .class-management-calendar-navigation,
 .class-management-calendar-modes {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .class-management-calendar-modes {
@@ -1087,7 +1088,7 @@
 .class-management-task-card-title {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
 }
 
 .class-management-task-card-title button {
@@ -1141,7 +1142,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   margin: 14px 0 10px;
 }
 
@@ -1168,7 +1169,7 @@
 .class-management-routine-navigation {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 14px;
 }
 
@@ -1229,7 +1230,7 @@
 .class-management-report-presets {
   display: flex;
   align-items: flex-end;
-  gap: 4px;
+  gap: 8px;
 }
 
 .class-management-ai-setup-modal {
@@ -1387,7 +1388,7 @@
 .class-management-coverage-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .class-management-coverage-grid {
@@ -1491,7 +1492,7 @@
 
 .class-management-legacy-record-list > div > div:last-child {
   display: flex;
-  gap: 4px;
+  gap: 8px;
 }
 
 .class-management-school-review-modal {
@@ -1532,7 +1533,7 @@
 
 .class-management-school-review-list > div > div:last-child {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .class-management-ai-paths {
@@ -1590,7 +1591,7 @@
 .class-management-data-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .class-management-diagnostic-row {
@@ -1620,7 +1621,7 @@
 
 .class-management-retention-toolbar {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
@@ -1834,7 +1835,7 @@
 .class-management-ops-setup-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -1878,7 +1879,7 @@
 
 .class-management-ops-week-nav {
   display: flex;
-  gap: 4px;
+  gap: 8px;
 }
 
 .class-management-ops-week-table,
@@ -2292,7 +2293,7 @@
 
 .class-management-inspector-buttons {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   margin-top: 6px;
 }
 
@@ -2347,7 +2348,7 @@
 
 .class-management-inspector-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   padding: 4px;
   flex-wrap: wrap;
 }
@@ -2361,7 +2362,7 @@
 .class-management-gantt-toolbar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 10px;
 }
 .class-management-gantt-toolbar button.is-active {
