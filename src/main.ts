@@ -183,6 +183,8 @@ export default class ClassManagementPlugin extends Plugin {
       }
       // 날짜가 지난 수업 기록에 raw를 스탬프한다(이후 플러그인은 건드리지 않음).
       window.setTimeout(() => void this.stampRawLessonRecords(), 2000);
+      // 학기 경계를 지나면 설정 전환을 제안한다(자동 변경은 하지 않음).
+      window.setTimeout(() => void this.suggestSemesterSwitch(), 2600);
     });
     this.registerView(REPORT_VIEW_TYPE, (leaf) => new ReportView(leaf, this));
     this.registerView(
@@ -238,12 +240,12 @@ export default class ClassManagementPlugin extends Plugin {
     });
     this.addCommand({
       id: "add-school-record-evidence",
-      name: "학교생활기록부 근거 기록",
+      name: "학생부 근거 기록",
       callback: () => this.openSchoolRecordEvidenceFlow()
     });
     this.addCommand({
       id: "add-school-record-evidence-batch",
-      name: "학교생활기록부 근거 학급 일괄 입력",
+      name: "학생부 근거 학급 일괄 입력",
       callback: () => this.openSchoolRecordBatch()
     });
     this.addCommand({
@@ -263,7 +265,7 @@ export default class ClassManagementPlugin extends Plugin {
     });
     this.addCommand({
       id: "open-activity-list",
-      name: "학급 통합 목록 열기",
+      name: "통합 목록 열기",
       callback: () => void this.openActivityList()
     });
     this.addCommand({
@@ -327,6 +329,11 @@ export default class ClassManagementPlugin extends Plugin {
       callback: () => void this.linkifyProgressStandardCodes()
     });
     this.addCommand({
+      id: "backfill-lesson-progress-links",
+      name: "수업일지 진도표 역링크 채우기",
+      callback: () => void this.backfillLessonProgressLinks()
+    });
+    this.addCommand({
       id: "open-curriculum-gantt",
       name: "일체화 간트 열기",
       callback: () => void this.openCurriculumGantt()
@@ -368,7 +375,7 @@ export default class ClassManagementPlugin extends Plugin {
     });
     this.addCommand({
       id: "open-curriculum-integration",
-      name: "교육과정-수업-평가-기록 열기",
+      name: "교육과정 일체화 열기",
       callback: () => void this.openCurriculum()
     });
     this.addCommand({
@@ -378,7 +385,7 @@ export default class ClassManagementPlugin extends Plugin {
     });
     this.addCommand({
       id: "open-reports",
-      name: "분석과 보고서 열기",
+      name: "분석·보고서 열기",
       callback: () => void this.openReports()
     });
     this.addCommand({
@@ -393,12 +400,12 @@ export default class ClassManagementPlugin extends Plugin {
     });
     this.addCommand({
       id: "open-data-management",
-      name: "학급·데이터 관리 열기",
+      name: "학급·데이터 열기",
       callback: () => void this.openDataManagement()
     });
     this.addCommand({
       id: "open-maintenance",
-      name: "백업·복구·마이그레이션 열기",
+      name: "백업·유지관리 열기",
       callback: () => void this.openMaintenance()
     });
 
@@ -1111,6 +1118,83 @@ export default class ClassManagementPlugin extends Plugin {
       );
     } catch (error) {
       new Notice(error instanceof Error ? error.message : "성취기준 링크화에 실패했습니다.");
+    }
+  }
+
+  /** 학기 경계를 지나면 설정 학기 전환을 제안한다 (§3 안내 문형 — 자동 변경하지 않음). */
+  async suggestSemesterSwitch(): Promise<void> {
+    try {
+      const calendar = await this.repository.getAcademicCalendar();
+      if (!calendar) return;
+      const current = semesterForDate(calendar, localDate());
+      if (!current || current === this.settings.semester) return;
+      new Notice(
+        `오늘은 ${current} 기간입니다. 설정에서 학기를 ${current}(으)로 바꾸면 시간표·진도가 맞게 표시됩니다.`,
+        10000
+      );
+    } catch {
+      // 제안 실패는 조용히 넘어간다 — 다음 로드에서 다시 시도된다.
+    }
+  }
+
+  /** 수동 작성 수업일지를 진도표 비고에 역링크한다(플러그인 생성분과 같은 형식, 멱등). */
+  async backfillLessonProgressLinks(): Promise<void> {
+    if (!this.canWriteActiveClass()) return;
+    try {
+      const calendar = await this.repository.getAcademicCalendar();
+      if (!calendar) {
+        new Notice("학사일정 노트가 필요합니다. `학사일정 노트 열기`를 먼저 실행하세요.");
+        return;
+      }
+      const lessons = this.repository
+        .getCurriculumLessons()
+        .filter((lesson) => lesson.date && lesson.subject);
+      if (lessons.length === 0) {
+        new Notice("날짜·과목이 있는 수업일지가 없습니다.");
+        return;
+      }
+      const tablesBySemester = new Map<string, ProgressTable[]>();
+      let added = 0;
+      let already = 0;
+      let unmatched = 0;
+      for (const lesson of lessons) {
+        const semester = semesterForDate(calendar, lesson.date);
+        if (!semester) {
+          unmatched += 1;
+          continue;
+        }
+        if (!tablesBySemester.has(semester)) {
+          tablesBySemester.set(semester, await this.repository.getProgressTables(semester));
+        }
+        const table = (tablesBySemester.get(semester) ?? []).find(
+          (item) => item.subject === lesson.subject
+        );
+        const candidates = table
+          ? table.rows.filter((row) => row.assigned.includes(lesson.date))
+          : [];
+        const periodDigits = lesson.period.replace(/[^0-9]/g, "");
+        const row =
+          candidates.find(
+            (item) => periodDigits && item.assigned.includes(`${lesson.date}(${periodDigits})`)
+          ) ?? candidates[0];
+        if (!table || !row) {
+          unmatched += 1;
+          continue;
+        }
+        const link = `[[${lesson.file.path.replace(/\.md$/i, "")}|수업일지]]`;
+        if (row.note.includes(link)) {
+          already += 1;
+          continue;
+        }
+        await this.repository.appendProgressRowLink(table, row.order, "note", link);
+        added += 1;
+      }
+      const parts = [`수업일지 ${lessons.length}건 중 ${added}건을 진도표 비고에 역링크했습니다.`];
+      if (already > 0) parts.push(`이미 연결 ${already}건.`);
+      if (unmatched > 0) parts.push(`배정 차시를 못 찾은 ${unmatched}건은 진도표 배정을 확인하세요.`);
+      new Notice(parts.join(" "));
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "역링크 채우기에 실패했습니다.");
     }
   }
 

@@ -1311,6 +1311,8 @@ export class ClassRepository {
       table.file,
       progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)
     );
+    // 같은 표 객체로 잇달아 기입할 때 앞선 기입이 유실되지 않도록 메모리도 갱신한다.
+    table.rows = rows;
   }
 
   get standardsFolderPath(): string {
@@ -1346,6 +1348,7 @@ export class ClassRepository {
         table.file,
         progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)
       );
+      table.rows = rows;
     }
     return changed;
   }

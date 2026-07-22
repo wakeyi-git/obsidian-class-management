@@ -98,7 +98,10 @@ export class ClassDashboardView extends ItemView {
     const list = section.createDiv({ cls: "class-management-student-list" });
     students.forEach((student) => {
       const row = list.createDiv({ cls: "class-management-student-row" });
-      const note = row.createEl("button", { cls: "class-management-student-note" });
+      const note = row.createEl("button", {
+        cls: "class-management-student-note",
+        attr: { "aria-label": `${student.number}번 ${student.name} 학생 인스펙터 열기` }
+      });
       note.createEl("span", {
         text: student.number,
         cls: "class-management-student-number"
@@ -107,7 +110,8 @@ export class ClassDashboardView extends ItemView {
       note.addEventListener("click", () => void this.plugin.inspectStudent(student.number));
       const timeline = row.createEl("button", {
         text: "타임라인",
-        cls: "class-management-timeline-button"
+        cls: "class-management-timeline-button",
+        attr: { "aria-label": `${student.number}번 ${student.name} 타임라인 열기` }
       });
       timeline.addEventListener("click", () => void this.plugin.openStudentTimeline(student));
     });
@@ -126,7 +130,10 @@ export class ClassDashboardView extends ItemView {
 
     const list = section.createDiv({ cls: "class-management-record-list" });
     records.slice(0, 10).forEach((record) => {
-      const row = list.createEl("button", { cls: "class-management-record-row" });
+      const row = list.createEl("button", {
+        cls: "class-management-record-row",
+        attr: { "aria-label": `${record.studentNumber}번 ${record.studentName} ${record.date} 기록 열기` }
+      });
       const meta = row.createDiv({ cls: "class-management-record-meta" });
       meta.createEl("strong", {
         text: `${record.studentNumber}번 ${record.studentName}`

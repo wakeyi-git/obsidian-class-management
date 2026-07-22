@@ -1,5 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
-import { addOption } from "@core/dom";
+import { addOption, filterLabel } from "@core/dom";
 import { createAiDraft } from "@core/ai-collaboration";
 import type ClassManagementPlugin from "./main";
 import {
@@ -82,24 +82,24 @@ export class ReportView extends ItemView {
 
   private renderFilters(): void {
     const filters = this.contentEl.createDiv({ cls: "class-management-filter-bar" });
-    const title = filter(filters, "보고서 제목").createEl("input");
+    const title = filterLabel(filters, "보고서 제목").createEl("input");
     title.value = this.options.title;
     title.addEventListener("input", () => (this.options.title = title.value));
-    const from = filter(filters, "시작일").createEl("input");
+    const from = filterLabel(filters, "시작일").createEl("input");
     from.type = "date";
     from.value = this.options.dateFrom;
     from.addEventListener("change", () => {
       this.options.dateFrom = from.value;
       this.render();
     });
-    const to = filter(filters, "종료일").createEl("input");
+    const to = filterLabel(filters, "종료일").createEl("input");
     to.type = "date";
     to.value = this.options.dateTo;
     to.addEventListener("change", () => {
       this.options.dateTo = to.value;
       this.render();
     });
-    const student = filter(filters, "대상").createEl("select");
+    const student = filterLabel(filters, "대상").createEl("select");
     addOption(student, "", "학급 전체");
     this.plugin.repository.getStudents().forEach((entry) =>
       addOption(student, entry.number, `${entry.number}번 ${entry.name}`)
@@ -223,7 +223,10 @@ export class ReportView extends ItemView {
       const meter = card.createDiv({ cls: "class-management-coverage-meter" });
       const fill = meter.createDiv();
       fill.style.width = `${area.total ? Math.round((area.covered / area.total) * 100) : 0}%`;
-      const button = card.createEl("button", { text: `${area.gaps.length}건 누락 보기` });
+      const button = card.createEl("button", {
+        text: `${area.gaps.length}건 누락 보기`,
+        attr: { "aria-label": `${area.label} 누락 ${area.gaps.length}건 보기` }
+      });
       button.disabled = area.gaps.length === 0;
       button.addEventListener("click", () => this.renderCoverageGaps(panel, area.area, area.gaps));
     });
@@ -389,11 +392,6 @@ function monthStart(): string {
   return `${today.slice(0, 7)}-01`;
 }
 
-function filter(container: HTMLElement, label: string): HTMLLabelElement {
-  const element = container.createEl("label");
-  element.createEl("span", { text: label });
-  return element;
-}
 
 
 function formatDate(date: Date): string {
