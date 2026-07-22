@@ -601,7 +601,12 @@ export class ClassRepository {
     ].join("\n");
 
     if (existingFile) {
-      await this.app.vault.process(existingFile, () => content);
+      // 확인표 아래에 교사가 적어 둔 섹션(평가 정보·기준 등)은 다시 쓸 때 보존한다.
+      await this.app.vault.process(existingFile, (current) => {
+        const tailIndex = current.search(/^## /m);
+        const tail = tailIndex >= 0 ? `\n${current.slice(tailIndex)}` : "";
+        return content + tail;
+      });
       return existingFile;
     }
 
