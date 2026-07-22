@@ -63,7 +63,7 @@ export class CurriculumUnitModal extends Modal {
     });
     this.addDate("시작일", this.draft.startDate, (value) => (this.draft.startDate = value));
     this.addDate("종료일", this.draft.endDate, (value) => (this.draft.endDate = value));
-    this.addNumber("계획 시수", this.draft.plannedHours, 1, (value) => (this.draft.plannedHours = value));
+    this.addNumber("계획 시수", this.draft.plannedHours, 0, (value) => (this.draft.plannedHours = value));
 
     this.heading("1. 교육과정 재인식과 학생 요구");
     this.addTextArea("성취기준", "코드와 내용을 함께 입력합니다. 여러 기준은 줄바꿈으로 구분합니다.", this.draft.achievementStandards, (value) => {

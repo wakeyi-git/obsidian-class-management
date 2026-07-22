@@ -300,7 +300,7 @@ export function curriculumUnitMarkdown(
     `curriculumStatus: ${yamlString(unit.status)}`,
     `startDate: ${yamlString(unit.startDate)}`,
     `endDate: ${yamlString(unit.endDate)}`,
-    `plannedHours: ${Math.max(1, unit.plannedHours)}`,
+    `plannedHours: ${Math.max(0, unit.plannedHours)}`,
     `achievementStandards: ${yamlString(unit.achievementStandards)}`,
     `studentNeeds: ${yamlString(unit.studentNeeds)}`,
     `enduringUnderstanding: ${yamlString(unit.enduringUnderstanding)}`,
@@ -470,7 +470,8 @@ export function parseCurriculumUnit(
     status: status in CURRICULUM_UNIT_STATUS_LABELS ? status : "draft",
     startDate: stringValue(frontmatter.startDate),
     endDate: stringValue(frontmatter.endDate),
-    plannedHours: positiveNumber(frontmatter.plannedHours, 1),
+    // 0시수 허용 — 전량 통합 이관된 일반 단원(원장 규칙: 일반=자체 운영분).
+    plannedHours: nonNegativeNumber(frontmatter.plannedHours, 1),
     achievementStandards: stringValue(frontmatter.achievementStandards),
     studentNeeds: stringValue(frontmatter.studentNeeds),
     enduringUnderstanding: stringValue(frontmatter.enduringUnderstanding),
@@ -674,6 +675,11 @@ function inlineList(value: string): string {
 function positiveNumber(value: unknown, fallback: number): number {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function nonNegativeNumber(value: unknown, fallback: number): number {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : fallback;
 }
 
 function stripWikiLink(value: string): string {
