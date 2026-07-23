@@ -56,22 +56,44 @@ export class NavigatorView extends ItemView {
     this.render();
   }
 
-  private viewEntries(): Array<{ type: string; label: string; icon: string; open: () => void }> {
+  private viewGroups(): Array<{
+    title: string;
+    entries: Array<{ type: string; label: string; icon: string; open: () => void }>;
+  }> {
     const plugin = this.plugin;
     return [
-      { type: DASHBOARD_VIEW_TYPE, label: "학급 대시보드", icon: "school", open: () => void plugin.openDashboard() },
-      { type: CURRICULUM_OPS_VIEW_TYPE, label: "교육과정 운영", icon: "calendar-clock", open: () => void plugin.openCurriculumOps() },
-      { type: CALENDAR_VIEW_TYPE, label: "학급 캘린더", icon: "calendar-days", open: () => void plugin.openCalendar() },
-      { type: ACTIVITY_LIST_VIEW_TYPE, label: "통합 목록", icon: "list", open: () => void plugin.openActivityList() },
-      { type: STUDENT_TIMELINE_VIEW_TYPE, label: "학생별 타임라인", icon: "user", open: () => plugin.openStudentTimelineFlow() },
-      { type: TASK_VIEW_TYPE, label: "GTD 할 일", icon: "list-todo", open: () => void plugin.openTasks() },
-      { type: ROUTINE_VIEW_TYPE, label: "루틴 체크리스트", icon: "repeat", open: () => void plugin.openRoutines() },
-      { type: CURRICULUM_VIEW_TYPE, label: "교육과정 일체화", icon: "book-open-check", open: () => void plugin.openCurriculum() },
-      { type: CURRICULUM_GANTT_VIEW_TYPE, label: "일체화 로드맵", icon: "gantt-chart", open: () => void plugin.openCurriculumGantt() },
-      { type: REPORT_VIEW_TYPE, label: "분석·보고서", icon: "bar-chart-2", open: () => void plugin.openReports() },
-      { type: DATA_MANAGEMENT_VIEW_TYPE, label: "학급·데이터", icon: "database", open: () => void plugin.openDataManagement() },
-      { type: MAINTENANCE_VIEW_TYPE, label: "백업·유지관리", icon: "archive", open: () => void plugin.openMaintenance() }
+      {
+        title: "학급 운영",
+        entries: [
+          { type: DASHBOARD_VIEW_TYPE, label: "학급 대시보드", icon: "school", open: () => void plugin.openDashboard() },
+          { type: CALENDAR_VIEW_TYPE, label: "학급 캘린더", icon: "calendar-days", open: () => void plugin.openCalendar() },
+          { type: ACTIVITY_LIST_VIEW_TYPE, label: "통합 목록", icon: "list", open: () => void plugin.openActivityList() },
+          { type: STUDENT_TIMELINE_VIEW_TYPE, label: "학생별 타임라인", icon: "user", open: () => plugin.openStudentTimelineFlow() },
+          { type: TASK_VIEW_TYPE, label: "GTD 할 일", icon: "list-todo", open: () => void plugin.openTasks() },
+          { type: ROUTINE_VIEW_TYPE, label: "루틴 체크리스트", icon: "repeat", open: () => void plugin.openRoutines() }
+        ]
+      },
+      {
+        title: "교육과정-수업-평가-기록",
+        entries: [
+          { type: CURRICULUM_OPS_VIEW_TYPE, label: "시간표·시수", icon: "calendar-clock", open: () => void plugin.openCurriculumOps() },
+          { type: CURRICULUM_VIEW_TYPE, label: "단원 설계 및 운영", icon: "book-open-check", open: () => void plugin.openCurriculum() },
+          { type: CURRICULUM_GANTT_VIEW_TYPE, label: "교육과정 로드맵", icon: "gantt-chart", open: () => void plugin.openCurriculumGantt() },
+          { type: REPORT_VIEW_TYPE, label: "분석·보고서", icon: "bar-chart-2", open: () => void plugin.openReports() }
+        ]
+      },
+      {
+        title: "데이터·유지관리",
+        entries: [
+          { type: DATA_MANAGEMENT_VIEW_TYPE, label: "학급·데이터", icon: "database", open: () => void plugin.openDataManagement() },
+          { type: MAINTENANCE_VIEW_TYPE, label: "백업·유지관리", icon: "archive", open: () => void plugin.openMaintenance() }
+        ]
+      }
     ];
+  }
+
+  private viewEntries(): Array<{ type: string; label: string; icon: string; open: () => void }> {
+    return this.viewGroups().flatMap((group) => group.entries);
   }
 
   /** 뷰별 작업 목록 — 하루 작업 순서와 사용 빈도 순으로 배열한다. */
@@ -179,25 +201,27 @@ export class NavigatorView extends ItemView {
     container.empty();
     container.addClass("class-management-nav-view");
 
-    const viewSection = container.createDiv({ cls: "class-management-nav-section" });
-    viewSection.createDiv({ text: "뷰", cls: "class-management-nav-title" });
-    for (const entry of this.viewEntries()) {
-      this.renderItem(
-        viewSection,
-        {
-          label: entry.label,
-          icon: entry.icon,
-          // 클릭 즉시 활성 강조 — 뷰 포커스 이벤트(active-leaf-change)가 늦게 오는 경우 대비.
-          run: () => {
-            entry.open();
-            if (this.contextViewType !== entry.type) {
-              this.contextViewType = entry.type;
-              this.render();
+    for (const group of this.viewGroups()) {
+      const viewSection = container.createDiv({ cls: "class-management-nav-section" });
+      viewSection.createDiv({ text: group.title, cls: "class-management-nav-title" });
+      for (const entry of group.entries) {
+        this.renderItem(
+          viewSection,
+          {
+            label: entry.label,
+            icon: entry.icon,
+            // 클릭 즉시 활성 강조 — 뷰 포커스 이벤트(active-leaf-change)가 늦게 오는 경우 대비.
+            run: () => {
+              entry.open();
+              if (this.contextViewType !== entry.type) {
+                this.contextViewType = entry.type;
+                this.render();
+              }
             }
-          }
-        },
-        entry.type === this.contextViewType
-      );
+          },
+          entry.type === this.contextViewType
+        );
+      }
     }
 
     const context = this.contextActions();

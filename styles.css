@@ -1134,6 +1134,13 @@
   color: var(--text-muted);
 }
 
+.class-management-task-routine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .class-management-task-board {
   display: grid;
   grid-template-columns: repeat(5, minmax(190px, 1fr));

@@ -2,7 +2,8 @@ import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
 import { addOption, filterLabel } from "@core/dom";
 import type ClassManagementPlugin from "./main";
 import { taskRecurrenceLabel } from "@core/task";
-import type { NoticeSheet, TaskEntry, TaskStatus } from "@core/types";
+import type { NoticeSheet, TaskEntry, TaskStatus,
+  RoutineInstance } from "@core/types";
 import { localDate } from "@core/utils";
 
 export const TASK_VIEW_TYPE = "class-management-task-view";
@@ -21,6 +22,7 @@ export class TaskView extends ItemView {
   private context = "";
   private boardHost: HTMLElement | null = null;
   private data: { tasks: TaskEntry[]; notices: NoticeSheet[] } | null = null;
+  private todayRoutine: RoutineInstance | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -51,6 +53,13 @@ export class TaskView extends ItemView {
         this.plugin.repository.loadNotice(summary)
       )
     );
+    const today = localDate();
+    const summary = this.plugin.repository
+      .getRoutineInstanceSummaries()
+      .find((entry) => entry.date === today);
+    this.todayRoutine = summary
+      ? await this.plugin.repository.loadRoutineInstance(summary.file, today)
+      : null;
     this.render(this.plugin.repository.getTasks(), notices);
   }
 
@@ -64,6 +73,14 @@ export class TaskView extends ItemView {
     const add = header.createEl("button", { text: "할 일 수집", cls: "mod-cta" });
     add.addEventListener("click", () => this.plugin.openTaskModal());
 
+    if (this.todayRoutine && this.todayRoutine.items.length > 0) {
+      const done = this.todayRoutine.items.filter((item) => item.completed).length;
+      const routineLine = this.contentEl.createDiv({ cls: "class-management-today-item is-static class-management-task-routine" });
+      routineLine.createSpan({ text: "루틴", cls: "class-management-today-badge" });
+      routineLine.createSpan({ text: `오늘 ${done}/${this.todayRoutine.items.length} 완료` });
+      const open = routineLine.createEl("button", { text: "루틴 열기" });
+      open.addEventListener("click", () => void this.plugin.openRoutines());
+    }
     this.renderFilters(tasks, notices);
     // 필터 변경 시 입력창(한글 조합·포커스)을 보존하려고 보드 영역만 다시 그린다.
     this.boardHost = this.contentEl.createDiv();

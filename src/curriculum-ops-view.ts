@@ -68,7 +68,7 @@ export class CurriculumOpsView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "교육과정 운영";
+    return "시간표·시수";
   }
 
   getIcon(): string {
@@ -87,7 +87,7 @@ export class CurriculumOpsView extends ItemView {
     const repository = this.plugin.repository;
 
     container.createEl("h2", {
-      text: `교육과정 운영 · ${settings.schoolYear} ${settings.semester}`
+      text: `시간표·시수 · ${settings.schoolYear} ${settings.semester}`
     });
 
     const calendar = await repository.getAcademicCalendar();

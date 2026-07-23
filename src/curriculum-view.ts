@@ -36,7 +36,7 @@ export class CurriculumView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "교육과정 일체화";
+    return "단원 설계 및 운영";
   }
 
   getIcon(): string {

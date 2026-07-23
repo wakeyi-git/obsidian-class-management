@@ -27,7 +27,7 @@ export class CurriculumGanttView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "일체화 로드맵";
+    return "교육과정 로드맵";
   }
 
   getIcon(): string {

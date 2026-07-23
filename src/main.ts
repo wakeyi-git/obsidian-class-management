@@ -282,7 +282,7 @@ export default class ClassManagementPlugin extends Plugin {
     });
     this.addCommand({
       id: "open-curriculum-ops",
-      name: "교육과정 운영 열기",
+      name: "시간표·시수 열기",
       callback: () => void this.openCurriculumOps()
     });
     this.addCommand({
@@ -337,7 +337,7 @@ export default class ClassManagementPlugin extends Plugin {
     });
     this.addCommand({
       id: "open-curriculum-gantt",
-      name: "일체화 로드맵 열기",
+      name: "교육과정 로드맵 열기",
       callback: () => void this.openCurriculumGantt()
     });
     this.addCommand({
@@ -377,7 +377,7 @@ export default class ClassManagementPlugin extends Plugin {
     });
     this.addCommand({
       id: "open-curriculum-integration",
-      name: "교육과정 일체화 열기",
+      name: "단원 설계 및 운영 열기",
       callback: () => void this.openCurriculum()
     });
     this.addCommand({
