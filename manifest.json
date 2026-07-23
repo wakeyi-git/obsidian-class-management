@@ -1,7 +1,7 @@
 {
   "id": "class-management",
   "name": "Classroom Manager",
-  "version": "1.41.1",
+  "version": "1.42.0",
   "minAppVersion": "1.8.0",
   "description": "학생 명단, 출결, 생활 기록, 할 일과 체크리스트를 로컬 Markdown으로 관리합니다.",
   "author": "wakeyi",
