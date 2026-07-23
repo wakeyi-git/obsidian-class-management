@@ -466,6 +466,11 @@ export interface VacationRange {
 
 export interface HoursStandardEntry {
   subject: string;
+  /** 1학기 기준 시수 — 구형 노트(연간만)면 0. */
+  hours1: number;
+  /** 2학기 기준 시수 — 구형 노트(연간만)면 0. */
+  hours2: number;
+  /** 학년(연간) 기준 시수 — 명시값이 없으면 1·2학기 합. */
   hours: number;
   /** 구분(교과·창체 등) — 구형 2열 표는 이름으로 추정한다. */
   category: string;
@@ -561,6 +566,8 @@ export interface HoursAuditRow {
   /** 기준 시수 노트의 구분(교과·창체 등). */
   category: string;
   standardHours: number;
+  standard1: number;
+  standard2: number;
   planned1: number;
   taught1: number;
   planned2: number;

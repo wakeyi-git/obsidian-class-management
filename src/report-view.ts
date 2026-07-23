@@ -192,14 +192,14 @@ export class ReportView extends ItemView {
       text: `${this.plugin.settings.grade}학년 · ${this.plugin.settings.schoolRecordGuidelineYear} 기재요령 · 검토 제외가 아닌 구조화된 학생부 근거(RAW) 기준`
     });
     const coverageActions = heading.createDiv({ cls: "class-management-coverage-actions" });
-    const add = coverageActions.createEl("button", { text: "개별 근거 기록", cls: "mod-cta" });
+    const add = coverageActions.createEl("button", { text: "학생 개별 기록", cls: "mod-cta" });
     add.disabled = this.plugin.activeClassProfile.archived;
     add.addEventListener("click", () => this.plugin.openSchoolRecordEvidenceFlow(
       undefined,
       "creative-activities",
       students.length === 1 ? students[0] : undefined
     ));
-    const batch = coverageActions.createEl("button", { text: "학급 일괄 입력" });
+    const batch = coverageActions.createEl("button", { text: "학급 일괄 기록" });
     batch.disabled = this.plugin.activeClassProfile.archived;
     batch.addEventListener("click", () => this.plugin.openSchoolRecordBatch());
     const review = coverageActions.createEl("button", { text: "근거 검토 상태" });

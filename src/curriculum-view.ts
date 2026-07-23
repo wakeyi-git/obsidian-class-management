@@ -278,9 +278,9 @@ export class CurriculumView extends ItemView {
     edit.addEventListener("click", () => this.plugin.openCurriculumUnitModal(unit));
     const lesson = actions.createEl("button", { text: "수업일지" });
     lesson.addEventListener("click", () => this.plugin.openCurriculumLessonModal(unit));
-    const evidenceButton = actions.createEl("button", { text: "학생 근거" });
+    const evidenceButton = actions.createEl("button", { text: "학생 개별 기록" });
     evidenceButton.addEventListener("click", () => this.plugin.openCurriculumEvidenceFlow(unit));
-    const batchEvidenceButton = actions.createEl("button", { text: "학급 근거" });
+    const batchEvidenceButton = actions.createEl("button", { text: "학급 일괄 기록" });
     batchEvidenceButton.addEventListener("click", () => this.plugin.openSchoolRecordBatch("subject-development", unit));
 
     if (lessons.length) {

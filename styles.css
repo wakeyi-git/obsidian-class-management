@@ -178,6 +178,7 @@
 .class-management-curriculum-title-button,
 .class-management-curriculum-title-button:hover,
 .class-management-curriculum-title-button:active {
+  color: var(--link-color, var(--text-accent));
   display: block;
   height: auto;
   margin: 4px 0;
@@ -2038,6 +2039,11 @@
 }
 
 /* 시수 점검: 교과·영역 열만 넓게, 숫자 열은 균등 */
+.class-management-ops-audit-table th.is-group {
+  border-bottom: 1px solid var(--background-modifier-border);
+  text-align: center;
+}
+
 .class-management-ops-audit-table tr.is-subtotal td,
 .class-management-ops-audit-table tr.is-total td {
   border-top: 1px solid var(--background-modifier-border);

@@ -242,12 +242,12 @@ export default class ClassManagementPlugin extends Plugin {
     });
     this.addCommand({
       id: "add-school-record-evidence",
-      name: "학생부 근거 기록",
+      name: "학생 개별 기록 (학생부 근거)",
       callback: () => this.openSchoolRecordEvidenceFlow()
     });
     this.addCommand({
       id: "add-school-record-evidence-batch",
-      name: "학생부 근거 학급 일괄 입력",
+      name: "학급 일괄 기록 (학생부 근거)",
       callback: () => this.openSchoolRecordBatch()
     });
     this.addCommand({
@@ -398,7 +398,7 @@ export default class ClassManagementPlugin extends Plugin {
     this.addCommand({
       id: "manage-classes",
       name: "학급·학기 추가 및 전환",
-      callback: () => new ClassProfileModal(this).open()
+      callback: () => this.openClassProfileModal()
     });
     this.addCommand({
       id: "open-data-management",
@@ -902,6 +902,10 @@ export default class ClassManagementPlugin extends Plugin {
     } catch (error) {
       new Notice(error instanceof Error ? error.message : "기초시간표 노트를 열지 못했습니다.");
     }
+  }
+
+  openClassProfileModal(): void {
+    new ClassProfileModal(this).open();
   }
 
   openProgressImportModal(): void {

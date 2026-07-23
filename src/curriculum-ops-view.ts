@@ -443,7 +443,7 @@ export class CurriculumOpsView extends ItemView {
 
     section.createEl("p", {
       cls: "class-management-ops-hint",
-      text: "실행은 오늘까지 시간표 기준으로 운영된 시수입니다. 시간표 변경·행사·교시 삭제가 반영됩니다. 행 순서·구분(소계 묶음)은 기준 시수 노트의 표를 따릅니다."
+      text: "실행은 오늘까지 시간표 기준으로 운영된 시수입니다. 학기별 기준은 기준 시수 노트의 1학기·2학기 열, 학년 기준·증감·상태는 학년 열(비면 1·2학기 합) 기준입니다."
     });
     const rows = buildHoursAudit(standard, semesterHours["1학기"], semesterHours["2학기"]);
     if (missingSemesters.length > 0) {
@@ -454,20 +454,31 @@ export class CurriculumOpsView extends ItemView {
     }
 
     const table = section.createEl("table", { cls: "class-management-ops-audit-table" });
-    const head = table.createEl("thead").createEl("tr");
-    for (const label of ["교과·영역", "기준", "1학기 편성", "1학기 실행", "2학기 편성", "2학기 실행", "편성 합", "증감", "상태"]) {
-      head.createEl("th", { text: label });
+    const head = table.createEl("thead");
+    const groupRow = head.createEl("tr");
+    groupRow.createEl("th", { text: "" });
+    for (const label of ["1학기", "2학기", "학년"]) {
+      groupRow.createEl("th", { text: label, attr: { colspan: "3" }, cls: "is-group" });
     }
+    groupRow.createEl("th", { text: "", attr: { colspan: "2" } });
+    const headRow = head.createEl("tr");
+    for (const label of ["교과·영역", "기준", "편성", "실행", "기준", "편성", "실행", "기준", "편성", "실행", "증감", "상태"]) {
+      headRow.createEl("th", { text: label });
+    }
+    const dash = (value: number): string => (value > 0 ? String(value) : "—");
     const body = table.createEl("tbody");
     for (const row of rows) {
       const line = body.createEl("tr", { cls: `is-${row.status} is-${row.kind}` });
       line.createEl("td", { text: row.subject });
-      line.createEl("td", { text: row.standardHours ? String(row.standardHours) : "—" });
+      line.createEl("td", { text: dash(row.standard1) });
       line.createEl("td", { text: String(row.planned1) });
       line.createEl("td", { text: String(row.taught1) });
+      line.createEl("td", { text: dash(row.standard2) });
       line.createEl("td", { text: String(row.planned2) });
       line.createEl("td", { text: String(row.taught2) });
+      line.createEl("td", { text: dash(row.standardHours) });
       line.createEl("td", { text: String(row.plannedHours) });
+      line.createEl("td", { text: String(row.taughtHours) });
       line.createEl("td", {
         text: row.standardHours ? `${row.deltaPercent > 0 ? "+" : ""}${row.deltaPercent}%` : "—"
       });

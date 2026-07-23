@@ -144,7 +144,7 @@ export class LessonInspectorView extends ItemView {
       const section = this.section(container, "book-open-check", "연결된 단원");
       for (const unit of units) {
         const item = section.createDiv({ cls: "class-management-today-item" });
-        item.createSpan({ text: unit.unitName, cls: "class-management-nav-label" });
+        item.createSpan({ text: unit.unitName, cls: "class-management-nav-label class-management-link-text" });
         this.openable(item, `${unit.unitName} 단원 노트 열기`, () => void this.plugin.openFile(unit.file));
       }
     }
@@ -238,7 +238,7 @@ export class LessonInspectorView extends ItemView {
     }
     for (const link of links) {
       const item = container.createDiv({ cls: "class-management-today-item" });
-      const label = item.createSpan({ cls: "class-management-nav-label" });
+      const label = item.createSpan({ cls: "class-management-nav-label class-management-link-text" });
       label.createSpan({ text: `${link.marker} `, cls: `class-management-slot-marker-text ${link.cls}` });
       label.createSpan({ text: link.label });
       this.openable(item, `${link.label} 노트 열기`, () => {
@@ -255,7 +255,7 @@ export class LessonInspectorView extends ItemView {
     if (unit) {
       for (const pdf of pdfPageLinks(`${unit.theme}\n${unit.unitOverview}`)) {
         const item = container.createDiv({ cls: "class-management-today-item" });
-        const label = item.createSpan({ cls: "class-management-nav-label" });
+        const label = item.createSpan({ cls: "class-management-nav-label class-management-link-text" });
         label.createSpan({ text: "📖 " });
         label.createSpan({ text: pdf.label });
         this.openable(item, `${pdf.label} 열기 (단원 시작 쪽)`, () =>

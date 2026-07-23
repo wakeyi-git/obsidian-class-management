@@ -84,8 +84,8 @@ export class NavigatorView extends ItemView {
         { label: "과제 체크", icon: "clipboard-check", run: () => plugin.openAssignmentFlow() },
         { label: "할 일 빠른 수집", icon: "inbox", run: () => plugin.openTaskModal() },
         { label: "가정통신문 회신", icon: "mail", run: () => plugin.openNoticeFlow() },
-        { label: "학생부 근거 기록", icon: "file-text", run: () => plugin.openSchoolRecordEvidenceFlow() },
-        { label: "학생부 학급 일괄", icon: "files", run: () => plugin.openSchoolRecordBatch() },
+        { label: "학생 개별 기록", icon: "file-text", run: () => plugin.openSchoolRecordEvidenceFlow() },
+        { label: "학급 일괄 기록", icon: "files", run: () => plugin.openSchoolRecordBatch() },
         { label: "학생 추가·명렬표", icon: "user-plus", run: () => plugin.openStudentModal() },
         { label: "학생 인스펙터", icon: "user-search", run: () => plugin.openStudentInspectorFlow() }
       ],
@@ -117,20 +117,21 @@ export class NavigatorView extends ItemView {
       ],
       [STUDENT_TIMELINE_VIEW_TYPE]: [
         { label: "학생 빠른 기록", icon: "pencil", run: () => plugin.openRecordFlow() },
-        { label: "학생부 근거 기록", icon: "file-text", run: () => plugin.openSchoolRecordEvidenceFlow() }
+        { label: "학생 개별 기록", icon: "file-text", run: () => plugin.openSchoolRecordEvidenceFlow() }
       ],
       [TASK_VIEW_TYPE]: [
         { label: "할 일 빠른 수집", icon: "inbox", run: () => plugin.openTaskModal() }
       ],
       [CURRICULUM_VIEW_TYPE]: [
         { label: "새 통합 단원 설계", icon: "plus-circle", run: () => plugin.openCurriculumUnitModal() },
-        { label: "학생부 근거 기록", icon: "file-text", run: () => plugin.openSchoolRecordEvidenceFlow() },
-        { label: "학생부 학급 일괄", icon: "files", run: () => plugin.openSchoolRecordBatch() }
+        { label: "학생 개별 기록", icon: "file-text", run: () => plugin.openSchoolRecordEvidenceFlow() },
+        { label: "학급 일괄 기록", icon: "files", run: () => plugin.openSchoolRecordBatch() }
       ],
       [REPORT_VIEW_TYPE]: [
         { label: "AI 협업 설정", icon: "bot", run: () => plugin.openAiSetup() }
       ],
       [DATA_MANAGEMENT_VIEW_TYPE]: [
+        { label: "학급·학기 추가 및 전환", icon: "arrow-left-right", run: () => plugin.openClassProfileModal() },
         { label: "학생 추가·명렬표", icon: "user-plus", run: () => plugin.openStudentModal() },
         { label: "학급 공간 초기화", icon: "folder-plus", run: () => void plugin.initializeWorkspace() }
       ]
@@ -183,7 +184,18 @@ export class NavigatorView extends ItemView {
     for (const entry of this.viewEntries()) {
       this.renderItem(
         viewSection,
-        { label: entry.label, icon: entry.icon, run: entry.open },
+        {
+          label: entry.label,
+          icon: entry.icon,
+          // 클릭 즉시 활성 강조 — 뷰 포커스 이벤트(active-leaf-change)가 늦게 오는 경우 대비.
+          run: () => {
+            entry.open();
+            if (this.contextViewType !== entry.type) {
+              this.contextViewType = entry.type;
+              this.render();
+            }
+          }
+        },
         entry.type === this.contextViewType
       );
     }
