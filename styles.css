@@ -175,10 +175,10 @@
   text-decoration-line: var(--link-decoration-hover, underline);
 }
 
-.class-management-curriculum-title-button,
-.class-management-curriculum-title-button:hover,
-.class-management-curriculum-title-button:active {
-  color: var(--link-color, var(--text-accent));
+/* 앱 기본 button:not(.clickable-icon)(0,1,1)보다 특이도를 높여 링크 스타일을 확정한다 */
+.class-management-curriculum-unit button.class-management-curriculum-title-button,
+.class-management-curriculum-unit button.class-management-curriculum-title-button:hover,
+.class-management-curriculum-unit button.class-management-curriculum-title-button:active {
   display: block;
   height: auto;
   margin: 4px 0;
@@ -186,10 +186,17 @@
   border: 0;
   background: transparent;
   box-shadow: none;
+  color: var(--link-color, var(--text-accent));
   font-size: var(--h3-size, 1.1em);
   font-weight: 650;
   text-align: left;
+  text-decoration-line: var(--link-decoration, none);
   white-space: normal;
+}
+
+.class-management-curriculum-unit button.class-management-curriculum-title-button:hover {
+  color: var(--link-color-hover, var(--text-accent-hover, var(--text-accent)));
+  text-decoration-line: var(--link-decoration-hover, underline);
 }
 
 .class-management-curriculum-title-button:focus-visible {
