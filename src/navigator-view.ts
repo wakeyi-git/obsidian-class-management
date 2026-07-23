@@ -21,6 +21,31 @@ interface NavItem {
   run: () => void;
 }
 
+export interface QuickAction {
+  id: string;
+  label: string;
+  icon: string;
+  run: (plugin: ClassManagementPlugin) => void;
+}
+
+/** '자주 쓰는 명령'으로 고를 수 있는 빠른 동작 목록 — id는 설정에 저장되므로 바꾸지 않는다. */
+export const QUICK_ACTIONS: QuickAction[] = [
+  { id: "attendance", label: "출결 체크", icon: "user-check", run: (plugin) => plugin.openAttendanceModal() },
+  { id: "record", label: "학생 빠른 기록", icon: "pencil", run: (plugin) => plugin.openRecordFlow() },
+  { id: "assignment", label: "과제 체크", icon: "clipboard-check", run: (plugin) => plugin.openAssignmentFlow() },
+  { id: "task", label: "할 일 빠른 수집", icon: "inbox", run: (plugin) => plugin.openTaskModal() },
+  { id: "notice", label: "가정통신문 회신", icon: "mail", run: (plugin) => plugin.openNoticeFlow() },
+  { id: "evidence", label: "학생 개별 기록", icon: "file-text", run: (plugin) => plugin.openSchoolRecordEvidenceFlow() },
+  { id: "batch-evidence", label: "학급 일괄 기록", icon: "files", run: (plugin) => plugin.openSchoolRecordBatch() },
+  { id: "weekly-plan", label: "주간학습안내 생성", icon: "newspaper", run: (plugin) => void plugin.generateWeeklyPlan() },
+  { id: "lesson-inspector", label: "차시 인스펙터", icon: "book-open", run: (plugin) => void plugin.openLessonInspector() },
+  { id: "student-inspector", label: "학생 인스펙터", icon: "user-search", run: (plugin) => plugin.openStudentInspectorFlow() },
+  { id: "student-modal", label: "학생 추가·명렬표", icon: "user-plus", run: (plugin) => plugin.openStudentModal() },
+  { id: "new-unit", label: "새 통합 단원 설계", icon: "plus-circle", run: (plugin) => plugin.openCurriculumUnitModal() },
+  { id: "progress-import", label: "진도표 차시 가져오기", icon: "download", run: (plugin) => plugin.openProgressImportModal() },
+  { id: "assign-progress", label: "진도 자동 배정", icon: "wand", run: (plugin) => void plugin.runProgressAssignment() }
+];
+
 export class NavigatorView extends ItemView {
   /** 마지막으로 활성화됐던 학급 뷰 — 내비게이터 클릭으로 포커스가 바뀌어도 유지한다. */
   private contextViewType = DASHBOARD_VIEW_TYPE;
@@ -163,12 +188,15 @@ export class NavigatorView extends ItemView {
 
   private globalActions(): NavItem[] {
     const plugin = this.plugin;
-    return [
-      { label: "출결 체크", icon: "user-check", run: () => plugin.openAttendanceModal() },
-      { label: "학생 빠른 기록", icon: "pencil", run: () => plugin.openRecordFlow() },
-      { label: "과제 체크", icon: "clipboard-check", run: () => plugin.openAssignmentFlow() },
-      { label: "할 일 빠른 수집", icon: "inbox", run: () => plugin.openTaskModal() }
-    ];
+    return plugin.settings.favoriteActionIds
+      .map((id) => QUICK_ACTIONS.find((action) => action.id === id))
+      .filter((action): action is QuickAction => action !== undefined)
+      .map((action) => ({ label: action.label, icon: action.icon, run: () => action.run(plugin) }));
+  }
+
+  /** 설정에서 자주 쓰는 명령이 바뀌면 즉시 다시 그린다. */
+  refreshFavorites(): void {
+    this.render();
   }
 
   private renderItem(

@@ -123,6 +123,7 @@ const DEFAULT_SETTINGS: ClassManagementSettings = {
   }],
   activityListFilters: { ...EMPTY_ACTIVITY_FILTERS },
   savedActivityViews: [],
+  favoriteActionIds: ["attendance", "record", "assignment", "task"],
   activitySortBy: "date",
   activitySortDirection: "desc",
   activityVisibleColumns: ["date", "student", "kind", "status", "detail", "source"],
@@ -449,7 +450,8 @@ export default class ClassManagementPlugin extends Plugin {
         ...EMPTY_ACTIVITY_FILTERS,
         ...(loaded?.activityListFilters ?? {})
       },
-      savedActivityViews: loaded?.savedActivityViews ?? []
+      savedActivityViews: loaded?.savedActivityViews ?? [],
+      favoriteActionIds: loaded?.favoriteActionIds ?? DEFAULT_SETTINGS.favoriteActionIds
     };
     // v13: 폴더 직관화 — 기본 이름을 쓰던 설정만 새 이름으로 옮긴다(사용자 지정 이름은 유지).
     if ((loaded?.schemaVersion ?? 0) < 13 && loaded?.recordsFolder === "기록") {

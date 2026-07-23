@@ -1,7 +1,8 @@
-import { App, PluginSettingTab } from "obsidian";
+import { App, FuzzySuggestModal, PluginSettingTab } from "obsidian";
 import type { SettingDefinitionItem } from "obsidian";
 import type ClassManagementPlugin from "./main";
 import { defaultSubjectsForGrade } from "@core/school-record-evidence";
+import { NAVIGATOR_VIEW_TYPE, NavigatorView, QUICK_ACTIONS, type QuickAction } from "./navigator-view";
 
 /** 폴더·파일 이름에 쓸 수 없는 문자 검증 (하위 폴더명 텍스트 입력용). */
 function invalidFolderName(value: string): string | void {
@@ -68,6 +69,15 @@ export class ClassManagementSettingTab extends PluginSettingTab {
     }
     await this.plugin.saveSettings();
     if (key === "grade") this.update(); // 교과 목록 컨트롤에 재설정 값을 반영
+  }
+
+  private async saveFavorites(ids: string[]): Promise<void> {
+    this.plugin.settings.favoriteActionIds = ids;
+    await this.plugin.saveSettings();
+    this.app.workspace
+      .getLeavesOfType(NAVIGATOR_VIEW_TYPE)
+      .forEach((leaf) => leaf.view instanceof NavigatorView && leaf.view.refreshFavorites());
+    this.update();
   }
 
   getSettingDefinitions(): SettingDefinitionItem[] {
@@ -192,6 +202,39 @@ export class ClassManagementSettingTab extends PluginSettingTab {
         ]
       },
 
+      // ── 자주 쓰는 명령 (학급 메뉴 하단 목록 — 추가·삭제·드래그 정렬) ──
+      {
+        type: "list",
+        heading: "자주 쓰는 명령",
+        emptyState: "학급 메뉴에 표시할 명령이 없습니다. +로 추가하세요.",
+        addItem: {
+          name: "명령 추가",
+          action: () => {
+            const chosen = new Set(this.plugin.settings.favoriteActionIds);
+            const candidates = QUICK_ACTIONS.filter((action) => !chosen.has(action.id));
+            new QuickActionPickerModal(this.app, candidates, (action) => {
+              void this.saveFavorites([...this.plugin.settings.favoriteActionIds, action.id]);
+            }).open();
+          }
+        },
+        onReorder: (oldIndex, newIndex) => {
+          const ids = [...this.plugin.settings.favoriteActionIds];
+          const [moved] = ids.splice(oldIndex, 1);
+          if (moved === undefined) return;
+          ids.splice(newIndex, 0, moved);
+          void this.saveFavorites(ids);
+        },
+        onDelete: (index) => {
+          const ids = [...this.plugin.settings.favoriteActionIds];
+          ids.splice(index, 1);
+          void this.saveFavorites(ids);
+        },
+        items: this.plugin.settings.favoriteActionIds
+          .map((id) => QUICK_ACTIONS.find((action) => action.id === id))
+          .filter((action): action is QuickAction => action !== undefined)
+          .map((action) => ({ name: action.label, searchable: false }))
+      },
+
       // ── 데이터 보관 ──
       {
         type: "group",
@@ -233,5 +276,29 @@ export class ClassManagementSettingTab extends PluginSettingTab {
         ]
       }
     ];
+  }
+}
+
+
+class QuickActionPickerModal extends FuzzySuggestModal<QuickAction> {
+  constructor(
+    app: App,
+    private readonly candidates: QuickAction[],
+    private readonly onPick: (action: QuickAction) => void
+  ) {
+    super(app);
+    this.setPlaceholder("추가할 명령 검색");
+  }
+
+  getItems(): QuickAction[] {
+    return this.candidates;
+  }
+
+  getItemText(action: QuickAction): string {
+    return action.label;
+  }
+
+  onChooseItem(action: QuickAction): void {
+    this.onPick(action);
   }
 }

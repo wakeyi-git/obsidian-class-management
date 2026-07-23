@@ -31,6 +31,8 @@ export interface ClassManagementSettings {
   classProfiles: ClassProfile[];
   activityListFilters: ActivityListFilters;
   savedActivityViews: SavedActivityView[];
+  /** 학급 메뉴 '자주 쓰는 명령'의 동작 id 목록(순서 유지). */
+  favoriteActionIds: string[];
   activitySortBy: "date" | "student" | "status";
   activitySortDirection: "asc" | "desc";
   activityVisibleColumns: ActivityColumn[];
