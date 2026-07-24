@@ -233,7 +233,7 @@ export class CurriculumOpsView extends ItemView {
   private renderSetup(
     container: HTMLElement,
     calendar: AcademicCalendar | null,
-    standard: { file: TFile } | null,
+    standard: HoursStandard | null,
     timetable: BaseTimetable | null,
     tables: ProgressTable[]
   ): void {
@@ -271,7 +271,16 @@ export class CurriculumOpsView extends ItemView {
     });
     const importButton = progressRow.createEl("button", { text: "차시 가져오기" });
     importButton.addEventListener("click", () => this.plugin.openProgressImportModal());
-    for (const table of tables) {
+    // 진도표 열기 버튼은 시수 점검표와 같은 순서 — 기준 시수 노트의 행 순서, 없는 과목은 뒤에 이름순.
+    const orderIndex = new Map(
+      (standard?.entries ?? []).map((entry, index) => [entry.subject, index] as const)
+    );
+    const orderedTables = [...tables].sort((a, b) => {
+      const aIndex = orderIndex.get(a.subject) ?? Number.MAX_SAFE_INTEGER;
+      const bIndex = orderIndex.get(b.subject) ?? Number.MAX_SAFE_INTEGER;
+      return aIndex - bIndex || a.subject.localeCompare(b.subject);
+    });
+    for (const table of orderedTables) {
       const button = progressRow.createEl("button", { text: table.subject });
       button.addEventListener("click", () => void this.plugin.openFile(table.file));
     }
