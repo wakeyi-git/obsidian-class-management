@@ -402,14 +402,14 @@ class ActivityColumnsModal extends Modal {
     const labels: Record<ActivityColumn, string> = {
       date: "날짜", student: "학생", kind: "유형", status: "상태", detail: "내용", source: "원본"
     };
-    (Object.entries(labels) as Array<[ActivityColumn, string]>).forEach(([column, label]) =>
+    (Object.entries(labels) as Array<[ActivityColumn, string]>).forEach(([column, label]) => {
       new Setting(this.contentEl).setName(label).addToggle((toggle) =>
         toggle.setValue(this.selected.has(column)).onChange((value) => {
           if (value) this.selected.add(column);
           else this.selected.delete(column);
         })
-      )
-    );
+      );
+    });
     new Setting(this.contentEl).addButton((button) =>
       button.setButtonText("적용").setCta().onClick(() => {
         if (this.selected.size === 0) {

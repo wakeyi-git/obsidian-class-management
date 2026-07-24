@@ -84,9 +84,9 @@ export class TaskModal extends Modal {
 
     new Setting(this.contentEl).setName("연결 학생").addDropdown((dropdown) => {
       dropdown.addOption("", "연결하지 않음");
-      this.students.forEach((student) =>
-        dropdown.addOption(student.number, `${student.number}번 ${student.name}`)
-      );
+      this.students.forEach((student) => {
+        dropdown.addOption(student.number, `${student.number}번 ${student.name}`);
+      });
       dropdown.onChange((value) => (this.studentNumber = value));
     });
 

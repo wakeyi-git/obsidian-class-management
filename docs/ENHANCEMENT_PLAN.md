@@ -56,7 +56,7 @@
 - [x] `RecordEntry.content`를 타입에서 제거 (읽는 곳 없음, 본문은 ActivityIndex가 직접 읽음. 생성 입력 `NewRecord.content`는 유지)
 - [x] `schemaVersion` 매직 넘버를 `SETTINGS_SCHEMA_VERSION` 상수로 통일하고 운용 정책 주석 추가 (정규화는 멱등이라 항상 실행, 비호환 변경 시에만 버전 분기). `schoolLevel`은 초등 전용 표식으로 유지 결정
 - [x] 테스트를 도메인별 15개 파일로 분리, `node --test` 러너 전환, 공용 픽스처 `tests/helpers.mjs` 추출 — 56개 명명 테스트
-- [ ] (선택) eslint + prettier 도입 — 보류 (strict tsc가 대부분 커버, 필요해지면 도입)
+- [x] (선택) eslint 도입 — 2026-07-24 (1.46.0, typescript-eslint 타입 인지 린트를 check에 편입). prettier는 계속 보류
 - 완료 기준: `npm run check` 통과 + 볼트 수동 스모크 테스트 (docs/TESTING.md 체크리스트)
 
 ### 2단계 — 실사용 검증 루프 (2학기, 9~12월)

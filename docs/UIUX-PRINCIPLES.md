@@ -87,7 +87,7 @@
 
 - [x] ◐ `main.ts` 분해 2단계 (2026-07-24, 1.45.0 완료 — 명령 42개→`commands.ts`, 도메인 플로 23개→`curriculum-flows.ts`(뷰 진입점은 플러그인 위임 유지), 2,043→약 1,000줄. 설정·프로필은 플러그인 상태 소유와 결합돼 main 잔류로 결정)
 - [x] ◐ `maintenance.ts`의 볼트 IO를 repository로 이관 (2026-07-24, 1.45.0 완료 — 백업·자동 스냅숏·누락 복구·레거시 이행·휴지통 이동이 repository 메서드가 되고 maintenance.ts 삭제, 쓰기 경로 vault 호출이 repository 밖 0건)
-- [ ] ◐ ESLint(typescript-eslint) 도입 — 미사용 임포트·floating promise 가드 (ENHANCEMENT_PLAN 1단계의 "보류" 재평가)
+- [x] ◐ ESLint(typescript-eslint) 도입 (2026-07-24, 1.46.0 완료 — TS 레이어 타입 인지 린트: no-floating-promises·no-misused-promises·await-thenable·no-unused-vars, `npm run check`에 편입되어 CI 게이트. 참고: 옵시디언 Setting·컴포넌트는 체이닝용 `.then()` 탓에 thenable로 취급되므로 void 콜백에서 축약 반환하지 말고 중괄호로 감쌀 것)
 - [ ] ○ 전역 무효화 → 부분 갱신 — 현재 볼트의 모든 create/delete/metadata 변경이 열린 뷰 전부를 전체 재렌더(스크롤·표시 한도 리셋). 변경 종류별 영향 뷰만 갱신하고, 시간표·시수 뷰 주 이동 시 학기 데이터 캐시
 - [ ] ○ 파서 판별자 자기검증 통일 — `parseProgressTable`·`parseAcademicCalendar`·`parseBaseTimetable`·`parseHoursStandard`도 kind 확인 후 파싱(현재 단원·수업일지·근거 파서만 자기검증)
 - [ ] ○ frontmatter kind 22종을 `NoteKind` 유니언 상수로 단일화(core/types) — 현재 각 직렬화기에 문자열 산재

@@ -2,6 +2,14 @@
 
 이 프로젝트는 [Semantic Versioning](https://semver.org/)을 따릅니다.
 
+## 1.46.0 - 2026-07-24
+
+### 개선 — ESLint 도입 (§7 백로그)
+
+- **typescript-eslint 타입 인지 린트** — TS 레이어(src·packages/core) 대상, strict tsc가 못 잡는 부류를 겨냥: `no-floating-promises`·`no-misused-promises`·`await-thenable`·`no-unused-vars`. `npm run lint` 신설, `npm run check`에 편입되어 CI에서 자동 게이트
+- 발견 위반 10건 해소 — 옵시디언 Setting·컴포넌트가 체이닝용 `.then()` 탓에 thenable로 취급되는 void 콜백 축약 반환 4곳(중괄호로 값 버림), 빈 인터페이스 1곳(type 별칭으로), 미사용 심벌 정리
+- CLAUDE.md 검증 절차에 린트 추가
+
 ## 1.45.0 - 2026-07-24
 
 ### 개선 — main.ts 분해 2단계 · 볼트 IO 단일 창구 완성 (§7 백로그)

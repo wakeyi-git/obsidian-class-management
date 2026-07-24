@@ -62,7 +62,9 @@ export class SchoolRecordEvidenceModal extends Modal {
       });
     });
     new Setting(this.contentEl).setName("학교생활기록부 영역").addDropdown((dropdown) => {
-      SCHOOL_RECORD_AREAS.forEach((definition) => dropdown.addOption(definition.area, definition.label));
+      SCHOOL_RECORD_AREAS.forEach((definition) => {
+        dropdown.addOption(definition.area, definition.label);
+      });
       dropdown.setValue(this.evidence.area).onChange((value) => {
         const curriculumLink = pickCurriculumLink(this.evidence);
         this.evidence = { ...emptySchoolRecordEvidence(value as SchoolRecordArea), ...curriculumLink };

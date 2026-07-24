@@ -187,7 +187,7 @@ export interface TaskEntry {
   createdAt: number;
 }
 
-export interface NewTask extends Omit<TaskEntry, "file" | "createdAt"> {}
+export type NewTask = Omit<TaskEntry, "file" | "createdAt">;
 
 export type NoticeStatus = "미회신" | "회신 완료" | "확인 필요";
 

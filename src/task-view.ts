@@ -133,7 +133,7 @@ export class TaskView extends ItemView {
     });
   }
 
-  private renderFilters(tasks: TaskEntry[], notices: NoticeSheet[]): void {
+  private renderFilters(tasks: TaskEntry[], _notices: NoticeSheet[]): void {
     const filters = this.contentEl.createDiv({ cls: "class-management-filter-bar" });
     const searchLabel = filterLabel(filters, "검색");
     const search = searchLabel.createEl("input", { attr: { placeholder: "예: 상담 준비" } });

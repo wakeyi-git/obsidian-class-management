@@ -82,7 +82,9 @@ export class SchoolRecordBatchModal extends Modal {
       });
     });
     new Setting(this.commonEl).setName("영역").addDropdown((dropdown) => {
-      SCHOOL_RECORD_AREAS.forEach((definition) => dropdown.addOption(definition.area, definition.shortLabel));
+      SCHOOL_RECORD_AREAS.forEach((definition) => {
+        dropdown.addOption(definition.area, definition.shortLabel);
+      });
       dropdown.setValue(this.area).onChange((value) => {
         this.area = value as SchoolRecordArea;
         this.subarea = this.area === "creative-activities" ? "autonomy" : this.area === "subject-development" ? "subject" : "general";
