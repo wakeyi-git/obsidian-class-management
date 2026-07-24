@@ -6,6 +6,7 @@ export * from "./assignment";
 export * from "./attendance";
 export * from "./calendar";
 export * from "./change-scope";
+export * from "./covault-bridge";
 export * from "./csv";
 export * from "./curriculum";
 export * from "./entity-notes";

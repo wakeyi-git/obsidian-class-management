@@ -987,6 +987,31 @@ export class ClassRepository {
     return this.app.vault.create(path, content);
   }
 
+  /** CoVault 이관용 파일 — 내보내기/CoVault/ 아래에 만든다(사용자가 CoVault 볼트로 복사). */
+  async saveCovaultExport(title: string, content: string): Promise<TFile> {
+    await this.ensureWorkspace();
+    const folder = this.vaultPath(this.exportsFolderPath, "CoVault");
+    await this.ensureFolder(folder);
+    const path = this.availableMarkdownPath(folder, safeFileSegment(title));
+    return this.app.vault.create(path, content);
+  }
+
+  /** 주간학습안내 노트 목록(최신 주 먼저) — CoVault 내보내기 선택지. */
+  getWeeklyPlanFiles(): Array<{ file: TFile; weekStart: string; weekEnd: string }> {
+    return this.markdownFilesIn(this.weeklyPlanFolderPath)
+      .map((file) => {
+        const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+        if (frontmatter?.["class-management"] !== "weekly-plan") return null;
+        return {
+          file,
+          weekStart: stringValue(frontmatter.weekStart),
+          weekEnd: stringValue(frontmatter.weekEnd)
+        };
+      })
+      .filter((entry): entry is { file: TFile; weekStart: string; weekEnd: string } => entry !== null)
+      .sort((a, b) => b.weekStart.localeCompare(a.weekStart));
+  }
+
   /** 실사용 피드백 한 줄을 기본 폴더의 피드백 노트에 덧붙인다 (없으면 생성). */
   async appendFeedbackEntry(text: string, version: string, screen: string): Promise<TFile> {
     await this.ensureWorkspace();

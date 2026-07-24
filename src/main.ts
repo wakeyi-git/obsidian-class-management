@@ -7,6 +7,7 @@ import { AttendanceModal } from "./attendance-modal";
 import { FeedbackModal } from "./feedback-modal";
 import { NeisCharCountModal } from "./neis-char-modal";
 import { YearEndModal } from "./year-end-modal";
+import { CovaultExportModal, CovaultStatsModal } from "./covault-modal";
 import { AssignmentModal, AssignmentPickerModal } from "./assignment-modal";
 import { ClassCalendarView, CALENDAR_VIEW_TYPE } from "./calendar-view";
 import { ClassProfileModal } from "./class-profile-modal";
@@ -964,6 +965,14 @@ export default class ClassManagementPlugin extends Plugin {
 
   openYearEnd(): void {
     new YearEndModal(this).open();
+  }
+
+  openCovaultExport(): void {
+    new CovaultExportModal(this).open();
+  }
+
+  openCovaultStats(): void {
+    new CovaultStatsModal(this).open();
   }
 
   async openDataManagement(): Promise<void> {
