@@ -1241,8 +1241,11 @@
   background: var(--color-orange);
 }
 
+/* 과제 = 주황 ◆ — 로드맵·주간 시간표와 같은 표식 (UIUX §4) */
 .class-management-calendar-event.is-assignment::before {
-  background: var(--color-purple);
+  background: var(--color-orange);
+  border-radius: 1px;
+  transform: rotate(45deg);
 }
 
 .class-management-calendar-event.is-task::before {
@@ -1253,8 +1256,9 @@
   background: var(--color-green);
 }
 
-.class-management-calendar-event.is-project::before {
-  background-color: var(--interactive-accent);
+/* 통합(프로젝트)의 표식은 제목의 ✦ 하나만 — 점과 겹으로 달지 않는다 (UIUX §4) */
+.class-management-calendar-view .class-management-calendar-event.is-project::before {
+  content: none;
 }
 
 .class-management-calendar-event.is-project strong {
@@ -2251,6 +2255,18 @@
   display: block;
   font-size: 0.75em;
   color: var(--text-accent);
+}
+
+/* 행사 = 보라 ● — 로드맵과 같은 표식 (UIUX §4) */
+.class-management-calendar-school-event::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--color-purple);
+  vertical-align: middle;
 }
 
 /* 진도 차시 레이어(옵트인) — 기록·일정과 구분되는 보조 정보라 muted 톤 텍스트 행.
