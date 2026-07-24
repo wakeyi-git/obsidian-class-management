@@ -241,6 +241,11 @@ export class ClassManagementSettingTab extends PluginSettingTab {
         heading: "데이터 보관",
         items: [
           {
+            name: "할 일 자동 수집 (로드 시)",
+            desc: "플러그인이 켜질 때 규칙 기반으로 마감 임박 과제·행사·미회신·시수 이상 등을 GTD 수집함에 담습니다. 같은 항목은 다시 만들지 않습니다. ‘할 일 자동 수집’ 명령으로 수동 실행할 수도 있습니다.",
+            control: { type: "toggle", key: "autoTaskScan", defaultValue: false }
+          },
+          {
             name: "기록 보관 기간",
             desc: "설정한 연수보다 오래된 관리 파일을 보존 정리에서 검토합니다. 자동 삭제하지 않습니다.",
             control: {

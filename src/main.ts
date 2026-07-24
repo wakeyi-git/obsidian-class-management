@@ -115,6 +115,7 @@ const DEFAULT_SETTINGS: ClassManagementSettings = {
   activityListFilters: { ...EMPTY_ACTIVITY_FILTERS },
   savedActivityViews: [],
   favoriteActionIds: ["attendance", "record", "assignment", "task"],
+  autoTaskScan: false,
   activitySortBy: "date",
   activitySortDirection: "desc",
   activityVisibleColumns: ["date", "student", "kind", "status", "detail", "source"],
@@ -209,7 +210,11 @@ export default class ClassManagementPlugin extends Plugin {
         // 학기 경계를 지나면 설정 전환을 제안한다(자동 변경은 하지 않음).
         window.setTimeout(() => void this.flows.suggestSemesterSwitch(), 2600),
         // 1.30.0 폴더 직관화 이후 구 이름 폴더가 남아 있으면 이행 안내(자동 이동은 하지 않음).
-        window.setTimeout(() => this.flows.warnLegacyFolders(), 3200)
+        window.setTimeout(() => this.flows.warnLegacyFolders(), 3200),
+        // 규칙 기반 할 일 자동 수집(옵트인) — sourceKey 멱등이라 반복 실행해도 안전.
+        window.setTimeout(() => {
+          if (this.settings.autoTaskScan) void this.flows.scanOperationalTasks(true);
+        }, 3800)
       ];
       this.register(() => startupTimers.forEach((id) => window.clearTimeout(id)));
     });

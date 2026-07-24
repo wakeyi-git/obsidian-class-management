@@ -1,8 +1,10 @@
 import { Notice, type App, type TFile } from "obsidian";
 import { addDays, dayStatus, mondayOf, semesterForDate, semesterRange } from "@core/academic-calendar";
-import { isRemovedSubject, resolveDay, subjectSlots } from "@core/timetable";
+import { isRemovedSubject, plannedHoursBySubject, resolveDay, subjectSlots } from "@core/timetable";
 import { assignProgress, buildAssignedSlotContents } from "@core/progress";
-import { emptyCurriculumUnit, taughtHoursForUnit } from "@core/curriculum";
+import { buildHoursAudit } from "@core/hours-audit";
+import { scanOperationalTasks } from "@core/task-scan";
+import { auditCurriculumAlignment, emptyCurriculumUnit, taughtHoursForUnit } from "@core/curriculum";
 import {
   achievementStandardMarkdown,
   extractStandardCodes,
@@ -808,6 +810,140 @@ export class CurriculumFlows {
       }
     } catch {
       // 스탬프 실패는 다음 로드에서 재시도된다.
+    }
+  }
+
+  /**
+   * 규칙 기반 할 일 자동 수집 — skills/task-scan 규칙표 7종의 플러그인 단독 경로.
+   * sourceKey 멱등이라 스킬·자동·수동 어느 조합으로 반복 실행해도 중복 생성되지 않는다.
+   */
+  async scanOperationalTasks(auto = false): Promise<void> {
+    try {
+      const today = localDate();
+      const repository = this.repository;
+
+      const assignments = repository.getAssignmentSummaries().map((item) => ({
+        fileName: item.file.basename,
+        title: item.title,
+        date: item.date
+      }));
+
+      const units = repository.getCurriculumUnits();
+      const projects = units
+        .filter((unit) => unit.conceptInquiryEnabled && unit.startDate)
+        .map((unit) => ({
+          fileName: unit.file.basename,
+          title: unit.unitName,
+          startDate: unit.startDate
+        }));
+
+      const calendar = await repository.getAcademicCalendar();
+      const events = (calendar?.events ?? []).map((event) => ({
+        date: event.date,
+        name: event.name
+      }));
+
+      // 회신표 로드는 비용이 있어 마감 창(D-2)에 든 통신문만 연다.
+      const notices: Array<{ fileName: string; title: string; dueDate: string; pendingCount: number }> = [];
+      for (const summary of repository.getNoticeSummaries()) {
+        if (!summary.dueDate || summary.dueDate < today || summary.dueDate > addDays(today, 2)) continue;
+        const sheet = await repository.loadNotice(summary);
+        notices.push({
+          fileName: summary.file.basename,
+          title: summary.title,
+          dueDate: summary.dueDate,
+          pendingCount: sheet.marks.filter((mark) => mark.status === "미회신").length
+        });
+      }
+
+      // 시수 점검 — 시간표·시수 뷰와 같은 계산(기준·편성만, 상태 적정 아님 → 확인 할 일).
+      const hoursIssues: Array<{ subject: string; statusLabel: string }> = [];
+      if (calendar) {
+        const standard = await repository.getHoursStandard();
+        const semesterHours: Record<string, { planned: Record<string, number>; taught: Record<string, number> }> = {
+          "1학기": { planned: {}, taught: {} },
+          "2학기": { planned: {}, taught: {} }
+        };
+        for (const semester of ["1학기", "2학기"]) {
+          const bucket = semesterHours[semester];
+          const range = semesterRange(calendar, semester);
+          if (!bucket || !range.from || !range.to) continue;
+          const timetable = await repository.getBaseTimetable(semester);
+          if (!timetable) continue;
+          bucket.planned = plannedHoursBySubject(calendar, timetable, range.from, range.to);
+        }
+        const statusLabels: Record<string, string> = { over: "초과", under: "미달" };
+        for (const row of buildHoursAudit(standard, semesterHours["1학기"], semesterHours["2학기"])) {
+          if (row.kind !== "subject") continue;
+          const label = statusLabels[row.status];
+          if (label) hoursIssues.push({ subject: row.subject, statusLabel: label });
+        }
+      }
+
+      const designIssues = units
+        .filter((unit) => {
+          if (!unit.startDate) return false;
+          const running = unit.startDate <= today && (!unit.endDate || unit.endDate >= today);
+          const upcoming = unit.startDate > today && unit.startDate <= addDays(today, 14);
+          return running || upcoming;
+        })
+        .map((unit) => {
+          const firstError = auditCurriculumAlignment(unit).issues.find(
+            (issue) => issue.severity === "error"
+          );
+          return firstError
+            ? {
+                fileName: unit.file.basename,
+                title: unit.unitName,
+                startDate: unit.startDate,
+                firstError: firstError.message
+              }
+            : null;
+        })
+        .filter((issue): issue is NonNullable<typeof issue> => issue !== null);
+
+      const scanned = scanOperationalTasks({
+        today,
+        assignments,
+        projects,
+        events,
+        notices,
+        hoursIssues,
+        designIssues,
+        lastBackupDate: repository.lastBackupDate(),
+        existingSourceKeys: repository.getTaskSourceKeys()
+      });
+
+      for (const task of scanned) {
+        await repository.createTask(
+          {
+            title: task.title,
+            status: "inbox",
+            project: task.project,
+            context: task.context,
+            startDate: "",
+            dueDate: task.dueDate,
+            priority: "normal",
+            recurrence: "none",
+            studentNumber: "",
+            studentName: "",
+            detail: task.detail
+          },
+          { sourceKey: task.sourceKey }
+        );
+      }
+
+      if (scanned.length > 0) {
+        // 파일 생성이 볼트 변경 이벤트로 색인·뷰 갱신을 이미 유발한다 — 별도 갱신 불필요.
+        new Notice(`할 일 ${scanned.length}건을 수집했습니다. — GTD 수집함`);
+      } else if (!auto) {
+        new Notice("새 할 일 없음 — 규칙에 해당하는 항목이 없습니다.");
+      }
+    } catch (error) {
+      // 자동 실행 실패는 조용히 넘기고 다음 기회에 재시도한다(Notice 문형 §3).
+      if (!auto) {
+        new Notice(error instanceof Error ? error.message : "할 일을 수집하지 못했습니다.");
+      }
     }
   }
 }

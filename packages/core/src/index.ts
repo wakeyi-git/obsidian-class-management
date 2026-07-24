@@ -20,6 +20,7 @@ export * from "./school-record";
 export * from "./school-record-evidence";
 export * from "./subject-options";
 export * from "./task";
+export * from "./task-scan";
 export * from "./timetable";
 export * from "./types";
 export * from "./utils";

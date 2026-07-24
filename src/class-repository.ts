@@ -94,6 +94,7 @@ import {
   localDate,
   localTimeForFile,
   safeFileSegment,
+  stringValue,
   yamlString
 } from "@core/utils";
 
@@ -683,7 +684,7 @@ export class ClassRepository {
       });
   }
 
-  async createTask(task: NewTask): Promise<TFile> {
+  async createTask(task: NewTask, extra: Record<string, string> = {}): Promise<TFile> {
     this.assertWritableClass();
     await this.ensureWorkspace();
     const title = task.title.trim();
@@ -691,8 +692,30 @@ export class ClassRepository {
     const settings = this.getSettings();
     const baseName = `${localDate()} ${localTimeForFile()} ${safeFileSegment(title)}`;
     const path = this.availableMarkdownPath(this.tasksFolderPath, baseName);
-    const content = taskMarkdown(task, settings, localDate());
+    const content = taskMarkdown(task, settings, localDate(), extra);
     return this.app.vault.create(path, content);
+  }
+
+  /** 자동 수집 멱등 게이트 — 완료·삭제 여부와 무관하게 존재하는 sourceKey 전부. */
+  getTaskSourceKeys(): Set<string> {
+    const keys = new Set<string>();
+    for (const file of this.markdownFilesIn(this.tasksFolderPath)) {
+      const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+      if (frontmatter?.["class-management"] !== "task") continue;
+      const key = stringValue(frontmatter.sourceKey);
+      if (key) keys.add(key);
+    }
+    return keys;
+  }
+
+  /** 마지막 백업 날짜(폴더명 YYYY-MM-DD 접두 최댓값) — 없으면 null. */
+  lastBackupDate(): string | null {
+    let latest: string | null = null;
+    for (const folder of this.listManagedBackups()) {
+      const stamp = /^(\d{4}-\d{2}-\d{2})/.exec(folder.name)?.[1];
+      if (stamp && (!latest || stamp > latest)) latest = stamp;
+    }
+    return latest;
   }
 
   async updateTaskStatus(file: TFile, status: TaskStatus): Promise<void> {

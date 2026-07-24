@@ -74,6 +74,8 @@ export interface ClassManagementSettings {
   savedActivityViews: SavedActivityView[];
   /** 학급 메뉴 '자주 쓰는 명령'의 동작 id 목록(순서 유지). */
   favoriteActionIds: string[];
+  /** 로드 시 규칙 기반 할 일 자동 수집(task-scan) 실행 여부. */
+  autoTaskScan: boolean;
   activitySortBy: "date" | "student" | "status";
   activitySortDirection: "asc" | "desc";
   activityVisibleColumns: ActivityColumn[];
