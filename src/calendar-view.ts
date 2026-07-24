@@ -244,30 +244,21 @@ export class ClassCalendarView extends ItemView {
       });
       add.addEventListener("click", () => new CalendarDateActionModal(this.plugin, key).open());
 
-      const lessons = this.lessonsByDate.get(key) ?? [];
-      if (lessons.length > 0) {
-        const lessonLimit = this.mode === "month" ? 3 : 8;
-        lessons.slice(0, lessonLimit).forEach((lesson) => {
-          const summary = this.mode === "week"
-            ? [lesson.subject, lesson.topic || lesson.unit].filter(Boolean).join(" — ")
-            : lesson.subject;
-          const button = cell.createEl("button", {
-            cls: "class-management-calendar-lesson",
-            attr: { "aria-label": `${lesson.period}교시 ${lesson.subject} 배정 차시 — 진도표 열기` }
-          });
-          button.createEl("span", { text: `${lesson.period}` , cls: "class-management-calendar-lesson-period" });
-          button.createEl("span", { text: summary });
-          const note = this.progressNotes.get(`${lesson.semester}|${lesson.subject}`);
-          button.addEventListener("click", () => {
-            if (note) void this.plugin.openFile(note);
-          });
+      // 진도 차시는 접지 않고 그날 전부 보인다 — 하루 최대 8교시라 과다해지지 않는다.
+      for (const lesson of this.lessonsByDate.get(key) ?? []) {
+        const summary = this.mode === "week"
+          ? [lesson.subject, lesson.topic || lesson.unit].filter(Boolean).join(" — ")
+          : lesson.subject;
+        const button = cell.createEl("button", {
+          cls: "class-management-calendar-lesson",
+          attr: { "aria-label": `${lesson.period}교시 ${lesson.subject} 배정 차시 — 진도표 열기` }
         });
-        if (lessons.length > lessonLimit) {
-          cell.createEl("span", {
-            text: `+${lessons.length - lessonLimit}차시`,
-            cls: "class-management-calendar-more"
-          });
-        }
+        button.createEl("span", { text: `${lesson.period}` , cls: "class-management-calendar-lesson-period" });
+        button.createEl("span", { text: summary });
+        const note = this.progressNotes.get(`${lesson.semester}|${lesson.subject}`);
+        button.addEventListener("click", () => {
+          if (note) void this.plugin.openFile(note);
+        });
       }
 
       const dayEvents = eventsByDate.get(key) ?? [];
