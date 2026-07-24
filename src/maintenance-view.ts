@@ -1,12 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
-import {
-  createManagedBackup,
-  listManagedBackups,
-  migrateLegacyNotes,
-  previewMigrations,
-  restoreMissingFromBackup,
-  type MigrationPreview
-} from "./maintenance";
+import type { MigrationPreview } from "./class-repository";
 import type ClassManagementPlugin from "./main";
 
 export const MAINTENANCE_VIEW_TYPE = "class-management-maintenance-view";
@@ -42,7 +35,7 @@ export class MaintenanceView extends ItemView {
     this.contentEl.empty();
     this.contentEl.addClass("class-management-maintenance-view");
     this.contentEl.createEl("p", { text: "유지관리 상태를 확인하고 있습니다…" });
-    this.migration = await previewMigrations(this.app, this.plugin.repository);
+    this.migration = await this.plugin.repository.previewMigrations();
     this.render();
   }
 
@@ -61,7 +54,7 @@ export class MaintenanceView extends ItemView {
   }
 
   private renderBackup(container: HTMLElement): void {
-    const backups = listManagedBackups(this.app, this.plugin.repository);
+    const backups = this.plugin.repository.listManagedBackups();
     const panel = container.createDiv({ cls: "class-management-panel" });
     panel.createEl("h3", { text: "수동 백업" });
     panel.createEl("p", {
@@ -74,7 +67,7 @@ export class MaintenanceView extends ItemView {
   }
 
   private renderRecovery(container: HTMLElement): void {
-    const backups = listManagedBackups(this.app, this.plugin.repository);
+    const backups = this.plugin.repository.listManagedBackups();
     const latest = backups[0];
     const panel = container.createDiv({ cls: "class-management-panel" });
     panel.createEl("h3", { text: "누락 파일 복구" });
@@ -122,7 +115,7 @@ export class MaintenanceView extends ItemView {
     this.busy = true;
     this.render();
     try {
-      const result = await createManagedBackup(this.app, this.plugin.repository, this.plugin.settings);
+      const result = await this.plugin.repository.createManagedBackup();
       new Notice(`백업 완료 · ${result.processed}개 파일 · ${result.backupPath}`);
     } catch (error) {
       new Notice(error instanceof Error ? error.message : "백업을 만들지 못했습니다.");
@@ -136,7 +129,7 @@ export class MaintenanceView extends ItemView {
     this.busy = true;
     this.render();
     try {
-      const restored = await restoreMissingFromBackup(this.app, this.plugin.repository, backup);
+      const restored = await this.plugin.repository.restoreMissingFromBackup(backup);
       new Notice(`누락 파일 ${restored}개를 복구했습니다. 기존 파일은 유지했습니다.`);
       this.plugin.activityIndex.invalidate();
       await this.plugin.refreshAllViews();
@@ -152,7 +145,7 @@ export class MaintenanceView extends ItemView {
     this.busy = true;
     this.render();
     try {
-      const result = await migrateLegacyNotes(this.app, this.plugin.repository, this.plugin.settings);
+      const result = await this.plugin.repository.migrateLegacyNotes();
       new Notice(`${result.processed}개 노트를 마이그레이션했습니다. 백업: ${result.backupPath}`);
       this.plugin.activityIndex.invalidate();
       await this.plugin.refreshAllViews();

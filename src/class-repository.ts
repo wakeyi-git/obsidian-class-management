@@ -36,6 +36,7 @@ import {
 } from "@core/timetable";
 import { formatAssignedSlots, parseProgressTable, progressTableMarkdown } from "@core/progress";
 import { hoursStandardMarkdown, parseHoursStandard } from "@core/hours-audit";
+import { isLegacyAttendanceContent, isWikiLinkStudentPath } from "@core/migration";
 import {
   aiDraftPlan,
   aiSetupPaths,
@@ -95,6 +96,16 @@ import {
   safeFileSegment,
   yamlString
 } from "@core/utils";
+
+export interface MigrationPreview {
+  legacyAttendance: TFile[];
+  legacyStudentPaths: TFile[];
+}
+
+export interface MaintenanceResult {
+  backupPath: string;
+  processed: number;
+}
 
 export class ClassRepository {
   constructor(
@@ -1453,6 +1464,188 @@ export class ClassRepository {
       path,
       buildAiDraftMarkdown(settings, student, activities, kind, dateFrom, dateTo, schoolRecordArea)
     );
+  }
+
+  // ── 백업·복구·마이그레이션 — 구 maintenance.ts에서 이관(§6 볼트 IO 단일 창구) ──
+
+  /** 관리 폴더 전체를 볼트 안 백업 폴더로 복제한다. */
+  async createManagedBackup(): Promise<MaintenanceResult> {
+    const settings = this.getSettings();
+    const stamp = this.backupStamp(new Date());
+    const backupPath = joinVaultPath(this.backupsFolderPath, stamp);
+    await this.ensureFolder(backupPath);
+    const prefix = `${this.baseFolderPath}/`;
+    const backupPrefix = `${this.backupsFolderPath}/`;
+    const files = this.app.vault.getFiles().filter((file) =>
+      file.path.startsWith(prefix) && !file.path.startsWith(backupPrefix)
+    );
+    let processed = 0;
+    for (const file of files) {
+      const relative = file.path.slice(prefix.length);
+      const target = joinVaultPath(backupPath, relative);
+      await this.ensureParentFolder(target);
+      const data = await this.app.vault.readBinary(file);
+      await this.app.vault.createBinary(target, data);
+      processed += 1;
+    }
+    await this.app.vault.create(joinVaultPath(backupPath, "백업 정보.md"), [
+      "---",
+      "class-management: backup",
+      `schemaVersion: ${settings.schemaVersion}`,
+      `class: ${JSON.stringify(settings.className)}`,
+      `created: ${JSON.stringify(new Date().toISOString())}`,
+      `files: ${processed}`,
+      "---",
+      "",
+      `# ${settings.className} 백업`,
+      "",
+      `- 원본 기본 폴더: ${this.baseFolderPath}`,
+      `- 파일 수: ${processed}`,
+      "- 이 백업은 Classroom Manager 유지관리 화면에서 누락 파일 복구에 사용할 수 있습니다.",
+      ""
+    ].join("\n"));
+    return { backupPath, processed };
+  }
+
+  /**
+   * 대량 쓰기 전 자동 스냅숏 (UIUX §5) — 다시 쓸 노트만 백업 폴더 규격으로 복사한다.
+   * 백업 목록·누락 복구 뷰가 그대로 재사용한다(폴더명 접미사 "자동"으로 구분).
+   */
+  async createTargetedSnapshot(files: TFile[], trigger: string): Promise<MaintenanceResult> {
+    const settings = this.getSettings();
+    const stamp = this.backupStamp(new Date());
+    let backupPath = joinVaultPath(this.backupsFolderPath, `${stamp} 자동`);
+    let suffix = 2;
+    while (this.app.vault.getAbstractFileByPath(backupPath)) {
+      backupPath = joinVaultPath(this.backupsFolderPath, `${stamp} 자동-${suffix}`);
+      suffix += 1;
+    }
+    await this.ensureFolder(backupPath);
+    const prefix = `${this.baseFolderPath}/`;
+    let processed = 0;
+    for (const file of files) {
+      if (!file.path.startsWith(prefix)) continue;
+      const relative = file.path.slice(prefix.length);
+      const target = joinVaultPath(backupPath, relative);
+      await this.ensureParentFolder(target);
+      const data = await this.app.vault.readBinary(file);
+      await this.app.vault.createBinary(target, data);
+      processed += 1;
+    }
+    await this.app.vault.create(joinVaultPath(backupPath, "백업 정보.md"), [
+      "---",
+      "class-management: backup",
+      `schemaVersion: ${settings.schemaVersion}`,
+      `class: ${JSON.stringify(settings.className)}`,
+      `created: ${JSON.stringify(new Date().toISOString())}`,
+      `files: ${processed}`,
+      `trigger: ${JSON.stringify(trigger)}`,
+      "---",
+      "",
+      `# ${settings.className} 자동 스냅숏`,
+      "",
+      `- 계기: ${trigger} (대량 변경 전 자동 백업)`,
+      `- 파일 수: ${processed}`,
+      "- 유지관리 화면의 누락 파일 복구·수동 확인에 사용할 수 있습니다.",
+      ""
+    ].join("\n"));
+    return { backupPath, processed };
+  }
+
+  listManagedBackups(): TFolder[] {
+    const root = this.app.vault.getAbstractFileByPath(this.backupsFolderPath);
+    if (!(root instanceof TFolder)) return [];
+    return root.children
+      .filter((entry): entry is TFolder => entry instanceof TFolder)
+      .sort((a, b) => b.name.localeCompare(a.name));
+  }
+
+  /** 백업에서 현재 볼트에 없는 파일만 복원한다 — 있는 파일은 건드리지 않는다. */
+  async restoreMissingFromBackup(backup: TFolder): Promise<number> {
+    const backupPrefix = `${backup.path}/`;
+    const files = this.collectBackupFiles(backup).filter((file) => file.name !== "백업 정보.md");
+    let restored = 0;
+    for (const file of files) {
+      const relative = file.path.slice(backupPrefix.length);
+      const target = joinVaultPath(this.baseFolderPath, relative);
+      if (this.app.vault.getAbstractFileByPath(target)) continue;
+      await this.ensureParentFolder(target);
+      await this.app.vault.createBinary(target, await this.app.vault.readBinary(file));
+      restored += 1;
+    }
+    return restored;
+  }
+
+  async previewMigrations(): Promise<MigrationPreview> {
+    const legacyAttendance: TFile[] = [];
+    for (const summary of this.getAttendanceSummaries()) {
+      const content = await this.app.vault.cachedRead(summary.file);
+      if (isLegacyAttendanceContent(content)) legacyAttendance.push(summary.file);
+    }
+    const legacyStudentPaths = this.getRecords()
+      .filter((record) => {
+        const path = String(
+          this.app.metadataCache.getFileCache(record.file)?.frontmatter?.studentPath ?? ""
+        );
+        return !isWikiLinkStudentPath(path);
+      })
+      .map((record) => record.file);
+    return { legacyAttendance, legacyStudentPaths };
+  }
+
+  /** 레거시 형식을 정규화한다 — 실행 전 전체 백업을 먼저 만든다. */
+  async migrateLegacyNotes(): Promise<MaintenanceResult> {
+    const preview = await this.previewMigrations();
+    const backup = await this.createManagedBackup();
+    for (const file of preview.legacyAttendance) {
+      const date = this.getAttendanceSummaries().find((item) => item.file.path === file.path)?.date;
+      if (!date) continue;
+      const marks = this.parseAttendanceContent(await this.app.vault.cachedRead(file));
+      await this.saveAttendance(date, marks);
+    }
+    const students = this.getStudents(true);
+    for (const file of preview.legacyStudentPaths) {
+      const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+      const number = String(frontmatter?.studentNumber ?? "");
+      const student = students.find((entry) => entry.number === number);
+      if (!student) continue;
+      await this.app.fileManager.processFrontMatter(file, (values) => {
+        values.studentPath = `[[${student.file.path.replace(/\.md$/i, "")}]]`;
+      });
+    }
+    return {
+      backupPath: backup.backupPath,
+      processed: preview.legacyAttendance.length + preview.legacyStudentPaths.length
+    };
+  }
+
+  /** 경로 목록을 옵시디언 휴지통으로 옮긴다(복구 가능). 이동한 개수를 돌려준다. */
+  async trashFilesByPath(paths: Iterable<string>): Promise<number> {
+    let moved = 0;
+    for (const path of paths) {
+      const file = this.app.vault.getAbstractFileByPath(path);
+      if (file instanceof TFile) {
+        await this.app.fileManager.trashFile(file);
+        moved += 1;
+      }
+    }
+    return moved;
+  }
+
+  private async ensureParentFolder(filePath: string): Promise<void> {
+    const parent = filePath.split("/").slice(0, -1).join("/");
+    if (parent) await this.ensureFolder(parent);
+  }
+
+  private collectBackupFiles(folder: TFolder): TFile[] {
+    return folder.children.flatMap((entry) =>
+      entry instanceof TFile ? [entry] : entry instanceof TFolder ? this.collectBackupFiles(entry) : []
+    );
+  }
+
+  private backupStamp(date: Date): string {
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
   }
 
   private markdownFilesIn(folderPath: string): TFile[] {

@@ -31,10 +31,12 @@
 packages/core/          순수 도메인 로직 (플랫폼 독립 — obsidian은 import type만, DOM·볼트 IO 토큰도 가드 테스트로 금지)
   학사일정·시간표·진도·단원·시수감사·주간안내·노트 직렬화/파싱 등 23모듈
 src/
-  class-repository.ts   볼트 IO 단일 창구 (폴더 규약·노트 생성/파싱·frontmatter·AI 작업 공간)
+  class-repository.ts   볼트 IO 단일 창구 (폴더 규약·노트 생성/파싱·frontmatter·AI 작업 공간·백업/복구/이행)
+  curriculum-flows.ts   교육과정 도메인 플로 (배정·주간안내·성취기준·기록 흐름 — 뷰는 플러그인 위임 경유)
+  commands.ts           명령 팔레트 42개 등록
   *-view.ts (16)        중앙·사이드 뷰 (ItemView)
   *-modal.ts (20)       입력 모달 (+modals.ts)
-  main.ts               조립: 명령 42개·설정·이벤트·뷰 레지스트리 갱신
+  main.ts               조립: 설정·프로필·뷰 레지스트리·open 흐름 (~1,000줄)
 ```
 
 의존 방향: `views/modals → main·repository → core`. 역방향 금지(core는 아무것도 모른다).

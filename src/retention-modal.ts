@@ -72,14 +72,7 @@ export class RetentionModal extends Modal {
   }
 
   private async trashSelected(): Promise<void> {
-    let moved = 0;
-    for (const path of this.selected) {
-      const file = this.app.vault.getAbstractFileByPath(path);
-      if (file instanceof TFile) {
-        await this.app.fileManager.trashFile(file);
-        moved += 1;
-      }
-    }
+    const moved = await this.plugin.repository.trashFilesByPath(this.selected);
     new Notice(`${moved}개 파일을 Obsidian 휴지통으로 이동했습니다.`);
     this.close();
     this.onComplete();
