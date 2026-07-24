@@ -11,6 +11,7 @@ export * from "./curriculum";
 export * from "./entity-notes";
 export * from "./hours-audit";
 export * from "./migration";
+export * from "./neis-export";
 export * from "./notice";
 export * from "./progress";
 export * from "./planning";

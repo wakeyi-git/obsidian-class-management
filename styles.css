@@ -2279,6 +2279,17 @@
   gap: 4px;
 }
 
+/* NEIS 글자수 검사 결과 — 초과는 위험 색으로 */
+.class-management-neis-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.class-management-neis-count.is-over {
+  color: var(--color-red);
+  font-weight: 600;
+}
+
 @media (max-width: 600px) {
   .class-management-ops-week-table {
     font-size: 0.78em;

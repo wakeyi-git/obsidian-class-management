@@ -14,6 +14,7 @@ import {
   buildSchoolRecordCoverage,
   normalizeSubjects
 } from "@core/school-record-evidence";
+import { buildNeisExportMarkdown } from "@core/neis-export";
 import type { ActivityEntry, ReportOptions, SchoolRecordArea } from "@core/types";
 import { localDate } from "@core/utils";
 
@@ -136,6 +137,8 @@ export class ReportView extends ItemView {
     csv.addEventListener("click", () => void this.saveCsv(activities));
     const counseling = actions.createEl("button", { text: "상담 자료 내보내기" });
     counseling.addEventListener("click", () => void this.exportCounseling());
+    const neis = actions.createEl("button", { text: "NEIS 붙여넣기 자료" });
+    neis.addEventListener("click", () => void this.exportNeisMaterial());
     const exportAi = actions.createEl("button", { text: "AI 초안 자료 내보내기 (익명)" });
     exportAi.disabled = !this.plugin.settings.aiCollaborationEnabled;
     exportAi.addEventListener("click", () => void this.exportAiBundle());
@@ -305,6 +308,29 @@ export class ReportView extends ItemView {
       await this.plugin.openFile(file);
     } catch (error) {
       new Notice(error instanceof Error ? error.message : "상담 자료를 만들지 못했습니다.");
+    }
+  }
+
+  /** NEIS 대비 — 검토 완료 근거를 영역별 붙여넣기 재료로 내보낸다 (자동 전송은 비목표). */
+  private async exportNeisMaterial(): Promise<void> {
+    try {
+      const content = buildNeisExportMarkdown(
+        this.activities,
+        this.plugin.repository.getStudents(),
+        {
+          className: this.plugin.settings.className,
+          guidelineYear: this.plugin.settings.schoolRecordGuidelineYear,
+          studentNumber: this.options.studentNumber || undefined,
+          dateFrom: this.options.dateFrom || undefined,
+          dateTo: this.options.dateTo || undefined
+        }
+      );
+      const scope = this.options.studentNumber ? `${this.options.studentNumber}번` : "전체";
+      const file = await this.plugin.repository.saveExport(`NEIS 붙여넣기 자료 - ${scope}`, content, "md");
+      new Notice("NEIS 붙여넣기 자료를 만들었습니다. 자수는 `NEIS 글자수 검사`로 확인하세요.");
+      await this.plugin.openFile(file);
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "NEIS 자료를 만들지 못했습니다.");
     }
   }
 
