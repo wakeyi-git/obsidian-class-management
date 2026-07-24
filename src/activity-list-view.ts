@@ -63,6 +63,8 @@ export class ActivityListView extends ItemView {
   }
 
   async refresh(): Promise<void> {
+    // 볼트 변경 재렌더 시 읽던 위치를 보존한다(§7 부분 갱신 — 전체 재구성이어도 스크롤은 유지).
+    const scrollTop = this.contentEl.scrollTop;
     this.contentEl.empty();
     this.contentEl.addClass("class-management-activity-view");
     this.contentEl.createEl("p", { text: "데이터를 불러오고 있습니다…" });
@@ -70,6 +72,7 @@ export class ActivityListView extends ItemView {
     try {
       this.activities = await this.plugin.activityIndex.getEntries();
       this.renderLayout();
+      this.contentEl.scrollTop = scrollTop;
     } catch (error) {
       this.contentEl.empty();
       this.contentEl.createEl("p", {
@@ -80,7 +83,7 @@ export class ActivityListView extends ItemView {
   }
 
   private renderLayout(): void {
-    this.displayLimit = 200;
+    // displayLimit은 여기서 되돌리지 않는다 — 볼트 변경 재렌더가 "더 보기"로 늘린 표시 범위를 잃지 않게.
     this.contentEl.empty();
     const header = this.contentEl.createDiv({ cls: "class-management-view-heading" });
     const headingText = header.createDiv();

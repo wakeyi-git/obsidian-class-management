@@ -11,6 +11,7 @@ const { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } =
 const calendar = parseAcademicCalendar(
   { path: "학사일정.md", basename: "학사일정", stat: { ctime: 1 } },
   {
+    "class-management": "academic-calendar",
     schoolYear: "2026",
     semester1Start: "2026-03-02",
     semester1End: "2026-07-17",
@@ -28,7 +29,7 @@ const calendar = parseAcademicCalendar(
 
 const timetable = parseBaseTimetable(
   { path: "기초시간표.md", basename: "기초시간표", stat: { ctime: 2 } },
-  { schoolYear: "2026", semester: "2학기" },
+  { "class-management": "timetable", schoolYear: "2026", semester: "2학기" },
   [
     "## 기초시간표",
     "| 교시 | 월 | 화 | 수 | 목 | 금 |",

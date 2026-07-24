@@ -122,7 +122,8 @@ export function parseAcademicCalendar(
   file: TFile,
   frontmatter: Record<string, unknown>,
   content: string
-): AcademicCalendar {
+): AcademicCalendar | null {
+  if (frontmatter["class-management"] !== "academic-calendar") return null;
   return {
     file,
     schoolYear: stringValue(frontmatter.schoolYear),

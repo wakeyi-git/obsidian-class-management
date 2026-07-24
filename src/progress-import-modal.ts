@@ -65,9 +65,18 @@ export class ProgressImportModal extends Modal {
       const content = await this.plugin.app.vault.read(file);
       const table = parseProgressTable(
         file,
-        { schoolYear: settings.schoolYear, semester: this.semester, subject: this.subject },
+        {
+          "class-management": "subject-progress",
+          schoolYear: settings.schoolYear,
+          semester: this.semester,
+          subject: this.subject
+        },
         content
       );
+      if (!table) {
+        new Notice("진도표 노트를 읽지 못했습니다. 노트의 frontmatter를 확인하세요.");
+        return;
+      }
       const startOrder = table.rows.reduce((max, row) => Math.max(max, row.order), 0) + 1;
       const imported = parseProgressImport(this.text, startOrder);
       if (imported.rows.length === 0) {

@@ -57,6 +57,8 @@ function progressColumnIndex(content: string): ProgressColumnIndex {
     if (/^#{1,6}\s/.test(line)) break;
     const cells = splitMarkdownTableRow(line);
     if (cells.length === 0) continue;
+    // 구분행(---)이 헤더보다 먼저 나오는 손상된 표에서 구버전 배치로 오분류되지 않게 건너뛴다.
+    if (cells.every((cell) => cell === "" || /^:?-+:?$/.test(cell))) continue;
     const named = columnIndexFromHeader(cells);
     if (named) return named;
     if ((cells[0] ?? "").includes("고정")) return V1_17_COLUMN_INDEX;
@@ -91,7 +93,8 @@ export function parseProgressTable(
   file: TFile,
   frontmatter: Record<string, unknown>,
   content: string
-): ProgressTable {
+): ProgressTable | null {
+  if (frontmatter["class-management"] !== "subject-progress") return null;
   const columns = progressColumnIndex(content);
   const rows = sectionTableRows(content, "진도표")
     .map((cells, index): ProgressRow | null => {

@@ -41,6 +41,8 @@ const RULES = [
 /** 소스에서 문자열 리터럴("…", '…', `…`)만 추출한다. 템플릿 내 표현식은 통째로 둔다. */
 function stringLiterals(source) {
   const literals = [];
+  // 인접 리터럴 연결("수업 " + "기록")로 금지어를 쪼개는 우회를 막는다 — 이어 붙여 한 리터럴로 본다.
+  source = source.replace(/(["'`])\s*\+\s*\1/g, "");
   const pattern = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g;
   for (const match of source.matchAll(pattern)) {
     const line = source.slice(0, match.index).split("\n").length;

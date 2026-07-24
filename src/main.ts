@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFile, type ItemView, type WorkspaceLeaf } from "obsidian";
+import { Notice, Plugin, TFile, type ItemView, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
 import { EMPTY_ACTIVITY_FILTERS } from "@core/activity";
 import { ActivityIndex } from "./activity-index";
 import { ActivityListView, ACTIVITY_LIST_VIEW_TYPE } from "./activity-list-view";
@@ -175,7 +175,10 @@ export default class ClassManagementPlugin extends Plugin {
     this.addSettingTab(new ClassManagementSettingTab(this.app, this));
 
     let refreshTimer: number | undefined;
-    const scheduleRefresh = () => {
+    // 기본 폴더 밖 볼트 변경(일기·첨부 등)은 학급 데이터와 무관 — 전 뷰 재렌더를 건너뛴다(§7 부분 갱신 1단계).
+    const scheduleRefresh = (changed: TAbstractFile) => {
+      const base = this.repository.baseFolderPath;
+      if (changed.path !== base && !changed.path.startsWith(`${base}/`)) return;
       this.activityIndex.invalidate();
       if (refreshTimer !== undefined) window.clearTimeout(refreshTimer);
       refreshTimer = window.setTimeout(() => void this.refreshViews(), 120);

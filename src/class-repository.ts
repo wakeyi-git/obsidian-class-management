@@ -1,4 +1,4 @@
-import { App, TAbstractFile, TFile, TFolder } from "obsidian";
+import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 import { formatAttendanceTableRow, parseAttendanceMetadata } from "@core/attendance";
 import { formatAssignmentTableRow, parseAssignmentTable } from "@core/assignment";
 import { formatNoticeTableRow, parseNoticeTable } from "@core/notice";
@@ -114,98 +114,98 @@ export class ClassRepository {
   ) {}
 
   get baseFolderPath(): string {
-    return joinVaultPath(this.getSettings().baseFolder);
+    return this.vaultPath(this.getSettings().baseFolder);
   }
 
   get studentsFolderPath(): string {
     const settings = this.getSettings();
-    return joinVaultPath(settings.baseFolder, settings.studentsFolder);
+    return this.vaultPath(settings.baseFolder, settings.studentsFolder);
   }
 
   get recordsFolderPath(): string {
     const settings = this.getSettings();
-    return joinVaultPath(settings.baseFolder, settings.recordsFolder);
+    return this.vaultPath(settings.baseFolder, settings.recordsFolder);
   }
 
   get attendanceFolderPath(): string {
     const settings = this.getSettings();
-    return joinVaultPath(settings.baseFolder, settings.attendanceFolder);
+    return this.vaultPath(settings.baseFolder, settings.attendanceFolder);
   }
 
   get assignmentsFolderPath(): string {
     const settings = this.getSettings();
-    return joinVaultPath(settings.baseFolder, settings.assignmentsFolder);
+    return this.vaultPath(settings.baseFolder, settings.assignmentsFolder);
   }
 
   get tasksFolderPath(): string {
     const settings = this.getSettings();
-    return joinVaultPath(settings.baseFolder, settings.tasksFolder);
+    return this.vaultPath(settings.baseFolder, settings.tasksFolder);
   }
 
   get noticesFolderPath(): string {
     const settings = this.getSettings();
-    return joinVaultPath(settings.baseFolder, settings.noticesFolder);
+    return this.vaultPath(settings.baseFolder, settings.noticesFolder);
   }
 
   get routinesFolderPath(): string {
     const settings = this.getSettings();
-    return joinVaultPath(settings.baseFolder, settings.routinesFolder);
+    return this.vaultPath(settings.baseFolder, settings.routinesFolder);
   }
 
   get curriculumFolderPath(): string {
     const settings = this.getSettings();
-    return joinVaultPath(settings.baseFolder, settings.curriculumFolder);
+    return this.vaultPath(settings.baseFolder, settings.curriculumFolder);
   }
 
   get curriculumUnitsFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "단원");
+    return this.vaultPath(this.curriculumFolderPath, "단원");
   }
 
   get curriculumLessonsFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "수업일지");
+    return this.vaultPath(this.curriculumFolderPath, "수업일지");
   }
 
   get academicCalendarFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "학사일정");
+    return this.vaultPath(this.curriculumFolderPath, "학사일정");
   }
 
   get timetableFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "시간표");
+    return this.vaultPath(this.curriculumFolderPath, "시간표");
   }
 
   get progressFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "진도표");
+    return this.vaultPath(this.curriculumFolderPath, "진도표");
   }
 
   get weeklyPlanFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "주간학습안내");
+    return this.vaultPath(this.curriculumFolderPath, "주간학습안내");
   }
 
   get routineTemplatesFolderPath(): string {
-    return joinVaultPath(this.routinesFolderPath, "템플릿");
+    return this.vaultPath(this.routinesFolderPath, "템플릿");
   }
 
   get routineInstancesFolderPath(): string {
-    return joinVaultPath(this.routinesFolderPath, "실행");
+    return this.vaultPath(this.routinesFolderPath, "실행");
   }
 
   get reportsFolderPath(): string {
     const settings = this.getSettings();
-    return joinVaultPath(settings.baseFolder, settings.reportsFolder);
+    return this.vaultPath(settings.baseFolder, settings.reportsFolder);
   }
 
   get aiOutputFolderPath(): string {
-    return joinVaultPath(this.getSettings().aiOutputFolder);
+    return this.vaultPath(this.getSettings().aiOutputFolder);
   }
 
   get exportsFolderPath(): string {
     const settings = this.getSettings();
-    return joinVaultPath(settings.baseFolder, settings.exportsFolder);
+    return this.vaultPath(settings.baseFolder, settings.exportsFolder);
   }
 
   get backupsFolderPath(): string {
     const settings = this.getSettings();
-    return joinVaultPath(settings.baseFolder, settings.backupsFolder);
+    return this.vaultPath(settings.baseFolder, settings.backupsFolder);
   }
 
   async ensureWorkspace(): Promise<void> {
@@ -237,7 +237,7 @@ export class ClassRepository {
 
     const paddedNumber = /^\d+$/.test(number) ? number.padStart(2, "0") : number;
     const fileName = safeFileSegment(`${paddedNumber} ${name}`);
-    const path = joinVaultPath(this.studentsFolderPath, `${fileName}.md`);
+    const path = this.vaultPath(this.studentsFolderPath, `${fileName}.md`);
 
     if (this.app.vault.getAbstractFileByPath(path)) {
       throw new Error(`${number}번 ${name} 학생 노트가 이미 있습니다.`);
@@ -587,7 +587,7 @@ export class ClassRepository {
     if (!cleanTitle) throw new Error("과제명을 입력해 주세요.");
     const safeTitle = safeFileSegment(cleanTitle);
     if (!safeTitle) throw new Error("파일 이름으로 사용할 수 있는 과제명을 입력해 주세요.");
-    const path = joinVaultPath(
+    const path = this.vaultPath(
       this.assignmentsFolderPath,
       `${safeFileSegment(date)} ${safeTitle}.md`
     );
@@ -750,7 +750,7 @@ export class ClassRepository {
     await this.ensureWorkspace();
     const cleanTitle = title.trim();
     if (!cleanTitle) throw new Error("가정통신문 제목을 입력해 주세요.");
-    const path = joinVaultPath(
+    const path = this.vaultPath(
       this.noticesFolderPath,
       `${safeFileSegment(sentDate)} ${safeFileSegment(cleanTitle)}.md`
     );
@@ -829,7 +829,7 @@ export class ClassRepository {
     if (!title || input.items.length === 0) {
       throw new Error("루틴 이름과 한 개 이상의 항목을 입력해 주세요.");
     }
-    const path = joinVaultPath(this.routineTemplatesFolderPath, `${safeFileSegment(title)}.md`);
+    const path = this.vaultPath(this.routineTemplatesFolderPath, `${safeFileSegment(title)}.md`);
     if (this.app.vault.getAbstractFileByPath(path)) {
       throw new Error("같은 이름의 루틴이 이미 있습니다.");
     }
@@ -882,7 +882,7 @@ export class ClassRepository {
 
   async ensureRoutineInstance(date: string): Promise<RoutineInstance | null> {
     await this.ensureWorkspace();
-    const path = joinVaultPath(this.routineInstancesFolderPath, `${date} 루틴.md`);
+    const path = this.vaultPath(this.routineInstancesFolderPath, `${date} 루틴.md`);
     const existing = this.app.vault.getAbstractFileByPath(path);
     if (existing instanceof TFile) return this.loadRoutineInstance(existing, date);
 
@@ -1031,7 +1031,7 @@ export class ClassRepository {
       else delete frontmatter.transferred;
     });
     const padded = /^\d+$/.test(number) ? number.padStart(2, "0") : number;
-    const target = joinVaultPath(
+    const target = this.vaultPath(
       this.studentsFolderPath,
       `${safeFileSegment(`${padded} ${name}`)}.md`
     );
@@ -1058,13 +1058,18 @@ export class ClassRepository {
       .sort((a, b) => b.date.localeCompare(a.date) || b.file.stat.ctime - a.file.stat.ctime);
   }
 
+  /** 볼트 경로 최종 조립 — 순수 joinVaultPath 결과를 옵시디언 normalizePath로 한 번 더 정규화한다. */
+  private vaultPath(...parts: string[]): string {
+    return normalizePath(joinVaultPath(...parts));
+  }
+
   private async ensureFolder(path: string): Promise<void> {
     if (!path || this.app.vault.getAbstractFileByPath(path)) return;
 
     const parts = path.split("/");
     let current = "";
     for (const part of parts) {
-      current = joinVaultPath(current, part);
+      current = this.vaultPath(current, part);
       if (!this.app.vault.getAbstractFileByPath(current)) {
         await this.app.vault.createFolder(current);
       }
@@ -1073,7 +1078,7 @@ export class ClassRepository {
 
   private async ensureHomeNote(): Promise<void> {
     const settings = this.getSettings();
-    const path = joinVaultPath(this.baseFolderPath, "학급 홈.md");
+    const path = this.vaultPath(this.baseFolderPath, "학급 홈.md");
     if (this.app.vault.getAbstractFileByPath(path)) return;
 
     const content = [
@@ -1146,7 +1151,8 @@ export class ClassRepository {
       if (String(frontmatter.schoolYear ?? "") !== settings.schoolYear) continue;
       if (String(frontmatter.semester ?? "") !== semester) continue;
       const content = await this.app.vault.cachedRead(file);
-      tables.push(parseProgressTable(file, frontmatter as Record<string, unknown>, content));
+      const parsed = parseProgressTable(file, frontmatter as Record<string, unknown>, content);
+      if (parsed) tables.push(parsed);
     }
     return tables.sort((a, b) => a.subject.localeCompare(b.subject, "ko"));
   }
@@ -1173,7 +1179,7 @@ export class ClassRepository {
     this.assertWritableClass();
     const settings = this.getSettings();
     await this.ensureFolder(this.academicCalendarFolderPath);
-    const path = joinVaultPath(
+    const path = this.vaultPath(
       this.academicCalendarFolderPath,
       `${safeFileSegment(settings.schoolYear)} 학사일정.md`
     );
@@ -1189,7 +1195,7 @@ export class ClassRepository {
     this.assertWritableClass();
     const settings = this.getSettings();
     await this.ensureFolder(this.academicCalendarFolderPath);
-    const path = joinVaultPath(
+    const path = this.vaultPath(
       this.academicCalendarFolderPath,
       `${safeFileSegment(settings.schoolYear)} 기준 시수.md`
     );
@@ -1205,7 +1211,7 @@ export class ClassRepository {
     this.assertWritableClass();
     const settings = this.getSettings();
     await this.ensureFolder(this.timetableFolderPath);
-    const path = joinVaultPath(
+    const path = this.vaultPath(
       this.timetableFolderPath,
       `${safeFileSegment(settings.schoolYear)} ${safeFileSegment(semester)} 기초시간표.md`
     );
@@ -1227,7 +1233,7 @@ export class ClassRepository {
     this.assertWritableClass();
     const settings = this.getSettings();
     await this.ensureFolder(this.progressFolderPath);
-    const path = joinVaultPath(
+    const path = this.vaultPath(
       this.progressFolderPath,
       `${safeFileSegment(settings.schoolYear)} ${safeFileSegment(semester)} ${safeFileSegment(subject)} 진도표.md`
     );
@@ -1253,10 +1259,15 @@ export class ClassRepository {
     await this.app.vault.process(table.file, (current) => {
       const fresh = parseProgressTable(
         table.file,
-        { schoolYear: table.schoolYear, semester: table.semester, subject: table.subject },
+        {
+          "class-management": "subject-progress",
+          schoolYear: table.schoolYear,
+          semester: table.semester,
+          subject: table.subject
+        },
         current
       );
-      nextRows = mutate(fresh.rows);
+      nextRows = mutate(fresh?.rows ?? table.rows);
       return progressTableMarkdown(
         table.schoolYear,
         table.semester,
@@ -1334,7 +1345,7 @@ export class ClassRepository {
   }
 
   get standardsFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "성취기준");
+    return this.vaultPath(this.curriculumFolderPath, "성취기준");
   }
 
   /** 성취기준 노트를 만든다 — 이미 있으면 내용을 건드리지 않고 그대로 둔다(멱등). */
@@ -1344,7 +1355,7 @@ export class ClassRepository {
   ): Promise<{ file: TFile; created: boolean }> {
     this.assertWritableClass();
     await this.ensureFolder(this.standardsFolderPath);
-    const path = joinVaultPath(this.standardsFolderPath, `${safeFileSegment(code)}.md`);
+    const path = this.vaultPath(this.standardsFolderPath, `${safeFileSegment(code)}.md`);
     const existing = this.app.vault.getAbstractFileByPath(path);
     if (existing instanceof TFile) return { file: existing, created: false };
     return { file: await this.app.vault.create(path, markdown), created: true };
@@ -1369,13 +1380,13 @@ export class ClassRepository {
   }
 
   get eventsFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "행사");
+    return this.vaultPath(this.curriculumFolderPath, "행사");
   }
 
   async ensureEventNote(event: SchoolEvent): Promise<TFile> {
     this.assertWritableClass();
     await this.ensureFolder(this.eventsFolderPath);
-    const path = joinVaultPath(this.eventsFolderPath, schoolEventNoteFileName(event));
+    const path = this.vaultPath(this.eventsFolderPath, schoolEventNoteFileName(event));
     const existing = this.app.vault.getAbstractFileByPath(path);
     if (existing instanceof TFile) return existing;
     return this.app.vault.create(
@@ -1388,7 +1399,7 @@ export class ClassRepository {
   async ensureAllEventNotes(events: SchoolEvent[]): Promise<string[]> {
     const created: string[] = [];
     for (const event of events) {
-      const path = joinVaultPath(this.eventsFolderPath, schoolEventNoteFileName(event));
+      const path = this.vaultPath(this.eventsFolderPath, schoolEventNoteFileName(event));
       if (this.app.vault.getAbstractFileByPath(path)) continue;
       await this.ensureEventNote(event);
       created.push(event.name);
@@ -1397,7 +1408,7 @@ export class ClassRepository {
   }
 
   get basesFolderPath(): string {
-    return joinVaultPath(this.curriculumFolderPath, "모아보기");
+    return this.vaultPath(this.curriculumFolderPath, "모아보기");
   }
 
   /** 일체화 Bases 보기를 스캐폴드한다. 정의는 entity-notes.ts BASES_VIEW_FILES가 단일 진실. */
@@ -1406,7 +1417,7 @@ export class ClassRepository {
     await this.ensureFolder(this.basesFolderPath);
     const created: string[] = [];
     for (const [name, content] of BASES_VIEW_FILES) {
-      const path = joinVaultPath(this.basesFolderPath, name);
+      const path = this.vaultPath(this.basesFolderPath, name);
       if (this.app.vault.getAbstractFileByPath(path)) continue;
       await this.app.vault.create(path, content);
       created.push(name);
@@ -1472,7 +1483,7 @@ export class ClassRepository {
   async createManagedBackup(): Promise<MaintenanceResult> {
     const settings = this.getSettings();
     const stamp = this.backupStamp(new Date());
-    const backupPath = joinVaultPath(this.backupsFolderPath, stamp);
+    const backupPath = this.vaultPath(this.backupsFolderPath, stamp);
     await this.ensureFolder(backupPath);
     const prefix = `${this.baseFolderPath}/`;
     const backupPrefix = `${this.backupsFolderPath}/`;
@@ -1482,13 +1493,13 @@ export class ClassRepository {
     let processed = 0;
     for (const file of files) {
       const relative = file.path.slice(prefix.length);
-      const target = joinVaultPath(backupPath, relative);
+      const target = this.vaultPath(backupPath, relative);
       await this.ensureParentFolder(target);
       const data = await this.app.vault.readBinary(file);
       await this.app.vault.createBinary(target, data);
       processed += 1;
     }
-    await this.app.vault.create(joinVaultPath(backupPath, "백업 정보.md"), [
+    await this.app.vault.create(this.vaultPath(backupPath, "백업 정보.md"), [
       "---",
       "class-management: backup",
       `schemaVersion: ${settings.schemaVersion}`,
@@ -1514,10 +1525,10 @@ export class ClassRepository {
   async createTargetedSnapshot(files: TFile[], trigger: string): Promise<MaintenanceResult> {
     const settings = this.getSettings();
     const stamp = this.backupStamp(new Date());
-    let backupPath = joinVaultPath(this.backupsFolderPath, `${stamp} 자동`);
+    let backupPath = this.vaultPath(this.backupsFolderPath, `${stamp} 자동`);
     let suffix = 2;
     while (this.app.vault.getAbstractFileByPath(backupPath)) {
-      backupPath = joinVaultPath(this.backupsFolderPath, `${stamp} 자동-${suffix}`);
+      backupPath = this.vaultPath(this.backupsFolderPath, `${stamp} 자동-${suffix}`);
       suffix += 1;
     }
     await this.ensureFolder(backupPath);
@@ -1526,13 +1537,13 @@ export class ClassRepository {
     for (const file of files) {
       if (!file.path.startsWith(prefix)) continue;
       const relative = file.path.slice(prefix.length);
-      const target = joinVaultPath(backupPath, relative);
+      const target = this.vaultPath(backupPath, relative);
       await this.ensureParentFolder(target);
       const data = await this.app.vault.readBinary(file);
       await this.app.vault.createBinary(target, data);
       processed += 1;
     }
-    await this.app.vault.create(joinVaultPath(backupPath, "백업 정보.md"), [
+    await this.app.vault.create(this.vaultPath(backupPath, "백업 정보.md"), [
       "---",
       "class-management: backup",
       `schemaVersion: ${settings.schemaVersion}`,
@@ -1567,7 +1578,7 @@ export class ClassRepository {
     let restored = 0;
     for (const file of files) {
       const relative = file.path.slice(backupPrefix.length);
-      const target = joinVaultPath(this.baseFolderPath, relative);
+      const target = this.vaultPath(this.baseFolderPath, relative);
       if (this.app.vault.getAbstractFileByPath(target)) continue;
       await this.ensureParentFolder(target);
       await this.app.vault.createBinary(target, await this.app.vault.readBinary(file));
@@ -1671,18 +1682,18 @@ export class ClassRepository {
 
   private availablePath(folder: string, baseName: string, extension: string): string {
     let suffix = 1;
-    let path = joinVaultPath(folder, `${baseName}.${extension}`);
+    let path = this.vaultPath(folder, `${baseName}.${extension}`);
 
     while (this.app.vault.getAbstractFileByPath(path)) {
       suffix += 1;
-      path = joinVaultPath(folder, `${baseName} ${suffix}.${extension}`);
+      path = this.vaultPath(folder, `${baseName} ${suffix}.${extension}`);
     }
 
     return path;
   }
 
   private attendanceFilePath(date: string): string {
-    return joinVaultPath(this.attendanceFolderPath, `${safeFileSegment(date)} 출결.md`);
+    return this.vaultPath(this.attendanceFolderPath, `${safeFileSegment(date)} 출결.md`);
   }
 
   private assertWritableClass(): void {

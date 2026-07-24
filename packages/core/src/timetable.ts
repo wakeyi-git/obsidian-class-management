@@ -31,7 +31,8 @@ export function parseBaseTimetable(
   file: TFile,
   frontmatter: Record<string, unknown>,
   content: string
-): BaseTimetable {
+): BaseTimetable | null {
+  if (frontmatter["class-management"] !== "timetable") return null;
   const grid = parseGrid(content);
   return {
     file,

@@ -1,6 +1,6 @@
 # UI/UX 원칙
 
-> 마지막 갱신: 2026-07-24 (v1.44.0) · 새 기능·수정은 이 원칙에 맞춘다. 원칙과 코드가 어긋나면 §7 백로그에 기록하고 릴리스 단위로 해소한다.
+> 마지막 갱신: 2026-07-24 (v1.47.0) · 새 기능·수정은 이 원칙에 맞춘다. 원칙과 코드가 어긋나면 §7 백로그에 기록하고 릴리스 단위로 해소한다.
 
 ## 1. 상호작용 규약
 
@@ -88,7 +88,8 @@
 - [x] ◐ `main.ts` 분해 2단계 (2026-07-24, 1.45.0 완료 — 명령 42개→`commands.ts`, 도메인 플로 23개→`curriculum-flows.ts`(뷰 진입점은 플러그인 위임 유지), 2,043→약 1,000줄. 설정·프로필은 플러그인 상태 소유와 결합돼 main 잔류로 결정)
 - [x] ◐ `maintenance.ts`의 볼트 IO를 repository로 이관 (2026-07-24, 1.45.0 완료 — 백업·자동 스냅숏·누락 복구·레거시 이행·휴지통 이동이 repository 메서드가 되고 maintenance.ts 삭제, 쓰기 경로 vault 호출이 repository 밖 0건)
 - [x] ◐ ESLint(typescript-eslint) 도입 (2026-07-24, 1.46.0 완료 — TS 레이어 타입 인지 린트: no-floating-promises·no-misused-promises·await-thenable·no-unused-vars, `npm run check`에 편입되어 CI 게이트. 참고: 옵시디언 Setting·컴포넌트는 체이닝용 `.then()` 탓에 thenable로 취급되므로 void 콜백에서 축약 반환하지 말고 중괄호로 감쌀 것)
-- [ ] ○ 전역 무효화 → 부분 갱신 — 현재 볼트의 모든 create/delete/metadata 변경이 열린 뷰 전부를 전체 재렌더(스크롤·표시 한도 리셋). 변경 종류별 영향 뷰만 갱신하고, 시간표·시수 뷰 주 이동 시 학기 데이터 캐시
-- [ ] ○ 파서 판별자 자기검증 통일 — `parseProgressTable`·`parseAcademicCalendar`·`parseBaseTimetable`·`parseHoursStandard`도 kind 확인 후 파싱(현재 단원·수업일지·근거 파서만 자기검증)
-- [ ] ○ frontmatter kind 22종을 `NoteKind` 유니언 상수로 단일화(core/types) — 현재 각 직렬화기에 문자열 산재
-- [ ] ○ 저장소 최종 경로 조립에 `normalizePath` 적용, terminology 가드의 문자열 연결 우회 보완, 진도표 구분행 선행 시 헤더 오분류 방지
+- [x] ○ 전역 무효화 → 부분 갱신 1단계 (2026-07-24, 1.47.0 완료 — 기본 폴더 밖 볼트 변경은 전 뷰 재렌더 제외, 시간표·시수 주 이동은 학기 데이터 캐시로 render만, 통합 목록은 재렌더 시 스크롤·"더 보기" 표시 한도 보존)
+- [x] ○ 파서 판별자 자기검증 통일 (2026-07-24, 1.47.0 완료 — 진도표·학사일정·기초시간표·기준 시수 파서가 kind 불일치 시 null, 호출부 정합)
+- [x] ○ frontmatter kind 22종 `NoteKind` 유니언 단일화 (2026-07-24, 1.47.0 완료 — core/types `NOTE_KINDS` + `tests/note-kinds.test.mjs` 가드가 소스 리터럴 ⊆ 목록을 강제)
+- [x] ○ 소형 3건 (2026-07-24, 1.47.0 완료 — 저장소 경로 조립 `normalizePath` 일괄(51곳), terminology 가드 문자열 연결 우회 봉합, 진도표 구분행 선행 시 헤더 오분류 방지)
+- [ ] ○ 부분 갱신 2단계 — 변경 노트 kind별 영향 뷰 매트릭스로 정밀화(현재는 기본 폴더 범위 필터), 활동 색인의 파일 단위 증분 갱신

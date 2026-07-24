@@ -58,6 +58,13 @@ const AUDIT_STATUS_LABELS: Record<HoursAuditRow["status"], string> = {
 
 export class CurriculumOpsView extends ItemView {
   private weekAnchor = mondayOf(localDate());
+  /** refresh()가 채우는 학기 데이터 캐시 — 주 이동은 이 캐시로 render()만 다시 한다. */
+  private data?: {
+    calendar: AcademicCalendar | null;
+    standard: HoursStandard | null;
+    timetables: Record<string, BaseTimetable | null>;
+    tablesBySemester: Record<string, ProgressTable[]>;
+  };
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: ClassManagementPlugin) {
     super(leaf);
@@ -79,27 +86,36 @@ export class CurriculumOpsView extends ItemView {
     await this.refresh();
   }
 
+  /** 볼트 변경 시 학기 데이터를 다시 읽는다. 주 이동은 render()만 다시 해 캐시를 재사용한다(§7 부분 갱신). */
   async refresh(): Promise<void> {
+    const repository = this.plugin.repository;
+    this.data = {
+      calendar: await repository.getAcademicCalendar(),
+      standard: await repository.getHoursStandard(),
+      timetables: {
+        "1학기": await repository.getBaseTimetable("1학기"),
+        "2학기": await repository.getBaseTimetable("2학기")
+      },
+      tablesBySemester: {
+        "1학기": await repository.getProgressTables("1학기"),
+        "2학기": await repository.getProgressTables("2학기")
+      }
+    };
+    this.render();
+  }
+
+  private render(): void {
+    if (!this.data) return;
+    const { calendar, standard, timetables, tablesBySemester } = this.data;
     const container = this.contentEl;
     container.empty();
     container.addClass("class-management-ops-view");
     const settings = this.plugin.settings;
-    const repository = this.plugin.repository;
 
     container.createEl("h2", {
       text: `시간표·시수 · ${settings.schoolYear} ${settings.semester}`
     });
 
-    const calendar = await repository.getAcademicCalendar();
-    const standard = await repository.getHoursStandard();
-    const timetables: Record<string, BaseTimetable | null> = {
-      "1학기": await repository.getBaseTimetable("1학기"),
-      "2학기": await repository.getBaseTimetable("2학기")
-    };
-    const tablesBySemester: Record<string, ProgressTable[]> = {
-      "1학기": await repository.getProgressTables("1학기"),
-      "2학기": await repository.getProgressTables("2학기")
-    };
     const currentTimetable = timetables[settings.semester] ?? null;
     const currentTables = tablesBySemester[settings.semester] ?? [];
 
@@ -193,17 +209,17 @@ export class CurriculumOpsView extends ItemView {
     const previous = navigation.createEl("button", { text: "◀" });
     previous.addEventListener("click", () => {
       this.weekAnchor = addDays(this.weekAnchor, -7);
-      void this.refresh();
+      this.render();
     });
     const today = navigation.createEl("button", { text: "이번 주" });
     today.addEventListener("click", () => {
       this.weekAnchor = mondayOf(localDate());
-      void this.refresh();
+      this.render();
     });
     const next = navigation.createEl("button", { text: "▶" });
     next.addEventListener("click", () => {
       this.weekAnchor = addDays(this.weekAnchor, 7);
-      void this.refresh();
+      this.render();
     });
     header.createEl("span", {
       text: `${this.weekAnchor} ~ ${addDays(this.weekAnchor, 4)}`

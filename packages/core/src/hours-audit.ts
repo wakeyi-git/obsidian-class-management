@@ -12,7 +12,8 @@ export function parseHoursStandard(
   file: TFile,
   frontmatter: Record<string, unknown>,
   content: string
-): HoursStandard {
+): HoursStandard | null {
+  if (frontmatter["class-management"] !== "hours-standard") return null;
   const tolerance = Number(frontmatter.tolerancePercent);
   const rows = sectionTableRows(content, "기준 시수");
   // 열 배치는 행 모양으로 해석한다(헤더는 sectionTableRows가 이미 건너뜀):
