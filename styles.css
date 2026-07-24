@@ -1128,16 +1128,15 @@
 .class-management-calendar-filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
-  gap: 8px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 8px 12px;
 }
 
+/* 탐색 버튼과 한 줄에 서는 툴바 필터 — 라벨을 인라인으로 두어 아랫선을 맞춘다 (§7.3 라벨 유지). */
 .class-management-calendar-filters label {
   display: flex;
-  min-width: 140px;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
