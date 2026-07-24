@@ -39,10 +39,10 @@ import { hoursStandardMarkdown, parseHoursStandard } from "@core/hours-audit";
 import { isLegacyAttendanceContent, isWikiLinkStudentPath } from "@core/migration";
 import type { ManagedFolders } from "@core/change-scope";
 import {
-  aiDraftPlan,
   aiSetupPaths,
   aiWorkspaceFiles,
-  buildAiDraftMarkdown,
+  buildAiExportMarkdown,
+  guidelineSummaryMarkdown,
   type AiSetupResult
 } from "@core/ai-collaboration";
 import type {
@@ -85,8 +85,6 @@ import type {
 import type {
   AchievementStandardEntry,
   ActivityEntry,
-  AiDraftKind,
-  SchoolRecordArea,
   SchoolRecordEvidence,
   SchoolRecordReviewStatus
 } from "@core/types";
@@ -1497,23 +1495,61 @@ export class ClassRepository {
     return result;
   }
 
-  /** 근거 링크가 포함된 검토용 AI 초안 노트를 만든다. */
-  async createAiDraft(
-    student: StudentEntry,
+  get guidelineSummaryPath(): string {
+    return this.vaultPath(this.curriculumFolderPath, "학생부 기재요령 요약.md");
+  }
+
+  /** 기재요령 요약 노트를 찾는다 — 연도와 본문(프론트매터 제외)을 돌려준다. */
+  async getGuidelineSummary(): Promise<{ file: TFile; year: string; content: string } | null> {
+    for (const file of this.markdownFilesIn(this.curriculumFolderPath)) {
+      const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+      if (frontmatter?.["class-management"] !== "school-record-guideline") continue;
+      const raw = await this.app.vault.cachedRead(file);
+      return {
+        file,
+        year: String(frontmatter.guidelineYear ?? ""),
+        content: raw.replace(/^---[\s\S]*?---\s*/m, "").trim()
+      };
+    }
+    return null;
+  }
+
+  /** 기재요령 요약 노트를 만든다 — 이미 있으면 그대로 돌려준다(멱등). PDF 요약은 LLM 협업으로 채운다. */
+  async ensureGuidelineSummaryNote(): Promise<{ file: TFile; created: boolean }> {
+    this.assertWritableClass();
+    const existing = await this.getGuidelineSummary();
+    if (existing) return { file: existing.file, created: false };
+    const settings = this.getSettings();
+    await this.ensureFolder(this.curriculumFolderPath);
+    const year = settings.schoolRecordGuidelineYear || settings.schoolYear;
+    const file = await this.app.vault.create(this.guidelineSummaryPath, guidelineSummaryMarkdown(year));
+    return { file, created: true };
+  }
+
+  /** 외부 LLM 제공용 익명 자료 묶음을 내보내기 폴더에 만든다 (§9-1 내보내기형 — 실명·경로 없음). */
+  async createAiExport(
+    students: StudentEntry[],
     activities: ActivityEntry[],
-    kind: AiDraftKind,
     dateFrom: string,
-    dateTo: string,
-    schoolRecordArea?: SchoolRecordArea
+    dateTo: string
   ): Promise<TFile> {
     const settings = this.getSettings();
-    const plan = aiDraftPlan(settings, student, kind, schoolRecordArea);
-    await this.ensureFolder(plan.folder);
-    const path = this.availableMarkdownPath(plan.folder, plan.baseName);
-    return this.app.vault.create(
-      path,
-      buildAiDraftMarkdown(settings, student, activities, kind, dateFrom, dateTo, schoolRecordArea)
+    const guideline = await this.getGuidelineSummary();
+    const markdown = buildAiExportMarkdown(settings, students, activities, {
+      dateFrom,
+      dateTo,
+      today: localDate(),
+      guideline: guideline ? { year: guideline.year, content: guideline.content } : undefined
+    });
+    await this.ensureFolder(this.exportsFolderPath);
+    const single = students.length === 1 && students[0]
+      ? ` 학생-S${students[0].number.padStart(2, "0")}`
+      : "";
+    const path = this.availableMarkdownPath(
+      this.exportsFolderPath,
+      `${localDate()} AI 초안 자료 ${safeFileSegment(dateFrom)}~${safeFileSegment(dateTo)}${single}`
     );
+    return this.app.vault.create(path, markdown);
   }
 
   // ── 백업·복구·마이그레이션 — 구 maintenance.ts에서 이관(§6 볼트 IO 단일 창구) ──

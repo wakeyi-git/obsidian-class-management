@@ -7,19 +7,13 @@ import {
   buildReportMarkdown,
   selectReportActivities
 } from "@core/report";
-import { SchoolRecordDraftModal } from "./school-record-modal";
 import { LegacyRecordMigrationModal } from "./legacy-record-migration-modal";
 import { SchoolRecordReviewModal } from "./school-record-review-modal";
 import {
   buildSchoolRecordCoverage,
   normalizeSubjects
 } from "@core/school-record-evidence";
-import type {
-  ActivityEntry,
-  AiDraftKind,
-  ReportOptions,
-  SchoolRecordArea
-} from "@core/types";
+import type { ActivityEntry, ReportOptions, SchoolRecordArea } from "@core/types";
 import { localDate } from "@core/utils";
 
 export const REPORT_VIEW_TYPE = "class-management-report-view";
@@ -139,14 +133,13 @@ export class ReportView extends ItemView {
     markdown.addEventListener("click", () => void this.saveMarkdown());
     const csv = actions.createEl("button", { text: "현재 자료 CSV 내보내기" });
     csv.addEventListener("click", () => void this.saveCsv(activities));
-    const feedback = actions.createEl("button", { text: "학생 피드백 초안" });
-    feedback.disabled = !this.options.studentNumber || !this.plugin.settings.aiCollaborationEnabled;
-    feedback.addEventListener("click", () => void this.saveAiDraft("feedback"));
-    const schoolRecord = actions.createEl("button", { text: "생활기록부 영역별 초안" });
-    schoolRecord.disabled = !this.options.studentNumber || !this.plugin.settings.aiCollaborationEnabled;
-    schoolRecord.addEventListener("click", () => this.openSchoolRecordDraft());
+    const exportAi = actions.createEl("button", { text: "AI 초안 자료 내보내기 (익명)" });
+    exportAi.disabled = !this.plugin.settings.aiCollaborationEnabled;
+    exportAi.addEventListener("click", () => void this.exportAiBundle());
+    const guideline = actions.createEl("button", { text: "기재요령 요약 노트" });
+    guideline.addEventListener("click", () => void this.openGuidelineNote());
     if (!this.plugin.settings.aiCollaborationEnabled) {
-      actions.createEl("span", { text: "초안 생성은 AI 협업 설정에서 명시적으로 활성화합니다.", cls: "setting-item-description" });
+      actions.createEl("span", { text: "내보내기는 AI 협업 설정에서 명시적으로 활성화합니다.", cls: "setting-item-description" });
     }
   }
 
@@ -298,68 +291,50 @@ export class ReportView extends ItemView {
     await this.plugin.openFile(file);
   }
 
-  private async saveAiDraft(
-    kind: AiDraftKind,
-    schoolRecordArea?: SchoolRecordArea
-  ): Promise<void> {
+  /**
+   * 외부 LLM 제공용 익명 자료 내보내기(§9-1 내보내기형) — 기간·대상의 학생 개별 기록을
+   * 실명·경로 없이 마크다운 한 파일로 만든다. 초안 작성은 외부 LLM, 확정은 교사.
+   */
+  private async exportAiBundle(): Promise<void> {
     if (!this.plugin.settings.aiCollaborationEnabled) {
       new Notice("먼저 AI 협업 설정에서 기능을 활성화해 주세요.");
       return;
     }
-    const student = this.plugin.repository.getStudents().find(
-      (entry) => entry.number === this.options.studentNumber
-    );
-    if (!student) {
-      new Notice("초안을 만들 학생을 선택해 주세요.");
+    const all = this.plugin.repository.getStudents();
+    const students = this.options.studentNumber
+      ? all.filter((entry) => entry.number === this.options.studentNumber)
+      : all;
+    if (students.length === 0) {
+      new Notice("내보낼 학생이 없습니다. 먼저 학생을 추가해 주세요.");
       return;
     }
-    const file = await this.plugin.repository.createAiDraft(
-      student,
-      this.activities,
-      kind,
-      this.options.dateFrom,
-      this.options.dateTo,
-      schoolRecordArea
-    );
-    new Notice("근거 링크가 포함된 검토용 초안을 만들었습니다.");
-    await this.plugin.openFile(file);
+    try {
+      const file = await this.plugin.repository.createAiExport(
+        students,
+        this.activities,
+        this.options.dateFrom,
+        this.options.dateTo
+      );
+      new Notice(
+        `익명 AI 초안 자료를 내보냈습니다 · 학생 ${students.length}명 · 본문에 실명이 남았는지 확인 후 사용하세요.`
+      );
+      await this.plugin.openFile(file);
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "AI 초안 자료를 내보내지 못했습니다.");
+    }
   }
 
-  private openSchoolRecordDraft(): void {
-    if (!this.plugin.settings.aiCollaborationEnabled) {
-      new Notice("먼저 AI 협업 설정에서 기능을 활성화해 주세요.");
-      return;
-    }
-    const student = this.plugin.repository.getStudents().find(
-      (entry) => entry.number === this.options.studentNumber
-    );
-    if (!student) {
-      new Notice("초안을 만들 학생을 선택해 주세요.");
-      return;
-    }
-    new SchoolRecordDraftModal(
-      this.app,
-      student,
-      this.activities,
-      this.options.dateFrom,
-      this.options.dateTo,
-      async (areas) => {
-        const files = [];
-        for (const area of areas) {
-          files.push(await this.plugin.repository.createAiDraft(
-            student,
-            this.activities,
-            "school-record",
-            this.options.dateFrom,
-            this.options.dateTo,
-            area
-          ));
-        }
-        new Notice(`학교생활기록부 영역별 검토용 초안 ${files.length}개를 만들었습니다.`);
-        const first = files[0];
-        if (first) await this.plugin.openFile(first);
+  /** 기재요령 요약 노트를 열거나 만든다 — PDF 요약은 LLM 협업으로 채운다. */
+  private async openGuidelineNote(): Promise<void> {
+    try {
+      const result = await this.plugin.repository.ensureGuidelineSummaryNote();
+      if (result.created) {
+        new Notice("기재요령 요약 노트를 만들었습니다. 기재요령 PDF 요약을 채우면 내보내기에 포함됩니다.");
       }
-    ).open();
+      await this.plugin.openFile(result.file);
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "기재요령 요약 노트를 열지 못했습니다.");
+    }
   }
 
   private applyRange(range: "day" | "week" | "month"): void {

@@ -1,7 +1,7 @@
 import type { TFile } from "obsidian";
 
 /**
- * frontmatter `class-management:` 판별자 22종 — 노트 종류의 단일 진실 (PRODUCT §7).
+ * frontmatter `class-management:` 판별자 23종 — 노트 종류의 단일 진실 (PRODUCT §7).
  * 직렬화기·파서의 리터럴이 이 목록을 벗어나면 tests/note-kinds.test.mjs 가드가 실패한다.
  */
 export const NOTE_KINDS = [
@@ -22,6 +22,7 @@ export const NOTE_KINDS = [
   "school-event",
   "weekly-plan",
   "achievement-standard",
+  "school-record-guideline",
   "home",
   "backup",
   "report",

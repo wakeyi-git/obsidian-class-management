@@ -387,6 +387,8 @@ function workflowInstructions(settings: ClassManagementSettings): string {
 
 ## 학교생활기록부 영역별 초안
 
+- \`${settings.baseFolder}/${settings.curriculumFolder}/학생부 기재요령 요약\` 노트가 있으면 그 기준을 먼저 따릅니다. 없으면 학교 기재요령 PDF를 요약해 그 노트를 채우는 것을 먼저 제안합니다.
+
 - \`창의적 체험활동상황/\`: 자율·자치활동과 동아리활동을 통합하고 진로활동은 별도로 검토합니다.
 - \`교과학습발달상황(학기말종합의견)/\`: 교과·성취기준·평가요소와 교사가 관찰한 수행 과정 및 결과를 연결합니다.
 - \`행동특성 및 종합의견/\`: 연중 누적된 직접 관찰을 바탕으로 성장, 강점과 발전 가능성을 검토합니다.
@@ -401,6 +403,116 @@ function workflowInstructions(settings: ClassManagementSettings): string {
 - API 키나 계정 토큰은 Vault에 저장하지 않습니다.
 - 최종 학교생활기록부 입력은 교사가 직접 수행합니다.
 `;
+}
+
+
+/** 기재요령 요약 노트 스캐폴드 — 본문은 LLM 협업으로 채우고, 내보내기가 그대로 인라인한다(멱등 생성용). */
+export function guidelineSummaryMarkdown(year: string): string {
+  return [
+    "---",
+    "class-management: school-record-guideline",
+    `guidelineYear: ${yamlString(year)}`,
+    "tags:",
+    "  - class-management/school-record-guideline",
+    "---",
+    "",
+    `# 학생부 기재요령 요약 (${year})`,
+    "",
+    "> 이 노트의 본문이 `AI 초안 자료 내보내기`에 그대로 인라인되어 외부 LLM이 따르는 작성 기준이 됩니다.",
+    "> 학교에서 받은 학생부 기재요령 PDF를 LLM 협업(에이전트 또는 /record-draft)으로 요약해 아래 절을 채우세요.",
+    "> 원문: (기재요령 PDF 첨부 링크를 여기에)",
+    "",
+    "## 공통 원칙",
+    "",
+    "- (기재 금지 사항, 문체·분량 기준 등을 요약해 채우세요)",
+    "",
+    "## 창의적 체험활동상황",
+    "",
+    "## 교과학습발달상황",
+    "",
+    "## 행동특성 및 종합의견",
+    ""
+  ].join("\n");
+}
+
+export interface AiExportOptions {
+  dateFrom: string;
+  dateTo: string;
+  today: string;
+  guideline?: { year: string; content: string };
+}
+
+/**
+ * 외부 LLM 제공용 익명 자료 묶음(§9-1 내보내기형) — 실명·파일 경로를 담지 않는다.
+ * 학생 라벨은 학생-S## 로, 근거는 [근거 NN] 번호로만 식별한다.
+ */
+export function buildAiExportMarkdown(
+  settings: ClassManagementSettings,
+  students: StudentEntry[],
+  activities: ActivityEntry[],
+  options: AiExportOptions
+): string {
+  const target = students.length === 1 && students[0]
+    ? anonymousStudentId(students[0].number)
+    : `학생 ${students.length}명`;
+  const lines: string[] = [
+    "# AI 초안 작성 자료 (익명 내보내기)",
+    "",
+    `> 생성 ${options.today} · 기간 ${options.dateFrom} ~ ${options.dateTo} · 대상 ${target} · ${settings.grade}학년 ${settings.semester}`,
+    "> 외부 LLM에 붙여넣기 위해 실명·파일 경로 없이 만들었습니다. 본문에 실명이 남아 있지 않은지 확인한 뒤 사용하세요.",
+    "",
+    "## 작성 지침",
+    "",
+    "- 아래 근거 목록에 없는 사실을 만들지 마세요. 모든 문장 끝에 근거 번호를 인용하세요. 예: …함. [근거 03]",
+    "- 단발 사건의 일반화, 과장·추론·낙인·진단 표현을 금지합니다. 관찰된 사실과 해석을 구분하세요.",
+    "- 수상·대회·방과후·MOOC는 교과학습발달상황 초안에 쓰지 않습니다.",
+    "- 결과는 초안입니다. 최종 확정과 공식 기록 입력은 교사가 합니다.",
+    ""
+  ];
+  if (options.guideline) {
+    lines.push(`## 학생부 기재요령 요약 (${options.guideline.year})`, "", options.guideline.content.trim(), "");
+  } else {
+    lines.push(
+      "> 기재요령 요약 노트가 아직 없어 일반 원칙만 담았습니다. `기재요령 요약 노트`를 만들어 PDF 요약을 채우면 함께 내보냅니다.",
+      ""
+    );
+  }
+  lines.push(
+    "## 요청 출력 형식",
+    "",
+    "학생마다 아래 두 벌을 작성하세요.",
+    "",
+    "1. **학생 피드백 초안** — 관찰된 강점 / 성장과 변화 / 필요한 지원 / 전달용 문안",
+    "2. **학교생활기록부 영역별 초안** — 창의적 체험활동상황 / 교과학습발달상황(교과·성취기준 명시) / 행동특성 및 종합의견",
+    ""
+  );
+  for (const student of students) {
+    const label = anonymousStudentId(student.number);
+    const selected = selectStudentActivities(activities, student.number, options.dateFrom, options.dateTo);
+    lines.push(`## ${label}`, "", "### 근거 목록", "");
+    if (selected.length === 0) {
+      lines.push("- 선택한 기간에 근거 자료가 없습니다.", "");
+      continue;
+    }
+    selected.forEach((activity, index) => {
+      const number = String(index + 1).padStart(2, "0");
+      const meta: string[] = [];
+      const evidence = activity.schoolRecordEvidence;
+      if (evidence) {
+        const area = schoolRecordAreaDefinition(evidence.area);
+        meta.push(`영역 ${area.label}`);
+        if (evidence.subject) meta.push(`교과 ${evidence.subject}`);
+        if (evidence.achievementStandard) meta.push(`성취기준 ${sanitizeInline(evidence.achievementStandard)}`);
+        if (evidence.evaluationElement) meta.push(`평가요소 ${sanitizeInline(evidence.evaluationElement)}`);
+        if (evidence.directObservation) meta.push("직접 관찰");
+      }
+      lines.push(
+        `- [근거 ${number}] ${activity.date} · ${ACTIVITY_KIND_LABELS[activity.kind]} · ${activity.status} · ${sanitizeInline(activity.detail || activity.title)}${meta.length ? ` (${meta.join(" · ")})` : ""}`
+      );
+    });
+    lines.push("");
+  }
+  return lines.join("\n");
 }
 
 function anonymousStudentId(number: string): string {

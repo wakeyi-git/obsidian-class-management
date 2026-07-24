@@ -17,8 +17,8 @@ function walk(dir, out = []) {
   return out;
 }
 
-test("NOTE_KINDS는 22종이고 중복이 없다", () => {
-  assert.equal(NOTE_KINDS.length, 22);
+test("NOTE_KINDS는 23종이고 중복이 없다", () => {
+  assert.equal(NOTE_KINDS.length, 23);
   assert.equal(new Set(NOTE_KINDS).size, NOTE_KINDS.length);
 });
 
