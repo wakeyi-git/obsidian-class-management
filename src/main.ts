@@ -23,6 +23,11 @@ import { AssessmentImportModal } from "./assessment-import-modal";
 import { CurriculumFlows } from "./curriculum-flows";
 import { registerCommands } from "./commands";
 import {
+  ACTIVITY_INDEX_CATEGORIES,
+  classifyVaultPath,
+  type VaultChangeCategory
+} from "@core/change-scope";
+import {
   DataManagementView,
   DATA_MANAGEMENT_VIEW_TYPE
 } from "./data-management-view";
@@ -115,20 +120,60 @@ const DEFAULT_SETTINGS: ClassManagementSettings = {
   calendarViewMode: "month"
 };
 
-/** 뷰 등록과 볼트 변경 갱신의 단일 원본 — 갱신 대상 여부는 뷰의 refresh() 유무로 정해진다. */
+/** 활동 색인을 쓰는 뷰의 공통 의존 — 색인 원천 7범주 + 학생 명단. */
+const INDEX_VIEW_DEPS: ReadonlyArray<VaultChangeCategory> = ["student", ...ACTIVITY_INDEX_CATEGORIES];
+
+/**
+ * 뷰 등록과 볼트 변경 갱신의 단일 원본 — 갱신 대상 여부는 뷰의 refresh() 유무로 정해진다.
+ * dependsOn이 있으면 그 범주의 변경에만 다시 그린다(§7 부분 갱신 2단계).
+ * 없으면 항상 다시 그린다 — 오늘·대시보드·인스펙터처럼 교차 도메인 콕핏은 넓게 두는 것이 안전.
+ */
 const MANAGED_VIEWS: ReadonlyArray<{
   type: string;
   create: (leaf: WorkspaceLeaf, plugin: ClassManagementPlugin) => ItemView;
+  dependsOn?: ReadonlyArray<VaultChangeCategory>;
 }> = [
   { type: DASHBOARD_VIEW_TYPE, create: (leaf, plugin) => new ClassDashboardView(leaf, plugin) },
-  { type: ACTIVITY_LIST_VIEW_TYPE, create: (leaf, plugin) => new ActivityListView(leaf, plugin) },
-  { type: STUDENT_TIMELINE_VIEW_TYPE, create: (leaf, plugin) => new StudentTimelineView(leaf, plugin) },
-  { type: CALENDAR_VIEW_TYPE, create: (leaf, plugin) => new ClassCalendarView(leaf, plugin) },
-  { type: TASK_VIEW_TYPE, create: (leaf, plugin) => new TaskView(leaf, plugin) },
-  { type: ROUTINE_VIEW_TYPE, create: (leaf, plugin) => new RoutineView(leaf, plugin) },
-  { type: CURRICULUM_VIEW_TYPE, create: (leaf, plugin) => new CurriculumView(leaf, plugin) },
-  { type: CURRICULUM_OPS_VIEW_TYPE, create: (leaf, plugin) => new CurriculumOpsView(leaf, plugin) },
-  { type: CURRICULUM_GANTT_VIEW_TYPE, create: (leaf, plugin) => new CurriculumGanttView(leaf, plugin) },
+  {
+    type: ACTIVITY_LIST_VIEW_TYPE,
+    create: (leaf, plugin) => new ActivityListView(leaf, plugin),
+    dependsOn: INDEX_VIEW_DEPS
+  },
+  {
+    type: STUDENT_TIMELINE_VIEW_TYPE,
+    create: (leaf, plugin) => new StudentTimelineView(leaf, plugin),
+    dependsOn: INDEX_VIEW_DEPS
+  },
+  {
+    type: CALENDAR_VIEW_TYPE,
+    create: (leaf, plugin) => new ClassCalendarView(leaf, plugin),
+    dependsOn: [...INDEX_VIEW_DEPS, "calendar-hours", "school-event"]
+  },
+  {
+    type: TASK_VIEW_TYPE,
+    create: (leaf, plugin) => new TaskView(leaf, plugin),
+    dependsOn: ["task", "notice", "student"]
+  },
+  {
+    type: ROUTINE_VIEW_TYPE,
+    create: (leaf, plugin) => new RoutineView(leaf, plugin),
+    dependsOn: ["routine", "calendar-hours"]
+  },
+  {
+    type: CURRICULUM_VIEW_TYPE,
+    create: (leaf, plugin) => new CurriculumView(leaf, plugin),
+    dependsOn: ["curriculum-unit", "curriculum-lesson", "assignment", "record", "progress"]
+  },
+  {
+    type: CURRICULUM_OPS_VIEW_TYPE,
+    create: (leaf, plugin) => new CurriculumOpsView(leaf, plugin),
+    dependsOn: ["calendar-hours", "timetable", "progress"]
+  },
+  {
+    type: CURRICULUM_GANTT_VIEW_TYPE,
+    create: (leaf, plugin) => new CurriculumGanttView(leaf, plugin),
+    dependsOn: ["curriculum-unit", "assignment", "school-event", "calendar-hours", "progress"]
+  },
   { type: NAVIGATOR_VIEW_TYPE, create: (leaf, plugin) => new NavigatorView(leaf, plugin) },
   { type: TODAY_VIEW_TYPE, create: (leaf, plugin) => new TodayView(leaf, plugin) },
   { type: STUDENT_INSPECTOR_VIEW_TYPE, create: (leaf, plugin) => new StudentInspectorView(leaf, plugin) },
@@ -175,20 +220,33 @@ export default class ClassManagementPlugin extends Plugin {
     this.addSettingTab(new ClassManagementSettingTab(this.app, this));
 
     let refreshTimer: number | undefined;
-    // 기본 폴더 밖 볼트 변경(일기·첨부 등)은 학급 데이터와 무관 — 전 뷰 재렌더를 건너뛴다(§7 부분 갱신 1단계).
-    const scheduleRefresh = (changed: TAbstractFile) => {
-      const base = this.repository.baseFolderPath;
-      if (changed.path !== base && !changed.path.startsWith(`${base}/`)) return;
-      this.activityIndex.invalidate();
+    let pendingCategories = new Set<VaultChangeCategory>();
+    // 변경 경로를 범주로 분류해 영향 뷰만 갱신한다 — 기본 폴더 밖 변경은 무시(§7 부분 갱신 2단계).
+    const scheduleRefresh = (changed: TAbstractFile, oldPath?: string) => {
+      const folders = this.repository.managedFolders();
+      const categories = [changed.path, oldPath ?? ""]
+        .filter(Boolean)
+        .map((path) => classifyVaultPath(path, folders))
+        .filter((category): category is VaultChangeCategory => category !== null);
+      if (categories.length === 0) return;
+      categories.forEach((category) => pendingCategories.add(category));
+      if (categories.some((category) => ACTIVITY_INDEX_CATEGORIES.includes(category))) {
+        this.activityIndex.invalidate();
+      }
       if (refreshTimer !== undefined) window.clearTimeout(refreshTimer);
-      refreshTimer = window.setTimeout(() => void this.refreshViews(), 120);
+      refreshTimer = window.setTimeout(() => {
+        const flush = pendingCategories;
+        pendingCategories = new Set();
+        void this.refreshViews(flush);
+      }, 120);
     };
     this.register(() => {
       if (refreshTimer !== undefined) window.clearTimeout(refreshTimer);
     });
-    this.registerEvent(this.app.vault.on("create", scheduleRefresh));
-    this.registerEvent(this.app.vault.on("delete", scheduleRefresh));
-    this.registerEvent(this.app.metadataCache.on("changed", scheduleRefresh));
+    this.registerEvent(this.app.vault.on("create", (file) => scheduleRefresh(file)));
+    this.registerEvent(this.app.vault.on("delete", (file) => scheduleRefresh(file)));
+    this.registerEvent(this.app.vault.on("rename", (file, oldPath) => scheduleRefresh(file, oldPath)));
+    this.registerEvent(this.app.metadataCache.on("changed", (file) => scheduleRefresh(file)));
   }
 
   async loadSettings(): Promise<void> {
@@ -991,9 +1049,17 @@ export default class ClassManagementPlugin extends Plugin {
     await Promise.all(views.map((view) => view.refresh()));
   }
 
-  private async refreshViews(): Promise<void> {
-    // 레지스트리의 열린 뷰 중 refresh()를 가진 것만 다시 그린다(내비게이터는 자체 이벤트로 갱신).
-    const views = MANAGED_VIEWS.flatMap((spec) =>
+  /**
+   * 레지스트리의 열린 뷰 중 refresh()를 가진 것만 다시 그린다(내비게이터는 자체 이벤트로 갱신).
+   * categories가 있으면 dependsOn이 겹치는 뷰(또는 광역 뷰)만 — 없으면 전부(명령 플로의 명시 갱신).
+   */
+  private async refreshViews(categories?: ReadonlySet<VaultChangeCategory>): Promise<void> {
+    const views = MANAGED_VIEWS.filter(
+      (spec) =>
+        !categories ||
+        !spec.dependsOn ||
+        spec.dependsOn.some((category) => categories.has(category))
+    ).flatMap((spec) =>
       this.app.workspace.getLeavesOfType(spec.type).map((leaf) => leaf.view)
     ).filter(
       (view): view is ItemView & { refresh(): Promise<void> } =>

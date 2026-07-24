@@ -7,6 +7,8 @@ export class ActivityIndex {
   private pending?: Promise<ActivityEntry[]>;
   /** 빌드 도중 무효화를 감지하는 세대 번호 — 낡은 빌드 결과가 캐시를 채우지 않게 한다. */
   private generation = 0;
+  /** 파일 단위 증분 캐시 — mtime이 같으면 지난 빌드의 항목을 재사용한다(§7 부분 갱신 2단계). */
+  private readonly fileCache = new Map<string, { mtime: number; entries: ActivityEntry[] }>();
 
   constructor(
     private readonly app: App,
@@ -34,24 +36,47 @@ export class ActivityIndex {
   }
 
   private async build(): Promise<ActivityEntry[]> {
+    const visited = new Set<string>();
     const [records, attendance, assignments, tasks, notices, routines, curriculum] = await Promise.all([
-      this.buildRecords(),
-      this.buildAttendance(),
-      this.buildAssignments(),
-      this.buildTasks(),
-      this.buildNotices(),
-      this.buildRoutines(),
-      this.buildCurriculumLessons()
+      this.buildRecords(visited),
+      this.buildAttendance(visited),
+      this.buildAssignments(visited),
+      this.buildTasks(visited),
+      this.buildNotices(visited),
+      this.buildRoutines(visited),
+      this.buildCurriculumLessons(visited)
     ]);
+    // 이번 빌드에서 안 쓰인 파일(삭제·이동·프로필 전환)은 증분 캐시에서 걷어낸다.
+    for (const path of [...this.fileCache.keys()]) {
+      if (!visited.has(path)) this.fileCache.delete(path);
+    }
 
     return [...records, ...attendance, ...assignments, ...tasks, ...notices, ...routines, ...curriculum].sort(
       (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt
     );
   }
 
-  private async buildRecords(): Promise<ActivityEntry[]> {
+  /** mtime이 같으면 캐시 항목을 재사용하고, 다르면 다시 계산한다 — 재빌드 비용을 변경 파일로 한정. */
+  private async memoized(
+    file: TFile,
+    visited: Set<string>,
+    compute: () => Promise<ActivityEntry[]> | ActivityEntry[]
+  ): Promise<ActivityEntry[]> {
+    visited.add(file.path);
+    const mtime = file.stat.mtime;
+    const cached = this.fileCache.get(file.path);
+    if (cached && cached.mtime === mtime) return cached.entries;
+    const entries = await compute();
+    this.fileCache.set(file.path, { mtime, entries });
+    return entries;
+  }
+
+  private async buildRecords(visited: Set<string>): Promise<ActivityEntry[]> {
     const records = this.repository.getRecords();
-    return mapWithConcurrency(records, 8, (record) => this.recordActivity(record));
+    const groups = await mapWithConcurrency(records, 8, (record) =>
+      this.memoized(record.file, visited, async () => [await this.recordActivity(record)])
+    );
+    return groups.flat();
   }
 
   private async recordActivity(record: RecordEntry): Promise<ActivityEntry> {
@@ -82,12 +107,12 @@ export class ActivityIndex {
     };
   }
 
-  private async buildAttendance(): Promise<ActivityEntry[]> {
+  private async buildAttendance(visited: Set<string>): Promise<ActivityEntry[]> {
     const summaries = this.repository.getAttendanceSummaries();
     const groups = await mapWithConcurrency(
       summaries,
       8,
-      async ({ file, date }) => {
+      ({ file, date }) => this.memoized(file, visited, async () => {
         const content = await this.app.vault.cachedRead(file);
         const marks = this.repository.parseAttendanceContent(content);
         return marks.map((mark) => ({
@@ -109,17 +134,17 @@ export class ActivityIndex {
           ]),
           createdAt: file.stat.ctime
         }));
-      }
+      })
     );
     return groups.flat();
   }
 
-  private async buildAssignments(): Promise<ActivityEntry[]> {
+  private async buildAssignments(visited: Set<string>): Promise<ActivityEntry[]> {
     const summaries = this.repository.getAssignmentSummaries();
     const groups = await mapWithConcurrency(
       summaries,
       8,
-      async (summary) => {
+      (summary) => this.memoized(summary.file, visited, async () => {
         const assignment = await this.repository.loadAssignment(summary);
         return assignment.marks.map((mark) => ({
           id: `${assignment.file.path}#${mark.studentNumber}`,
@@ -141,17 +166,18 @@ export class ActivityIndex {
           ]),
           createdAt: assignment.file.stat.ctime
         }));
-      }
+      })
     );
     return groups.flat();
   }
 
-  private async buildTasks(): Promise<ActivityEntry[]> {
-    return mapWithConcurrency(this.repository.getTasks(), 8, async (task) => {
+  private async buildTasks(visited: Set<string>): Promise<ActivityEntry[]> {
+    const groups = await mapWithConcurrency(this.repository.getTasks(), 8, (task) =>
+      this.memoized(task.file, visited, async () => {
       const content = await this.app.vault.cachedRead(task.file);
       const detail = content.replace(/^---[\s\S]*?---\s*/m, "").replace(/^#.*$/m, "").trim();
       const date = task.dueDate || task.startDate || fileDate(task.file);
-      return {
+      return [{
         id: task.file.path,
         file: task.file,
         date,
@@ -166,12 +192,15 @@ export class ActivityIndex {
           task.recurrence, task.studentNumber, task.studentName, detail
         ]),
         createdAt: task.createdAt
-      };
-    });
+      }];
+      })
+    );
+    return groups.flat();
   }
 
-  private async buildNotices(): Promise<ActivityEntry[]> {
-    const groups = await mapWithConcurrency(this.repository.getNoticeSummaries(), 8, async (summary) => {
+  private async buildNotices(visited: Set<string>): Promise<ActivityEntry[]> {
+    const groups = await mapWithConcurrency(this.repository.getNoticeSummaries(), 8, (summary) =>
+      this.memoized(summary.file, visited, async () => {
       const notice = await this.repository.loadNotice(summary);
       const date = notice.dueDate || notice.sentDate;
       return notice.marks.map((mark) => ({
@@ -190,15 +219,16 @@ export class ActivityIndex {
         ]),
         createdAt: notice.file.stat.ctime
       }));
-    });
+      })
+    );
     return groups.flat();
   }
 
-  private async buildRoutines(): Promise<ActivityEntry[]> {
+  private async buildRoutines(visited: Set<string>): Promise<ActivityEntry[]> {
     const groups = await mapWithConcurrency(
       this.repository.getRoutineInstanceSummaries(),
       8,
-      async (summary) => {
+      (summary) => this.memoized(summary.file, visited, async () => {
         const instance = await this.repository.loadRoutineInstance(summary.file, summary.date);
         return instance.items.map((item) => ({
           id: `${instance.file.path}#${item.line}`,
@@ -215,15 +245,15 @@ export class ActivityIndex {
           ]),
           createdAt: instance.file.stat.ctime
         }));
-      }
+      })
     );
     return groups.flat();
   }
 
-  private async buildCurriculumLessons(): Promise<ActivityEntry[]> {
-    return this.repository.getCurriculumLessons()
-      .filter((lesson) => Boolean(lesson.date))
-      .map((lesson) => ({
+  private async buildCurriculumLessons(visited: Set<string>): Promise<ActivityEntry[]> {
+    const lessons = this.repository.getCurriculumLessons().filter((lesson) => Boolean(lesson.date));
+    const groups = await Promise.all(lessons.map((lesson) =>
+      this.memoized(lesson.file, visited, () => [{
         id: lesson.file.path,
         file: lesson.file,
         date: lesson.date,
@@ -248,7 +278,9 @@ export class ActivityIndex {
           lesson.reflection
         ]),
         createdAt: lesson.createdAt
-      }));
+      }])
+    ));
+    return groups.flat();
   }
 }
 

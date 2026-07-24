@@ -37,6 +37,7 @@ import {
 import { formatAssignedSlots, parseProgressTable, progressTableMarkdown } from "@core/progress";
 import { hoursStandardMarkdown, parseHoursStandard } from "@core/hours-audit";
 import { isLegacyAttendanceContent, isWikiLinkStudentPath } from "@core/migration";
+import type { ManagedFolders } from "@core/change-scope";
 import {
   aiDraftPlan,
   aiSetupPaths,
@@ -1433,6 +1434,30 @@ export class ClassRepository {
       `${safeFileSegment(weekStart)} 주간학습안내`
     );
     return this.app.vault.create(path, markdown);
+  }
+
+  /** 부분 갱신 분류에 쓰는 폴더 규약 스냅숏 (core classifyVaultPath 입력). */
+  managedFolders(): ManagedFolders {
+    return {
+      base: this.baseFolderPath,
+      students: this.studentsFolderPath,
+      records: this.recordsFolderPath,
+      attendance: this.attendanceFolderPath,
+      assignments: this.assignmentsFolderPath,
+      tasks: this.tasksFolderPath,
+      notices: this.noticesFolderPath,
+      routines: this.routinesFolderPath,
+      academicCalendar: this.academicCalendarFolderPath,
+      timetable: this.timetableFolderPath,
+      progress: this.progressFolderPath,
+      curriculumUnits: this.curriculumUnitsFolderPath,
+      curriculumLessons: this.curriculumLessonsFolderPath,
+      events: this.eventsFolderPath,
+      standards: this.standardsFolderPath,
+      weeklyPlan: this.weeklyPlanFolderPath,
+      bases: this.basesFolderPath,
+      backups: this.backupsFolderPath
+    };
   }
 
   /** AI 협업 작업 공간(지침 파일·결과 폴더)을 만든다 — 기존 파일은 건너뛴다(멱등). */

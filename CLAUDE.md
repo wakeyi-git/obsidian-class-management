@@ -18,7 +18,7 @@ Classroom Manager 옵시디언 플러그인 저장소. 실사용 볼트는 `~/Do
 ## 검증·릴리스 절차
 
 ```bash
-npx tsc -noEmit -skipLibCheck && npm test && npm run lint   # 테스트 142+개·린트, 전부 통과 필수
+npx tsc -noEmit -skipLibCheck && npm test && npm run lint   # 테스트 147+개·린트, 전부 통과 필수
 ```
 
 릴리스: CHANGELOG 항목 추가 → `npm run version -- X.Y.Z` → `npm run check` → `npm run deploy`(볼트 배포) → 커밋(메시지 끝 `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`) → `git push` → 태그 `X.Y.Z`(v 접두사 없음) push → release.yml 성공 확인.
