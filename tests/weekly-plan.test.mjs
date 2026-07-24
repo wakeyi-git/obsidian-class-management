@@ -78,6 +78,7 @@ test("주간학습안내를 생성한다", () => {
   });
 
   assert.match(markdown, /class-management: weekly-plan/);
+  assert.match(markdown, /cssclasses:\n {2}- class-management-print/);
   assert.match(markdown, /08-17 \(월\)/);
   assert.match(markdown, /수학<br>1\. 분수<br>분수의 의미/);
   assert.match(markdown, /재량휴업/);

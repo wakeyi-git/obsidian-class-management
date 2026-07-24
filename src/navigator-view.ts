@@ -43,7 +43,8 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { id: "student-modal", label: "학생 추가·명렬표", icon: "user-plus", run: (plugin) => plugin.openStudentModal() },
   { id: "new-unit", label: "새 통합 단원 설계", icon: "plus-circle", run: (plugin) => plugin.openCurriculumUnitModal() },
   { id: "progress-import", label: "진도표 차시 가져오기", icon: "download", run: (plugin) => plugin.openProgressImportModal() },
-  { id: "assign-progress", label: "진도 자동 배정", icon: "wand", run: (plugin) => void plugin.runProgressAssignment() }
+  { id: "assign-progress", label: "진도 자동 배정", icon: "wand", run: (plugin) => void plugin.runProgressAssignment() },
+  { id: "feedback", label: "피드백 기록", icon: "message-square-plus", run: (plugin) => plugin.openFeedbackModal() }
 ];
 
 export class NavigatorView extends ItemView {

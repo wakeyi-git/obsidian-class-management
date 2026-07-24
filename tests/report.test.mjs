@@ -21,6 +21,7 @@ test("보고서 Markdown에 제목과 근거 링크가 들어간다", () => {
   );
   assert.match(report, /# 7월 보고서/);
   assert.match(report, /\[\[테스트\|원본\]\]/);
+  assert.match(report, /cssclasses:\n {2}- class-management-print/);
 });
 
 test("CSV는 BOM과 헤더로 시작한다", () => {

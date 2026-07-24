@@ -961,6 +961,30 @@ export class ClassRepository {
     return this.app.vault.create(path, content);
   }
 
+  /** 실사용 피드백 한 줄을 기본 폴더의 피드백 노트에 덧붙인다 (없으면 생성). */
+  async appendFeedbackEntry(text: string, version: string, screen: string): Promise<TFile> {
+    await this.ensureWorkspace();
+    const path = this.vaultPath(this.getSettings().baseFolder, "피드백.md");
+    const stamp = [localDate(), `v${version}`, screen].filter(Boolean).join(" · ");
+    const line = `- [ ] ${stamp} — ${text.replace(/\s*\n\s*/g, " / ")}`;
+    const existing = this.app.vault.getAbstractFileByPath(path);
+    if (existing instanceof TFile) {
+      await this.app.vault.process(existing, (content) => `${content.trimEnd()}\n${line}\n`);
+      return existing;
+    }
+    return this.app.vault.create(
+      path,
+      [
+        "# 플러그인 피드백",
+        "",
+        "실사용 중 남긴 마찰·요청 기록입니다. 처리한 항목은 체크하고, 반영 내역은 저장소 docs/FEEDBACK.md에 남깁니다.",
+        "",
+        line,
+        ""
+      ].join("\n")
+    );
+  }
+
   async saveExport(
     title: string,
     content: string,

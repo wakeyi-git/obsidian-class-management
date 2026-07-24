@@ -4,6 +4,7 @@ import { ActivityIndex } from "./activity-index";
 import { ActivityListView, ACTIVITY_LIST_VIEW_TYPE } from "./activity-list-view";
 import { AiSetupModal } from "./ai-setup-modal";
 import { AttendanceModal } from "./attendance-modal";
+import { FeedbackModal } from "./feedback-modal";
 import { AssignmentModal, AssignmentPickerModal } from "./assignment-modal";
 import { ClassCalendarView, CALENDAR_VIEW_TYPE } from "./calendar-view";
 import { ClassProfileModal } from "./class-profile-modal";
@@ -868,6 +869,20 @@ export default class ClassManagementPlugin extends Plugin {
       new Notice(`${task.title} 할 일을 수집했습니다.`);
       await this.refreshViews();
     }, initialDueDate).open();
+  }
+
+  /** 실사용 마찰을 즉시 남기는 피드백 기록 — 날짜·버전·현재 화면을 자동 스탬프한다. */
+  openFeedbackModal(): void {
+    if (!this.canWriteActiveClass()) return;
+    const screen = this.app.workspace.getMostRecentLeaf()?.view?.getDisplayText() ?? "";
+    new FeedbackModal(
+      this.app,
+      { version: this.manifest.version, screen },
+      async (text) => {
+        await this.repository.appendFeedbackEntry(text, this.manifest.version, screen);
+        new Notice("피드백을 기록했습니다.");
+      }
+    ).open();
   }
 
   openNoticeFlow(initialDate?: string): void {

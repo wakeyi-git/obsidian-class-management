@@ -80,6 +80,8 @@ export function buildReportMarkdown(
     `dateTo: ${yamlString(options.dateTo)}`,
     `studentNumber: ${yamlString(options.studentNumber)}`,
     `created: ${localDate()}`,
+    "cssclasses:",
+    "  - class-management-print",
     "tags:",
     "  - class-management/report",
     "---",

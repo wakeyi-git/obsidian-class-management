@@ -67,6 +67,8 @@ export function buildWeeklyPlanMarkdown(input: WeeklyPlanInput): string {
     `weekStart: ${yamlString(input.weekStart)}`,
     `weekEnd: ${yamlString(input.weekEnd)}`,
     `created: ${localDate()}`,
+    "cssclasses:",
+    "  - class-management-print",
     "tags:",
     "  - class-management/weekly-plan",
     "---",
