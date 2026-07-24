@@ -5,6 +5,7 @@ import { resolveDay } from "@core/timetable";
 import { buildAssignedSlotContents } from "@core/progress";
 import { extractStandardCodes, pdfPageLinks, wikiLinkTarget, wikiLinkText } from "@core/planning";
 import { collectSubjectOptions } from "@core/subject-options";
+import { tableCellDisplayText } from "@core/utils";
 import { TimetableCellModal } from "./timetable-cell-modal";
 import type ClassManagementPlugin from "./main";
 
@@ -125,10 +126,11 @@ export class LessonInspectorView extends ItemView {
         ["비고", row.note]
       ];
       for (const [label, value] of details) {
-        if (!value) continue;
+        const display = tableCellDisplayText(value);
+        if (!display) continue;
         const line = progress.createDiv({ cls: "class-management-today-item is-static" });
         line.createSpan({ text: label, cls: "class-management-today-badge" });
-        line.createSpan({ text: value, cls: "class-management-inspector-value" });
+        line.createSpan({ text: display, cls: "class-management-inspector-value" });
       }
       this.renderStandards(progress, row.standard);
       this.renderRowLinks(progress, row, subject);

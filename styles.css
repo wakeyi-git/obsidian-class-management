@@ -2699,7 +2699,8 @@
 }
 
 .class-management-inspector-value {
-  white-space: normal;
+  /* 표 셀의 <br>를 되돌린 줄바꿈을 그대로 보인다 */
+  white-space: pre-line;
   overflow-wrap: anywhere;
 }
 

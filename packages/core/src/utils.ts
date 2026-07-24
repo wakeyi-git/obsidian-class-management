@@ -57,6 +57,14 @@ export function booleanValue(value: unknown, fallback: boolean): boolean {
   return fallback;
 }
 
+/** 표 셀의 `<br>` 줄바꿈 표기를 실제 줄바꿈으로 되돌린다 — 셀 값을 화면에 보일 때 사용. */
+export function tableCellDisplayText(value: string): string {
+  return value
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+}
+
 export function csvCell(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
 }
