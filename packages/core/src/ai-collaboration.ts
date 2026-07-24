@@ -1,4 +1,3 @@
-import type { App, TFile } from "obsidian";
 import { ACTIVITY_KIND_LABELS } from "./activity";
 import { joinVaultPath, localDate, safeFileSegment, yamlString } from "./utils";
 import {
@@ -37,71 +36,36 @@ export function aiSetupPaths(settings: ClassManagementSettings): string[] {
   ];
 }
 
-export async function setupAiWorkspace(
-  app: App,
-  settings: ClassManagementSettings
-): Promise<AiSetupResult> {
-  const result: AiSetupResult = { created: [], skipped: [] };
-  for (const folder of aiSetupPaths(settings).slice(3)) {
-    if (app.vault.getAbstractFileByPath(folder)) {
-      result.skipped.push(folder);
-    } else {
-      await ensureFolder(app, folder);
-      result.created.push(folder);
-    }
-  }
-
-  const files = new Map<string, string>([
+/** 볼트 루트에 만들 지침 파일 3종(경로→내용). 실제 생성은 저장소가 수행한다. */
+export function aiWorkspaceFiles(settings: ClassManagementSettings): Array<[string, string]> {
+  return [
     ["AGENTS.md", agentsInstructions(settings)],
     ["CLAUDE.md", claudeInstructions(settings)],
     ["AI_WORKFLOW.md", workflowInstructions(settings)]
-  ]);
-  for (const [path, content] of files) {
-    if (app.vault.getAbstractFileByPath(path)) {
-      result.skipped.push(path);
-    } else {
-      await app.vault.create(path, content);
-      result.created.push(path);
-    }
-  }
-  return result;
+  ];
 }
 
-export async function createAiDraft(
-  app: App,
+/** 초안 노트의 대상 폴더와 파일 기본 이름을 계산한다(순수 — 생성은 저장소). */
+export function aiDraftPlan(
   settings: ClassManagementSettings,
   student: StudentEntry,
-  activities: ActivityEntry[],
   kind: AiDraftKind,
-  dateFrom: string,
-  dateTo: string,
-  schoolRecordArea?: SchoolRecordArea
-): Promise<TFile> {
+  schoolRecordArea?: SchoolRecordArea,
+  today = localDate()
+): { folder: string; baseName: string } {
   const area = kind === "school-record"
     ? schoolRecordAreaDefinition(schoolRecordArea ?? "behavior-summary")
     : undefined;
   const folder = kind === "feedback"
     ? joinVaultPath(settings.aiOutputFolder, "학생 피드백")
     : joinVaultPath(settings.aiOutputFolder, "학교생활기록부 초안", area?.folder ?? "");
-  await ensureFolder(app, folder);
   const label = settings.aiAnonymizeStudents
     ? anonymousStudentId(student.number)
     : `${student.number}번 ${student.name}`;
   const title = kind === "feedback"
     ? `${label} 학생 피드백 초안`
     : `${label} ${area?.label ?? "학교생활기록부"} 초안`;
-  const baseName = `${localDate()} ${safeFileSegment(title)}`;
-  const path = availablePath(app, folder, baseName);
-  const content = buildAiDraftMarkdown(
-    settings,
-    student,
-    activities,
-    kind,
-    dateFrom,
-    dateTo,
-    schoolRecordArea
-  );
-  return app.vault.create(path, content);
+  return { folder, baseName: `${today} ${safeFileSegment(title)}` };
 }
 
 export function buildAiDraftMarkdown(
@@ -441,25 +405,6 @@ function workflowInstructions(settings: ClassManagementSettings): string {
 
 function anonymousStudentId(number: string): string {
   return `학생-S${number.padStart(2, "0")}`;
-}
-
-async function ensureFolder(app: App, path: string): Promise<void> {
-  const parts = path.split("/").filter(Boolean);
-  let current = "";
-  for (const part of parts) {
-    current = joinVaultPath(current, part);
-    if (!app.vault.getAbstractFileByPath(current)) await app.vault.createFolder(current);
-  }
-}
-
-function availablePath(app: App, folder: string, baseName: string): string {
-  let suffix = 1;
-  let path = joinVaultPath(folder, `${baseName}.md`);
-  while (app.vault.getAbstractFileByPath(path)) {
-    suffix += 1;
-    path = joinVaultPath(folder, `${baseName} ${suffix}.md`);
-  }
-  return path;
 }
 
 function sanitizeInline(value: string): string {

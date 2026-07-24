@@ -17,6 +17,7 @@ import {
 import {
   curriculumLessonMarkdown,
   curriculumUnitMarkdown,
+  mergeManualSections,
   parseCurriculumLesson,
   parseCurriculumUnit
 } from "@core/curriculum";
@@ -35,6 +36,13 @@ import {
 } from "@core/timetable";
 import { formatAssignedSlots, parseProgressTable, progressTableMarkdown } from "@core/progress";
 import { hoursStandardMarkdown, parseHoursStandard } from "@core/hours-audit";
+import {
+  aiDraftPlan,
+  aiSetupPaths,
+  aiWorkspaceFiles,
+  buildAiDraftMarkdown,
+  type AiSetupResult
+} from "@core/ai-collaboration";
 import type {
   AcademicCalendar,
   BaseTimetable,
@@ -72,7 +80,13 @@ import type {
   TaskEntry,
   TaskStatus
 } from "@core/types";
-import type { SchoolRecordEvidence, SchoolRecordReviewStatus } from "@core/types";
+import type {
+  ActivityEntry,
+  AiDraftKind,
+  SchoolRecordArea,
+  SchoolRecordEvidence,
+  SchoolRecordReviewStatus
+} from "@core/types";
 import {
   compareStudentNumber,
   joinVaultPath,
@@ -355,7 +369,11 @@ export class ClassRepository {
 
   async updateCurriculumUnit(file: TFile, input: NewCurriculumUnit): Promise<CurriculumUnit> {
     this.assertWritableClass();
-    await this.app.vault.modify(file, curriculumUnitMarkdown(input, this.getSettings()));
+    const settings = this.getSettings();
+    // 쓰기 시점 내용 기준으로 재작성하고, 스캐폴드에 없는 절(교사 추가 본문)은 보존한다.
+    await this.app.vault.process(file, (current) =>
+      mergeManualSections(curriculumUnitMarkdown(input, settings), current)
+    );
     return { ...input, file, createdAt: file.stat.ctime };
   }
 
@@ -387,7 +405,10 @@ export class ClassRepository {
 
   async updateCurriculumLesson(file: TFile, input: NewCurriculumLesson): Promise<CurriculumLesson> {
     this.assertWritableClass();
-    await this.app.vault.modify(file, curriculumLessonMarkdown(input, this.getSettings()));
+    const settings = this.getSettings();
+    await this.app.vault.process(file, (current) =>
+      mergeManualSections(curriculumLessonMarkdown(input, settings), current)
+    );
     return { ...input, file, createdAt: file.stat.ctime };
   }
 
@@ -1207,16 +1228,38 @@ export class ClassRepository {
     );
   }
 
-  async appendProgressRows(table: ProgressTable, rows: ProgressRow[]): Promise<void> {
+  /**
+   * 진도표를 쓰기 시점의 실제 내용으로 다시 파싱해 행 변형을 적용한다.
+   * 파싱 이후의 손편집·동시 변경이 전체 재작성에 휩쓸려 사라지지 않게 한다.
+   */
+  private async processProgressRows(
+    table: ProgressTable,
+    mutate: (rows: ProgressRow[]) => ProgressRow[]
+  ): Promise<void> {
     this.assertWritableClass();
     const settings = this.getSettings();
-    await this.app.vault.modify(
-      table.file,
-      progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, [
-        ...table.rows,
-        ...rows
-      ])
-    );
+    let nextRows = table.rows;
+    await this.app.vault.process(table.file, (current) => {
+      const fresh = parseProgressTable(
+        table.file,
+        { schoolYear: table.schoolYear, semester: table.semester, subject: table.subject },
+        current
+      );
+      nextRows = mutate(fresh.rows);
+      return progressTableMarkdown(
+        table.schoolYear,
+        table.semester,
+        table.subject,
+        settings.className,
+        nextRows
+      );
+    });
+    // 같은 표 객체로 잇달아 기입해도 앞선 기입이 유실되지 않도록 메모리도 갱신한다.
+    table.rows = nextRows;
+  }
+
+  async appendProgressRows(table: ProgressTable, rows: ProgressRow[]): Promise<void> {
+    await this.processProgressRows(table, (current) => [...current, ...rows]);
   }
 
   async updateProgressRowFixed(
@@ -1225,14 +1268,8 @@ export class ClassRepository {
     fixedDate: string,
     fixedPeriod: number
   ): Promise<void> {
-    this.assertWritableClass();
-    const settings = this.getSettings();
-    const rows = table.rows.map((row) =>
-      row.order === order ? { ...row, fixedDate, fixedPeriod } : row
-    );
-    await this.app.vault.modify(
-      table.file,
-      progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)
+    await this.processProgressRows(table, (rows) =>
+      rows.map((row) => (row.order === order ? { ...row, fixedDate, fixedPeriod } : row))
     );
   }
 
@@ -1240,20 +1277,17 @@ export class ClassRepository {
     table: ProgressTable,
     assignment: ProgressAssignment
   ): Promise<void> {
-    this.assertWritableClass();
-    const settings = this.getSettings();
-    const rows = table.rows.map((row) => {
-      const entry = assignment.rows.find((item) => item.row === row);
-      if (!entry) return row;
-      const assigned = formatAssignedSlots(entry.slots);
-      return {
-        ...row,
-        assigned: entry.shortage > 0 ? `${assigned}${assigned ? " " : ""}(부족 ${entry.shortage})` : assigned
-      };
-    });
-    await this.app.vault.modify(
-      table.file,
-      progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)
+    // 배정 결과는 스냅숏 행 객체를 물고 있으므로, 행의 키인 순(order)으로 다시 맞춘다.
+    await this.processProgressRows(table, (rows) =>
+      rows.map((row) => {
+        const entry = assignment.rows.find((item) => item.row.order === row.order);
+        if (!entry) return row;
+        const assigned = formatAssignedSlots(entry.slots);
+        return {
+          ...row,
+          assigned: entry.shortage > 0 ? `${assigned}${assigned ? " " : ""}(부족 ${entry.shortage})` : assigned
+        };
+      })
     );
   }
 
@@ -1278,20 +1312,14 @@ export class ClassRepository {
     field: "note" | "unitLink" | "assignmentLink",
     link: string
   ): Promise<void> {
-    this.assertWritableClass();
-    const settings = this.getSettings();
-    const rows = table.rows.map((row) => {
-      if (row.order !== order) return row;
-      const current = row[field];
-      if (current.includes(link)) return row;
-      return { ...row, [field]: `${current ? `${current} ` : ""}${link}` };
-    });
-    await this.app.vault.modify(
-      table.file,
-      progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)
+    await this.processProgressRows(table, (rows) =>
+      rows.map((row) => {
+        if (row.order !== order) return row;
+        const current = row[field];
+        if (current.includes(link)) return row;
+        return { ...row, [field]: `${current ? `${current} ` : ""}${link}` };
+      })
     );
-    // 같은 표 객체로 잇달아 기입할 때 앞선 기입이 유실되지 않도록 메모리도 갱신한다.
-    table.rows = rows;
   }
 
   get standardsFolderPath(): string {
@@ -1313,22 +1341,19 @@ export class ClassRepository {
 
   /** 진도표 성취기준 셀의 코드들을 위키링크로 바꾼다. 바뀐 행 수를 돌려준다. */
   async linkifyProgressStandards(table: ProgressTable): Promise<number> {
-    this.assertWritableClass();
-    const settings = this.getSettings();
-    let changed = 0;
-    const rows = table.rows.map((row) => {
-      const next = linkifyStandardCell(row.standard);
-      if (next === row.standard) return row;
-      changed += 1;
-      return { ...row, standard: next };
-    });
-    if (changed > 0) {
-      await this.app.vault.modify(
-        table.file,
-        progressTableMarkdown(table.schoolYear, table.semester, table.subject, settings.className, rows)
-      );
-      table.rows = rows;
+    // 스냅숏 기준으로 바뀔 게 없으면 파일을 건드리지 않는다(멱등 재실행 시 무변경).
+    if (table.rows.every((row) => linkifyStandardCell(row.standard) === row.standard)) {
+      return 0;
     }
+    let changed = 0;
+    await this.processProgressRows(table, (rows) =>
+      rows.map((row) => {
+        const next = linkifyStandardCell(row.standard);
+        if (next === row.standard) return row;
+        changed += 1;
+        return { ...row, standard: next };
+      })
+    );
     return changed;
   }
 
@@ -1386,6 +1411,48 @@ export class ClassRepository {
       `${safeFileSegment(weekStart)} 주간학습안내`
     );
     return this.app.vault.create(path, markdown);
+  }
+
+  /** AI 협업 작업 공간(지침 파일·결과 폴더)을 만든다 — 기존 파일은 건너뛴다(멱등). */
+  async setupAiWorkspace(): Promise<AiSetupResult> {
+    const settings = this.getSettings();
+    const result: AiSetupResult = { created: [], skipped: [] };
+    for (const folder of aiSetupPaths(settings).slice(3)) {
+      if (this.app.vault.getAbstractFileByPath(folder)) {
+        result.skipped.push(folder);
+      } else {
+        await this.ensureFolder(folder);
+        result.created.push(folder);
+      }
+    }
+    for (const [path, content] of aiWorkspaceFiles(settings)) {
+      if (this.app.vault.getAbstractFileByPath(path)) {
+        result.skipped.push(path);
+      } else {
+        await this.app.vault.create(path, content);
+        result.created.push(path);
+      }
+    }
+    return result;
+  }
+
+  /** 근거 링크가 포함된 검토용 AI 초안 노트를 만든다. */
+  async createAiDraft(
+    student: StudentEntry,
+    activities: ActivityEntry[],
+    kind: AiDraftKind,
+    dateFrom: string,
+    dateTo: string,
+    schoolRecordArea?: SchoolRecordArea
+  ): Promise<TFile> {
+    const settings = this.getSettings();
+    const plan = aiDraftPlan(settings, student, kind, schoolRecordArea);
+    await this.ensureFolder(plan.folder);
+    const path = this.availableMarkdownPath(plan.folder, plan.baseName);
+    return this.app.vault.create(
+      path,
+      buildAiDraftMarkdown(settings, student, activities, kind, dateFrom, dateTo, schoolRecordArea)
+    );
   }
 
   private markdownFilesIn(folderPath: string): TFile[] {

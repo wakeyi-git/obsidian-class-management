@@ -1,4 +1,4 @@
-import { registerLongPress } from "@core/dom";
+import { registerLongPress } from "./dom";
 import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
 import { dayStatus, semesterForDate, weekdayLabel } from "@core/academic-calendar";
 import { resolveDay } from "@core/timetable";

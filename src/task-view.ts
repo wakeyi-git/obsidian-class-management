@@ -1,5 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
-import { addOption, filterLabel } from "@core/dom";
+import { addOption, filterLabel } from "./dom";
 import type ClassManagementPlugin from "./main";
 import { taskRecurrenceLabel } from "@core/task";
 import type { NoticeSheet, TaskEntry, TaskStatus,

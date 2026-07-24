@@ -6,7 +6,7 @@ import type {
   SchoolEvent,
   SchoolEventType,
   VacationRange } from "./types";
-import { splitMarkdownTableRow, unescapeTableCell, yamlString } from "./utils";
+import { splitMarkdownTableRow, stringValue, unescapeTableCell, yamlString } from "./utils";
 
 export const CLOSED_DAY_CATEGORIES: readonly ClosedDayCategory[] = ["공휴일", "재량휴업일", "기타"];
 export const SCHOOL_EVENT_TYPES: readonly SchoolEventType[] = ["행사", "전일행사", "단축", "연장"];
@@ -298,9 +298,6 @@ export function academicCalendarMarkdown(schoolYear: string, className: string):
   ].join("\n");
 }
 
-function stringValue(value: unknown): string {
-  return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
-}
 
 function toDate(date: string): Date {
   const [year, month, day] = date.split("-").map(Number);

@@ -1,5 +1,5 @@
 import { App, ItemView, Modal, Notice, Setting, WorkspaceLeaf } from "obsidian";
-import { addOption, filterLabel } from "@core/dom";
+import { addOption, filterLabel } from "./dom";
 import {
   ACTIVITY_KIND_LABELS,
   EMPTY_ACTIVITY_FILTERS,

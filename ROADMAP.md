@@ -1,6 +1,6 @@
 # Classroom Manager 로드맵
 
-현재 버전은 `1.0.0`입니다. 아래 1.0 범위는 구현과 자동 회귀 검증을 완료했습니다.
+현재 버전은 `manifest.json`과 [CHANGELOG.md](CHANGELOG.md)가 기준입니다(이 문서의 1.0 범위는 구현·자동 회귀 검증 완료, 이후 우선순위는 [docs/PRODUCT.md §10](docs/PRODUCT.md) 참고).
 
 ## 제품 원칙
 

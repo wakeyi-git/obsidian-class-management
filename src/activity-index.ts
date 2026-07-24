@@ -5,6 +5,8 @@ import type { ActivityEntry, RecordEntry } from "@core/types";
 export class ActivityIndex {
   private cache?: ActivityEntry[];
   private pending?: Promise<ActivityEntry[]>;
+  /** 빌드 도중 무효화를 감지하는 세대 번호 — 낡은 빌드 결과가 캐시를 채우지 않게 한다. */
+  private generation = 0;
 
   constructor(
     private readonly app: App,
@@ -12,6 +14,7 @@ export class ActivityIndex {
   ) {}
 
   invalidate(): void {
+    this.generation += 1;
     this.cache = undefined;
   }
 
@@ -19,10 +22,12 @@ export class ActivityIndex {
     if (this.cache) return this.cache;
     if (this.pending) return this.pending;
 
+    const generation = this.generation;
     this.pending = this.build();
     try {
-      this.cache = await this.pending;
-      return this.cache;
+      const entries = await this.pending;
+      if (generation === this.generation) this.cache = entries;
+      return entries;
     } finally {
       this.pending = undefined;
     }

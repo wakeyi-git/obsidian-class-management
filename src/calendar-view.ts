@@ -1,5 +1,5 @@
 import { ItemView, Modal, Setting, WorkspaceLeaf } from "obsidian";
-import { addOption } from "@core/dom";
+import { addOption } from "./dom";
 import { ACTIVITY_KIND_LABELS } from "@core/activity";
 import {
   buildCalendarEvents,

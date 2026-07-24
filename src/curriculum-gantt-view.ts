@@ -1,5 +1,5 @@
 import { ItemView, Menu, WorkspaceLeaf, setIcon } from "obsidian";
-import { registerLongPress } from "@core/dom";
+import { registerLongPress } from "./dom";
 import { dayStatus, listDates, semesterForDate, semesterRange } from "@core/academic-calendar";
 import { localDate } from "@core/utils";
 import type ClassManagementPlugin from "./main";

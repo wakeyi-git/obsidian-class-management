@@ -1,5 +1,5 @@
 import type { TFile } from "obsidian";
-import { booleanValue, yamlString } from "./utils";
+import { booleanValue, stringValue, yamlString } from "./utils";
 import type {
   ClassManagementSettings,
   ConceptInquiryPhase,
@@ -450,6 +450,28 @@ export function curriculumLessonMarkdown(
   ].join("\n");
 }
 
+/**
+ * 재작성 스캐폴드에 없는 본문 절(`## 제목`)을 기존 내용에서 찾아 뒤에 덧붙인다.
+ * 모달 재저장이 교사가 손으로 추가한 절을 지우지 않게 한다(관리 절은 스캐폴드가 진실).
+ */
+export function mergeManualSections(generated: string, current: string): string {
+  const knownHeadings = new Set(
+    generated
+      .split("\n")
+      .filter((line) => line.startsWith("## "))
+      .map((line) => line.trim())
+  );
+  const kept: string[] = [];
+  let keeping = false;
+  for (const line of current.split("\n")) {
+    if (line.startsWith("## ")) keeping = !knownHeadings.has(line.trim());
+    if (keeping) kept.push(line);
+  }
+  const manual = kept.join("\n").trim();
+  if (!manual) return generated;
+  return `${generated.trimEnd()}\n\n${manual}\n`;
+}
+
 export function parseCurriculumUnit(
   file: TFile,
   frontmatter: Record<string, unknown> | undefined
@@ -593,12 +615,13 @@ function conceptInquiryMarkdown(unit: NewCurriculumUnit | CurriculumUnit): strin
   ];
 }
 
-function createCurriculumId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function stringValue(value: unknown, fallback = ""): string {
-  return value === undefined || value === null ? fallback : String(value);
+/** 새 단원·수업일지·스트랜드 ID. 생성 시점에만 쓰이며, 테스트는 now·entropy를 주입한다. */
+export function createCurriculumId(
+  prefix: string,
+  now = Date.now(),
+  entropy = Math.random().toString(36).slice(2, 8)
+): string {
+  return `${prefix}-${now}-${entropy}`;
 }
 
 function stringArray(value: unknown): string[] {
@@ -630,7 +653,7 @@ function conceptStrands(value: unknown): ConceptInquiryStrand[] {
     if (!entry || typeof entry !== "object") return [];
     const raw = entry as Record<string, unknown>;
     return [{
-      id: stringValue(raw.id, createCurriculumId("strand")),
+      id: stringValue(raw.id) || createCurriculumId("strand"),
       title: stringValue(raw.title, `스트랜드 ${index + 1}`),
       generalization: stringValue(raw.generalization),
       factualQuestions: stringValue(raw.factualQuestions),

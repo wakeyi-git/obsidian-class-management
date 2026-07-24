@@ -9,7 +9,7 @@ import {
   taughtHoursForUnit
 } from "@core/curriculum";
 import { localDate } from "@core/utils";
-import { filterLabel } from "@core/dom";
+import { filterLabel } from "./dom";
 import type ClassManagementPlugin from "./main";
 import type { CurriculumLesson, CurriculumUnit, CurriculumUnitStatus, RecordEntry } from "@core/types";
 

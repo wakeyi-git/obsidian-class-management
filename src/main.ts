@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFile, type WorkspaceLeaf } from "obsidian";
+import { Notice, Plugin, TFile, type ItemView, type WorkspaceLeaf } from "obsidian";
 import { EMPTY_ACTIVITY_FILTERS } from "@core/activity";
 import { ActivityIndex } from "./activity-index";
 import { ActivityListView, ACTIVITY_LIST_VIEW_TYPE } from "./activity-list-view";
@@ -130,6 +130,29 @@ const DEFAULT_SETTINGS: ClassManagementSettings = {
   calendarViewMode: "month"
 };
 
+/** 뷰 등록과 볼트 변경 갱신의 단일 원본 — 갱신 대상 여부는 뷰의 refresh() 유무로 정해진다. */
+const MANAGED_VIEWS: ReadonlyArray<{
+  type: string;
+  create: (leaf: WorkspaceLeaf, plugin: ClassManagementPlugin) => ItemView;
+}> = [
+  { type: DASHBOARD_VIEW_TYPE, create: (leaf, plugin) => new ClassDashboardView(leaf, plugin) },
+  { type: ACTIVITY_LIST_VIEW_TYPE, create: (leaf, plugin) => new ActivityListView(leaf, plugin) },
+  { type: STUDENT_TIMELINE_VIEW_TYPE, create: (leaf, plugin) => new StudentTimelineView(leaf, plugin) },
+  { type: CALENDAR_VIEW_TYPE, create: (leaf, plugin) => new ClassCalendarView(leaf, plugin) },
+  { type: TASK_VIEW_TYPE, create: (leaf, plugin) => new TaskView(leaf, plugin) },
+  { type: ROUTINE_VIEW_TYPE, create: (leaf, plugin) => new RoutineView(leaf, plugin) },
+  { type: CURRICULUM_VIEW_TYPE, create: (leaf, plugin) => new CurriculumView(leaf, plugin) },
+  { type: CURRICULUM_OPS_VIEW_TYPE, create: (leaf, plugin) => new CurriculumOpsView(leaf, plugin) },
+  { type: CURRICULUM_GANTT_VIEW_TYPE, create: (leaf, plugin) => new CurriculumGanttView(leaf, plugin) },
+  { type: NAVIGATOR_VIEW_TYPE, create: (leaf, plugin) => new NavigatorView(leaf, plugin) },
+  { type: TODAY_VIEW_TYPE, create: (leaf, plugin) => new TodayView(leaf, plugin) },
+  { type: STUDENT_INSPECTOR_VIEW_TYPE, create: (leaf, plugin) => new StudentInspectorView(leaf, plugin) },
+  { type: LESSON_INSPECTOR_VIEW_TYPE, create: (leaf, plugin) => new LessonInspectorView(leaf, plugin) },
+  { type: REPORT_VIEW_TYPE, create: (leaf, plugin) => new ReportView(leaf, plugin) },
+  { type: DATA_MANAGEMENT_VIEW_TYPE, create: (leaf, plugin) => new DataManagementView(leaf, plugin) },
+  { type: MAINTENANCE_VIEW_TYPE, create: (leaf, plugin) => new MaintenanceView(leaf, plugin) }
+];
+
 export default class ClassManagementPlugin extends Plugin {
   settings: ClassManagementSettings = DEFAULT_SETTINGS;
   repository = new ClassRepository(this.app, () => this.settings);
@@ -138,43 +161,9 @@ export default class ClassManagementPlugin extends Plugin {
   async onload(): Promise<void> {
     await this.loadSettings();
 
-    this.registerView(
-      DASHBOARD_VIEW_TYPE,
-      (leaf) => new ClassDashboardView(leaf, this)
-    );
-    this.registerView(
-      ACTIVITY_LIST_VIEW_TYPE,
-      (leaf) => new ActivityListView(leaf, this)
-    );
-    this.registerView(
-      STUDENT_TIMELINE_VIEW_TYPE,
-      (leaf) => new StudentTimelineView(leaf, this)
-    );
-    this.registerView(
-      CALENDAR_VIEW_TYPE,
-      (leaf) => new ClassCalendarView(leaf, this)
-    );
-    this.registerView(TASK_VIEW_TYPE, (leaf) => new TaskView(leaf, this));
-    this.registerView(ROUTINE_VIEW_TYPE, (leaf) => new RoutineView(leaf, this));
-    this.registerView(CURRICULUM_VIEW_TYPE, (leaf) => new CurriculumView(leaf, this));
-    this.registerView(
-      CURRICULUM_OPS_VIEW_TYPE,
-      (leaf) => new CurriculumOpsView(leaf, this)
-    );
-    this.registerView(
-      CURRICULUM_GANTT_VIEW_TYPE,
-      (leaf) => new CurriculumGanttView(leaf, this)
-    );
-    this.registerView(NAVIGATOR_VIEW_TYPE, (leaf) => new NavigatorView(leaf, this));
-    this.registerView(TODAY_VIEW_TYPE, (leaf) => new TodayView(leaf, this));
-    this.registerView(
-      STUDENT_INSPECTOR_VIEW_TYPE,
-      (leaf) => new StudentInspectorView(leaf, this)
-    );
-    this.registerView(
-      LESSON_INSPECTOR_VIEW_TYPE,
-      (leaf) => new LessonInspectorView(leaf, this)
-    );
+    for (const spec of MANAGED_VIEWS) {
+      this.registerView(spec.type, (leaf) => spec.create(leaf, this));
+    }
     this.app.workspace.onLayoutReady(() => {
       if (this.app.workspace.getLeavesOfType(NAVIGATOR_VIEW_TYPE).length === 0) {
         void this.openNavigator();
@@ -182,22 +171,16 @@ export default class ClassManagementPlugin extends Plugin {
       if (this.app.workspace.getLeavesOfType(TODAY_VIEW_TYPE).length === 0) {
         void this.openToday();
       }
-      // 날짜가 지난 수업 기록에 raw를 스탬프한다(이후 플러그인은 건드리지 않음).
-      window.setTimeout(() => void this.stampRawLessonRecords(), 2000);
-      // 학기 경계를 지나면 설정 전환을 제안한다(자동 변경은 하지 않음).
-      window.setTimeout(() => void this.suggestSemesterSwitch(), 2600);
-      // 1.30.0 폴더 직관화 이후 구 이름 폴더가 남아 있으면 이행 안내(자동 이동은 하지 않음).
-      window.setTimeout(() => this.warnLegacyFolders(), 3200);
+      const startupTimers = [
+        // 날짜가 지난 수업 기록에 raw를 스탬프한다(이후 플러그인은 건드리지 않음).
+        window.setTimeout(() => void this.stampRawLessonRecords(), 2000),
+        // 학기 경계를 지나면 설정 전환을 제안한다(자동 변경은 하지 않음).
+        window.setTimeout(() => void this.suggestSemesterSwitch(), 2600),
+        // 1.30.0 폴더 직관화 이후 구 이름 폴더가 남아 있으면 이행 안내(자동 이동은 하지 않음).
+        window.setTimeout(() => this.warnLegacyFolders(), 3200)
+      ];
+      this.register(() => startupTimers.forEach((id) => window.clearTimeout(id)));
     });
-    this.registerView(REPORT_VIEW_TYPE, (leaf) => new ReportView(leaf, this));
-    this.registerView(
-      DATA_MANAGEMENT_VIEW_TYPE,
-      (leaf) => new DataManagementView(leaf, this)
-    );
-    this.registerView(
-      MAINTENANCE_VIEW_TYPE,
-      (leaf) => new MaintenanceView(leaf, this)
-    );
 
     this.addRibbonIcon("school", "학급 대시보드", () => void this.openDashboard());
 
@@ -426,19 +409,6 @@ export default class ClassManagementPlugin extends Plugin {
     this.registerEvent(this.app.vault.on("create", scheduleRefresh));
     this.registerEvent(this.app.vault.on("delete", scheduleRefresh));
     this.registerEvent(this.app.metadataCache.on("changed", scheduleRefresh));
-  }
-
-  onunload(): void {
-    this.app.workspace.detachLeavesOfType(DASHBOARD_VIEW_TYPE);
-    this.app.workspace.detachLeavesOfType(ACTIVITY_LIST_VIEW_TYPE);
-    this.app.workspace.detachLeavesOfType(STUDENT_TIMELINE_VIEW_TYPE);
-    this.app.workspace.detachLeavesOfType(CALENDAR_VIEW_TYPE);
-    this.app.workspace.detachLeavesOfType(TASK_VIEW_TYPE);
-    this.app.workspace.detachLeavesOfType(ROUTINE_VIEW_TYPE);
-    this.app.workspace.detachLeavesOfType(CURRICULUM_VIEW_TYPE);
-    this.app.workspace.detachLeavesOfType(REPORT_VIEW_TYPE);
-    this.app.workspace.detachLeavesOfType(DATA_MANAGEMENT_VIEW_TYPE);
-    this.app.workspace.detachLeavesOfType(MAINTENANCE_VIEW_TYPE);
   }
 
   async loadSettings(): Promise<void> {
@@ -1966,78 +1936,13 @@ export default class ClassManagementPlugin extends Plugin {
   }
 
   private async refreshViews(): Promise<void> {
-    await this.refreshDashboard();
-    const activityViews = this.app.workspace
-      .getLeavesOfType(ACTIVITY_LIST_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is ActivityListView => view instanceof ActivityListView);
-    const timelineViews = this.app.workspace
-      .getLeavesOfType(STUDENT_TIMELINE_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is StudentTimelineView => view instanceof StudentTimelineView);
-    const calendarViews = this.app.workspace
-      .getLeavesOfType(CALENDAR_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is ClassCalendarView => view instanceof ClassCalendarView);
-    const ganttViews = this.app.workspace
-      .getLeavesOfType(CURRICULUM_GANTT_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is CurriculumGanttView => view instanceof CurriculumGanttView);
-    for (const view of ganttViews) await view.refresh();
-    const taskViews = this.app.workspace
-      .getLeavesOfType(TASK_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is TaskView => view instanceof TaskView);
-    const routineViews = this.app.workspace
-      .getLeavesOfType(ROUTINE_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is RoutineView => view instanceof RoutineView);
-    const curriculumViews = this.app.workspace
-      .getLeavesOfType(CURRICULUM_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is CurriculumView => view instanceof CurriculumView);
-    const reportViews = this.app.workspace
-      .getLeavesOfType(REPORT_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is ReportView => view instanceof ReportView);
-    const dataViews = this.app.workspace
-      .getLeavesOfType(DATA_MANAGEMENT_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is DataManagementView => view instanceof DataManagementView);
-    const maintenanceViews = this.app.workspace
-      .getLeavesOfType(MAINTENANCE_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is MaintenanceView => view instanceof MaintenanceView);
-    const opsViews = this.app.workspace
-      .getLeavesOfType(CURRICULUM_OPS_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is CurriculumOpsView => view instanceof CurriculumOpsView);
-    const todayViews = this.app.workspace
-      .getLeavesOfType(TODAY_VIEW_TYPE)
-      .map((leaf) => leaf.view)
-      .filter((view): view is TodayView => view instanceof TodayView);
-    const inspectorViews = [
-      ...this.app.workspace.getLeavesOfType(STUDENT_INSPECTOR_VIEW_TYPE),
-      ...this.app.workspace.getLeavesOfType(LESSON_INSPECTOR_VIEW_TYPE)
-    ]
-      .map((leaf) => leaf.view)
-      .filter(
-        (view): view is StudentInspectorView | LessonInspectorView =>
-          view instanceof StudentInspectorView || view instanceof LessonInspectorView
-      );
-    await Promise.all([
-      ...todayViews.map((view) => view.refresh()),
-      ...inspectorViews.map((view) => view.refresh()),
-      ...opsViews.map((view) => view.refresh()),
-      ...activityViews.map((view) => view.refresh()),
-      ...timelineViews.map((view) => view.refresh()),
-      ...calendarViews.map((view) => view.refresh()),
-      ...taskViews.map((view) => view.refresh()),
-      ...routineViews.map((view) => view.refresh()),
-      ...curriculumViews.map((view) => view.refresh()),
-      ...reportViews.map((view) => view.refresh()),
-      ...dataViews.map((view) => view.refresh()),
-      ...maintenanceViews.map((view) => view.refresh())
-    ]);
+    // 레지스트리의 열린 뷰 중 refresh()를 가진 것만 다시 그린다(내비게이터는 자체 이벤트로 갱신).
+    const views = MANAGED_VIEWS.flatMap((spec) =>
+      this.app.workspace.getLeavesOfType(spec.type).map((leaf) => leaf.view)
+    ).filter(
+      (view): view is ItemView & { refresh(): Promise<void> } =>
+        typeof (view as { refresh?: unknown }).refresh === "function"
+    );
+    await Promise.all(views.map((view) => view.refresh()));
   }
 }

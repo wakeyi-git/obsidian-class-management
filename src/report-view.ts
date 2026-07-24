@@ -1,6 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
-import { addOption, filterLabel } from "@core/dom";
-import { createAiDraft } from "@core/ai-collaboration";
+import { addOption, filterLabel } from "./dom";
 import type ClassManagementPlugin from "./main";
 import {
   analyzeActivities,
@@ -313,9 +312,7 @@ export class ReportView extends ItemView {
       new Notice("초안을 만들 학생을 선택해 주세요.");
       return;
     }
-    const file = await createAiDraft(
-      this.app,
-      this.plugin.settings,
+    const file = await this.plugin.repository.createAiDraft(
       student,
       this.activities,
       kind,
@@ -348,9 +345,7 @@ export class ReportView extends ItemView {
       async (areas) => {
         const files = [];
         for (const area of areas) {
-          files.push(await createAiDraft(
-            this.app,
-            this.plugin.settings,
+          files.push(await this.plugin.repository.createAiDraft(
             student,
             this.activities,
             "school-record",

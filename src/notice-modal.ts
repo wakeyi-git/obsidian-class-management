@@ -1,5 +1,5 @@
 import { App, ButtonComponent, Modal, Notice, Setting, SuggestModal, TFile } from "obsidian";
-import { addOption } from "@core/dom";
+import { addOption } from "./dom";
 import { NOTICE_STATUSES } from "@core/notice";
 import type {
   NoticeMark,

@@ -5,11 +5,13 @@ import { loadTypeScriptModule } from "./helpers.mjs";
 const {
   auditCurriculumAlignment,
   auditConceptInquiryDesign,
+  createCurriculumId,
   curriculumLessonMarkdown,
   curriculumUnitMarkdown,
   createConceptInquiryStrand,
   emptyCurriculumLesson,
   emptyCurriculumUnit,
+  mergeManualSections,
   parseCurriculumLesson,
   parseCurriculumUnit,
   taughtHoursForUnit
@@ -258,4 +260,45 @@ test("전량 이관 단원의 plannedHours 0이 왕복 보존된다", () => {
     markdown
   );
   assert.equal(missing.plannedHours, 1);
+});
+
+test("createCurriculumId는 시각·엔트로피를 주입할 수 있다", () => {
+  assert.equal(createCurriculumId("unit", 1234, "abcdef"), "unit-1234-abcdef");
+  assert.match(createCurriculumId("lesson"), /^lesson-\d+-[a-z0-9]+$/);
+});
+
+test("mergeManualSections는 스캐폴드에 없는 절을 보존한다", () => {
+  const unit = emptyCurriculumUnit(curriculumSettings);
+  unit.unitName = "분수의 의미";
+  const generated = curriculumUnitMarkdown(unit, curriculumSettings);
+  const current = `${generated}\n## 교사 메모\n\n- 3반은 모형 자료 부족\n\n## 다음 학기 개선\n\n- 차시 순서 조정\n`;
+
+  const merged = mergeManualSections(generated, current);
+  assert.match(merged, /## 교사 메모\n\n- 3반은 모형 자료 부족/);
+  assert.match(merged, /## 다음 학기 개선\n\n- 차시 순서 조정/);
+  // 절 순서 보존
+  assert.ok(merged.indexOf("교사 메모") < merged.indexOf("다음 학기 개선"));
+});
+
+test("mergeManualSections는 수동 절이 없으면 스캐폴드를 그대로 반환하고 재실행에 안정적이다", () => {
+  const unit = emptyCurriculumUnit(curriculumSettings);
+  unit.unitName = "안정성";
+  const generated = curriculumUnitMarkdown(unit, curriculumSettings);
+  assert.equal(mergeManualSections(generated, generated), generated);
+
+  const withManual = `${generated}\n## 교사 메모\n\n- 유지\n`;
+  const once = mergeManualSections(generated, withManual);
+  const twice = mergeManualSections(generated, once);
+  assert.equal(twice, once);
+});
+
+test("mergeManualSections는 관리 절의 내용은 스캐폴드 값으로 되돌린다", () => {
+  const unit = emptyCurriculumUnit(curriculumSettings);
+  unit.unitName = "관리 절";
+  unit.feedbackPlan = "주 1회 피드백";
+  const generated = curriculumUnitMarkdown(unit, curriculumSettings);
+  const edited = generated.replace("주 1회 피드백", "손으로 바꾼 값");
+  const merged = mergeManualSections(generated, edited);
+  assert.match(merged, /주 1회 피드백/);
+  assert.doesNotMatch(merged, /손으로 바꾼 값/);
 });

@@ -15,7 +15,7 @@ import {
   sectionTableRows,
   weekdayIndex
 } from "./academic-calendar";
-import { escapeTableCell, splitMarkdownTableRow, unescapeTableCell, yamlString } from "./utils";
+import { escapeTableCell, splitMarkdownTableRow, stringValue, unescapeTableCell, yamlString } from "./utils";
 
 const WEEKDAY_HEADERS = ["월", "화", "수", "목", "금"] as const;
 
@@ -352,6 +352,3 @@ function addDaysLocal(date: string, days: number): string {
   return `${resultYear}-${resultMonth}-${resultDay}`;
 }
 
-function stringValue(value: unknown): string {
-  return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
-}

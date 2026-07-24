@@ -8,7 +8,7 @@ import type {
 } from "./types";
 import { sectionTableRows, semesterRange } from "./academic-calendar";
 import { subjectSlots } from "./timetable";
-import { escapeTableCell, splitMarkdownTableRow, yamlString } from "./utils";
+import { escapeTableCell, splitMarkdownTableRow, stringValue, yamlString } from "./utils";
 import type { AcademicCalendar, BaseTimetable } from "./types";
 
 export const PROGRESS_TABLE_HEADER =
@@ -445,6 +445,3 @@ export function buildAssignedSlotContents(
   return contents;
 }
 
-function stringValue(value: unknown): string {
-  return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
-}

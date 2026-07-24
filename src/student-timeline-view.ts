@@ -1,5 +1,5 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
-import { addOption } from "@core/dom";
+import { addOption } from "./dom";
 import { ACTIVITY_KIND_LABELS, filterActivities } from "@core/activity";
 import type ClassManagementPlugin from "./main";
 import type { ActivityEntry, ActivityKind, StudentEntry } from "@core/types";

@@ -1,5 +1,5 @@
 import { Modal, Notice, Setting } from "obsidian";
-import { aiSetupPaths, setupAiWorkspace } from "@core/ai-collaboration";
+import { aiSetupPaths } from "@core/ai-collaboration";
 import type ClassManagementPlugin from "./main";
 
 export class AiSetupModal extends Modal {
@@ -65,7 +65,7 @@ export class AiSetupModal extends Modal {
       .split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
     await this.plugin.saveSettings();
     try {
-      const result = await setupAiWorkspace(this.app, this.plugin.settings);
+      const result = await this.plugin.repository.setupAiWorkspace();
       new Notice(`AI 협업 준비 완료 · 생성 ${result.created.length}개 · 기존 유지 ${result.skipped.length}개`);
       this.close();
     } catch (error) {

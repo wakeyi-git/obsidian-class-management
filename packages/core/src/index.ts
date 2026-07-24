@@ -7,7 +7,6 @@ export * from "./attendance";
 export * from "./calendar";
 export * from "./csv";
 export * from "./curriculum";
-export * from "./dom";
 export * from "./entity-notes";
 export * from "./hours-audit";
 export * from "./migration";

@@ -1,6 +1,6 @@
 # UI/UX 원칙
 
-> 마지막 갱신: 2026-07-22 (v1.23.0) · 새 기능·수정은 이 원칙에 맞춘다. 원칙과 코드가 어긋나면 §7 백로그에 기록하고 릴리스 단위로 해소한다.
+> 마지막 갱신: 2026-07-24 (v1.44.0) · 새 기능·수정은 이 원칙에 맞춘다. 원칙과 코드가 어긋나면 §7 백로그에 기록하고 릴리스 단위로 해소한다.
 
 ## 1. 상호작용 규약
 
@@ -78,3 +78,17 @@
 - [x] ○ 수동 작성 수업일지의 진도표 비고 역링크 (2026-07-22 완료 — `수업일지 진도표 역링크 채우기` 명령, 교시 일치 우선·멱등)
 - [x] ○ 진도표 열 헤더 "통합 단원" → **"프로젝트"** (2026-07-22 완료 — 헤더 이름 해석이 구명도 계속 읽음, 볼트 25개 백업 후 이행·왕복 검증 0 불일치)
 - [x] ◐ 볼트 AGENTS.md·저장소 CLAUDE.md에 §6-1 LLM 협업 규약 동기화 (2026-07-22 완료 — 볼트는 모드 A/B 이원 구조)
+- [x] ★ 전체 재작성 쓰기의 시점 경합 제거(§5 보존 원칙) — 진도표 5개 쓰기와 단원·수업일지 갱신을 `vault.modify` 전체 덮어쓰기에서 쓰기 시점 재파싱(`vault.process`)으로 전환, 단원·수업일지의 스캐폴드 밖 수동 절 보존(`mergeManualSections`) (2026-07-24 완료 — 전체 검토 발견 1위)
+- [x] ◐ 코어 순수성 실질화(§6) — `dom.ts`를 `src/`로 이동, AI 협업 볼트 IO(`setupAiWorkspace`·`createAiDraft`)를 repository로 이관, 가드 테스트를 소스 전체 스캔으로 강화(다중 행 import·export-from·동적 import·DOM/볼트 런타임 토큰 금지) (2026-07-24 완료)
+- [x] ◐ 뷰 레지스트리 단일화 — 등록 16종·볼트 변경 갱신을 `MANAGED_VIEWS` 하나로, `onunload` leaf detach 제거(옵시디언 가이드라인·6종 누락 해소), 시작 타이머 정리 등록 (2026-07-24 완료)
+- [x] ○ 코어 사각지대 테스트 — `entity-notes`(Bases 정의)·`utils` 직접 테스트, `stringValue` 4벌 통합(trim 일원화), `studentNameFromCell` 손편집 일반 파이프 별칭 허용, `createCurriculumId` 주입 가능화, ActivityIndex 빌드 중 무효화 세대 가드 (2026-07-24 완료 — 총 135개)
+
+2026-07-24 전체 검토에서 발견한 미착수 항목:
+
+- [ ] ◐ `main.ts` 분해 2단계 — 명령 등록(42개)·설정 이행·도메인 플로(진도 배정·주간안내·성취기준·raw 스탬프)를 서비스 모듈로 추출 (현재 약 2,000줄; 뷰 레지스트리는 1.44.0 완료)
+- [ ] ◐ `maintenance.ts`의 볼트 IO(백업·복구·레거시 이행)를 repository로 이관 — §6 "볼트 IO는 repository로만"의 잔여 위반(직접 vault 호출 7곳, `ensureFolder` 중복)
+- [ ] ◐ ESLint(typescript-eslint) 도입 — 미사용 임포트·floating promise 가드 (ENHANCEMENT_PLAN 1단계의 "보류" 재평가)
+- [ ] ○ 전역 무효화 → 부분 갱신 — 현재 볼트의 모든 create/delete/metadata 변경이 열린 뷰 전부를 전체 재렌더(스크롤·표시 한도 리셋). 변경 종류별 영향 뷰만 갱신하고, 시간표·시수 뷰 주 이동 시 학기 데이터 캐시
+- [ ] ○ 파서 판별자 자기검증 통일 — `parseProgressTable`·`parseAcademicCalendar`·`parseBaseTimetable`·`parseHoursStandard`도 kind 확인 후 파싱(현재 단원·수업일지·근거 파서만 자기검증)
+- [ ] ○ frontmatter kind 22종을 `NoteKind` 유니언 상수로 단일화(core/types) — 현재 각 직렬화기에 문자열 산재
+- [ ] ○ 저장소 최종 경로 조립에 `normalizePath` 적용, terminology 가드의 문자열 연결 우회 보완, 진도표 구분행 선행 시 헤더 오분류 방지

@@ -1,4 +1,4 @@
-import { registerLongPress } from "@core/dom";
+import { registerLongPress } from "./dom";
 import { ItemView, TFile, WorkspaceLeaf } from "obsidian";
 import { showTimetableCellMenu, type TimetableCellContext } from "./timetable-cell-modal";
 import {
