@@ -532,11 +532,26 @@ export class CurriculumOpsView extends ItemView {
       }
     }
 
+    // 이번 주(월~금) 편성 — 행사·수업 변경이 반영된 실제 시간표 기준. 방학 주는 전부 0(—)이 된다.
+    const weekSemester = semesterForDate(calendar, today);
+    const weekTimetable = weekSemester ? timetables[weekSemester] ?? null : null;
+    const weekStart = mondayOf(today);
+    const weekHours: Record<string, number> = weekTimetable
+      ? plannedHoursBySubject(calendar, weekTimetable, weekStart, addDays(weekStart, 4))
+      : {};
+
     section.createEl("p", {
       cls: "class-management-ops-hint",
-      text: "실행은 오늘까지 시간표 기준으로 운영된 시수입니다. 학기별 기준은 기준 시수 노트의 1학기·2학기 열, 학년 기준·증감·상태는 학년 열(비면 1·2학기 합) 기준입니다."
+      text: "이번 주는 이번 주 월~금의 편성 시수(행사·변경 반영), 실행은 오늘까지 시간표 기준으로 운영된 시수입니다. 학기별 기준은 기준 시수 노트의 1학기·2학기 열, 학년 기준·증감·상태는 학년 열(비면 1·2학기 합) 기준입니다."
     });
     const rows = buildHoursAudit(standard, semesterHours["1학기"], semesterHours["2학기"]);
+    const weekOf = (row: HoursAuditRow): number => {
+      if (row.kind === "subject") return weekHours[row.subject] ?? 0;
+      const members = rows.filter(
+        (item) => item.kind === "subject" && (row.kind === "total" || item.category === row.category)
+      );
+      return members.reduce((sum, item) => sum + (weekHours[item.subject] ?? 0), 0);
+    };
     if (missingSemesters.length > 0) {
       section.createEl("p", {
         cls: "class-management-ops-hint",
@@ -548,12 +563,13 @@ export class CurriculumOpsView extends ItemView {
     const head = table.createEl("thead");
     const groupRow = head.createEl("tr");
     groupRow.createEl("th", { text: "" });
+    groupRow.createEl("th", { text: "" });
     for (const label of ["1학기", "2학기", "학년"]) {
       groupRow.createEl("th", { text: label, attr: { colspan: "3" }, cls: "is-group" });
     }
     groupRow.createEl("th", { text: "", attr: { colspan: "2" } });
     const headRow = head.createEl("tr");
-    for (const label of ["교과·영역", "기준", "편성", "실행", "기준", "편성", "실행", "기준", "편성", "실행", "증감", "상태"]) {
+    for (const label of ["교과·영역", "이번 주", "기준", "편성", "실행", "기준", "편성", "실행", "기준", "편성", "실행", "증감", "상태"]) {
       headRow.createEl("th", { text: label });
     }
     const dash = (value: number): string => (value > 0 ? String(value) : "—");
@@ -561,6 +577,7 @@ export class CurriculumOpsView extends ItemView {
     for (const row of rows) {
       const line = body.createEl("tr", { cls: `is-${row.status} is-${row.kind}` });
       line.createEl("td", { text: row.subject });
+      line.createEl("td", { text: dash(weekOf(row)) });
       line.createEl("td", { text: dash(row.standard1) });
       line.createEl("td", { text: String(row.planned1) });
       line.createEl("td", { text: String(row.taught1) });
