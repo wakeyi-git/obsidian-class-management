@@ -37,23 +37,48 @@ export class ActivityIndex {
 
   private async build(): Promise<ActivityEntry[]> {
     const visited = new Set<string>();
-    const [records, attendance, assignments, tasks, notices, routines, curriculum] = await Promise.all([
+    const [records, attendance, assignments, tasks, notices, routines, curriculum, workJournals] = await Promise.all([
       this.buildRecords(visited),
       this.buildAttendance(visited),
       this.buildAssignments(visited),
       this.buildTasks(visited),
       this.buildNotices(visited),
       this.buildRoutines(visited),
-      this.buildCurriculumLessons(visited)
+      this.buildCurriculumLessons(visited),
+      this.buildWorkJournals(visited)
     ]);
     // 이번 빌드에서 안 쓰인 파일(삭제·이동·프로필 전환)은 증분 캐시에서 걷어낸다.
     for (const path of [...this.fileCache.keys()]) {
       if (!visited.has(path)) this.fileCache.delete(path);
     }
 
-    return [...records, ...attendance, ...assignments, ...tasks, ...notices, ...routines, ...curriculum].sort(
+    return [...records, ...attendance, ...assignments, ...tasks, ...notices, ...routines, ...curriculum, ...workJournals].sort(
       (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt
     );
+  }
+
+  private async buildWorkJournals(visited: Set<string>): Promise<ActivityEntry[]> {
+    const journals = this.repository.getWorkJournals();
+    const groups = await mapWithConcurrency(journals, 8, ({ file, date }) =>
+      this.memoized(file, visited, async () => {
+        const content = await this.app.vault.cachedRead(file);
+        const detail = extractSection(content, "기록");
+        return [{
+          id: file.path,
+          file,
+          date,
+          studentNumber: "",
+          studentName: "",
+          kind: "work-journal" as const,
+          title: "업무일지",
+          status: "",
+          detail,
+          searchText: activitySearchText(file, [date, "업무일지", detail, content]),
+          createdAt: file.stat.ctime
+        }];
+      })
+    );
+    return groups.flat();
   }
 
   /** mtime이 같으면 캐시 항목을 재사용하고, 다르면 다시 계산한다 — 재빌드 비용을 변경 파일로 한정. */

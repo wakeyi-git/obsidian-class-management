@@ -31,7 +31,8 @@ export function analyzeActivities(activities: ActivityEntry[]): ActivityAnalytic
     task: 0,
     notice: 0,
     routine: 0,
-    curriculum: 0
+    curriculum: 0,
+    "work-journal": 0
   };
   activities.forEach((activity) => (byKind[activity.kind] += 1));
   return {

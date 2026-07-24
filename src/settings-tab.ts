@@ -155,6 +155,11 @@ export class ClassManagementSettingTab extends PluginSettingTab {
             control: { type: "text", key: "recordsFolder", placeholder: "학생 기록", validate: invalidFolderName }
           },
           {
+            name: "업무일지 폴더",
+            desc: "교사 업무의 날짜별 기록(하루 1노트)을 담습니다.",
+            control: { type: "text", key: "workJournalFolder", placeholder: "업무일지", validate: invalidFolderName }
+          },
+          {
             name: "출결 폴더",
             desc: "날짜별 출결부를 담습니다.",
             control: { type: "text", key: "attendanceFolder", placeholder: "출결", validate: invalidFolderName }

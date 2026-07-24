@@ -365,6 +365,15 @@ class CalendarDateActionModal extends Modal {
           void this.plugin.openRoutines(this.date);
         })
       );
+    new Setting(this.contentEl)
+      .setName("업무일지")
+      .setDesc("선택한 날짜의 업무일지를 씁니다 (없으면 만들어 엽니다).")
+      .addButton((button) =>
+        button.setButtonText("쓰기").onClick(() => {
+          this.close();
+          void this.plugin.openWorkJournal(this.date);
+        })
+      );
   }
 }
 

@@ -1274,6 +1274,10 @@
   background: var(--color-cyan);
 }
 
+.class-management-calendar-event.is-work-journal::before {
+  background: var(--color-yellow);
+}
+
 .class-management-calendar-event strong,
 .class-management-calendar-event span {
   max-width: 100%;

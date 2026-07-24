@@ -93,6 +93,7 @@ const DEFAULT_SETTINGS: ClassManagementSettings = {
   tasksFolder: "할 일",
   noticesFolder: "가정통신문",
   routinesFolder: "루틴",
+  workJournalFolder: "업무일지",
   curriculumFolder: "교육과정",
   reportsFolder: "보고서",
   exportsFolder: "내보내기",
@@ -901,6 +902,18 @@ export default class ClassManagementPlugin extends Plugin {
       new Notice(`${task.title} 할 일을 수집했습니다.`);
       await this.refreshViews();
     }, initialDueDate).open();
+  }
+
+  /** 그날의 업무일지를 연다 — 없으면 만들어 연다(하루 1노트). */
+  async openWorkJournal(date = localDate()): Promise<void> {
+    if (!this.canWriteActiveClass()) return;
+    try {
+      const result = await this.repository.ensureWorkJournal(date);
+      if (result.created) new Notice(`${date} 업무일지를 만들었습니다.`);
+      await this.openFile(result.file);
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "업무일지를 열지 못했습니다.");
+    }
   }
 
   /** 실사용 마찰을 즉시 남기는 피드백 기록 — 날짜·버전·현재 화면을 자동 스탬프한다. */

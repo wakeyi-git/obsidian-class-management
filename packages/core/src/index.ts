@@ -27,3 +27,4 @@ export * from "./timetable";
 export * from "./types";
 export * from "./utils";
 export * from "./weekly-plan";
+export * from "./work-journal";

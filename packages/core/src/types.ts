@@ -11,6 +11,7 @@ export const NOTE_KINDS = [
   "assignment",
   "task",
   "notice",
+  "work-journal",
   "routine-template",
   "routine-instance",
   "academic-calendar",
@@ -58,6 +59,7 @@ export interface ClassManagementSettings {
   tasksFolder: string;
   noticesFolder: string;
   routinesFolder: string;
+  workJournalFolder: string;
   curriculumFolder: string;
   reportsFolder: string;
   exportsFolder: string;
@@ -186,7 +188,8 @@ export type ActivityKind =
   | "task"
   | "notice"
   | "routine"
-  | "curriculum";
+  | "curriculum"
+  | "work-journal";
 
 export interface ActivityEntry {
   id: string;

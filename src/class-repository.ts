@@ -9,6 +9,7 @@ import {
   routineRunsOn
 } from "@core/routine";
 import { nextRecurringDate, taskMarkdown } from "@core/task";
+import { workJournalMarkdown } from "@core/work-journal";
 import {
   BASES_VIEW_FILES,
   schoolEventNoteFileName,
@@ -157,6 +158,11 @@ export class ClassRepository {
   get routinesFolderPath(): string {
     const settings = this.getSettings();
     return this.vaultPath(settings.baseFolder, settings.routinesFolder);
+  }
+
+  get workJournalFolderPath(): string {
+    const settings = this.getSettings();
+    return this.vaultPath(settings.baseFolder, settings.workJournalFolder);
   }
 
   get curriculumFolderPath(): string {
@@ -993,6 +999,29 @@ export class ClassRepository {
     return this.app.vault.create(path, content);
   }
 
+  /** 그날의 업무일지를 연다 — 없으면 스캐폴드로 만든다(하루 1노트, 본문은 자유 편집). */
+  async ensureWorkJournal(date: string): Promise<{ file: TFile; created: boolean }> {
+    this.assertWritableClass();
+    await this.ensureWorkspace();
+    await this.ensureFolder(this.workJournalFolderPath);
+    const path = this.vaultPath(this.workJournalFolderPath, `${safeFileSegment(date)} 업무일지.md`);
+    const existing = this.app.vault.getAbstractFileByPath(path);
+    if (existing instanceof TFile) return { file: existing, created: false };
+    const file = await this.app.vault.create(path, workJournalMarkdown(date, this.getSettings()));
+    return { file, created: true };
+  }
+
+  /** 업무일지 목록 — 활동 색인용 (date만 읽는다). */
+  getWorkJournals(): Array<{ file: TFile; date: string }> {
+    return this.markdownFilesIn(this.workJournalFolderPath)
+      .map((file) => {
+        const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+        if (frontmatter?.["class-management"] !== "work-journal") return null;
+        return { file, date: stringValue(frontmatter.date) };
+      })
+      .filter((entry): entry is { file: TFile; date: string } => entry !== null && Boolean(entry.date));
+  }
+
   /** CoVault 이관용 파일 — 내보내기/CoVault/ 아래에 만든다(사용자가 CoVault 볼트로 복사). */
   async saveCovaultExport(title: string, content: string): Promise<TFile> {
     await this.ensureWorkspace();
@@ -1064,6 +1093,7 @@ export class ClassRepository {
       this.tasksFolderPath,
       this.noticesFolderPath,
       this.routineInstancesFolderPath,
+      this.workJournalFolderPath,
       this.curriculumLessonsFolderPath
     ];
     const cutoffTime = cutoff.getTime();
@@ -1555,6 +1585,7 @@ export class ClassRepository {
       tasks: this.tasksFolderPath,
       notices: this.noticesFolderPath,
       routines: this.routinesFolderPath,
+      workJournal: this.workJournalFolderPath,
       academicCalendar: this.academicCalendarFolderPath,
       timetable: this.timetableFolderPath,
       progress: this.progressFolderPath,

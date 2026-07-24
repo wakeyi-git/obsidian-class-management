@@ -12,6 +12,7 @@ export type VaultChangeCategory =
   | "task"
   | "notice"
   | "routine"
+  | "work-journal"
   | "calendar-hours"
   | "timetable"
   | "progress"
@@ -34,6 +35,7 @@ export interface ManagedFolders {
   tasks: string;
   notices: string;
   routines: string;
+  workJournal: string;
   academicCalendar: string;
   timetable: string;
   progress: string;
@@ -54,6 +56,7 @@ const CATEGORY_BY_FOLDER: ReadonlyArray<[keyof Omit<ManagedFolders, "base">, Vau
   ["tasks", "task"],
   ["notices", "notice"],
   ["routines", "routine"],
+  ["workJournal", "work-journal"],
   // 학사일정 폴더에는 학사일정·기준 시수 노트가 함께 산다 — 한 범주로 묶는다.
   ["academicCalendar", "calendar-hours"],
   ["timetable", "timetable"],
@@ -89,5 +92,6 @@ export const ACTIVITY_INDEX_CATEGORIES: ReadonlyArray<VaultChangeCategory> = [
   "task",
   "notice",
   "routine",
+  "work-journal",
   "curriculum-lesson"
 ];
