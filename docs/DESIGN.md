@@ -44,6 +44,8 @@ UI 코드를 쓰기 전에 반드시 다음을 수행한다.
 
 ### 화면 유형
 
+모든 중앙 뷰는 §6.5의 3층 골격(`scaffoldView`) 위에 아래 유형별 본문 구조를 얹는다.
+
 | 유형 | 기본 구조 | 참고 구현 |
 |---|---|---|
 | 시작·요약 | 헤더 → 요약 지표 → 1~2열 핵심 패널 | `src/dashboard-view.ts` |
@@ -302,19 +304,46 @@ heading.createEl("span", {
 - `100vh` 고정 높이를 피하고, 스크롤 영역에는 `max-height`를 사용한다.
 - 우클릭 동작에는 길게 누르기 또는 인스펙터 버튼이라는 터치 등가 경로가 있어야 한다.
 
+### 6.5 뷰 골격과 분할 기하 (필수)
+
+모든 중앙 뷰는 `scaffoldView()`(`src/dom.ts`)가 만드는 3층 골격을 사용해야 한다.
+
+```
+.class-management-view (루트 = contentEl · flex column · overflow hidden)
+├─ .class-management-view-header   고정 — 제목 h2 + 한 줄 설명 p + .class-management-actions
+├─ .class-management-view-toolbar  고정·선택 — 필터 바 또는 화면 전역 기간 탐색 (비면 숨김)
+└─ .class-management-view-body     유일한 스크롤러 (세로 + 넓은 내용의 가로)
+```
+
+**헤더에 넣는 것** — ① 제목 `h2`: 탭 이름(`getDisplayText`)과 동일하게 쓴다. 예외는 두 곳뿐: 대시보드(제목=학급 이름 — 뷰 자체가 학급 홈), 학생별 타임라인(제목=학생 이름 — 대상이 곧 화면). ② 설명 `p`: 결과 중심 한 문장(§7.1). 현황 요약 한 줄(예: GTD의 미결 건수)로 대신할 수 있다. ③ 행동: 화면 **전역** 행동만 0~3개, CTA는 1개. 행 단위 행동은 본문에 둔다.
+
+**툴바에 넣는 것** — 필터 바(§7.3) 또는 **화면 전역** 기간 탐색(캘린더의 ◀ 오늘 ▶·모드 전환, 루틴의 날짜 탐색). 한 섹션에만 영향을 주는 탐색(시간표·시수의 주 이동)은 툴바가 아니라 그 섹션 머리에 둔다. 헤더·툴바는 스크롤해도 고정되고, 본문 스크롤은 바디 하나뿐이다(뷰 안에 세로 스크롤러를 더 만들지 않는다).
+
+**바디 분할은 다음 네 가지만 사용한다** (임의 비율·임의 최소폭을 새로 만들지 않는다):
+
+| 분할 | 그리드 | 고정 크기 | 사용처 |
+|---|---|---|---|
+| 요약 지표 스트립 | `repeat(auto-fit, minmax(150px, 1fr))` · gap 12 | 카드 최소 150px | `class-management-summary` (대시보드·타임라인·보고서·단원) |
+| 동등 패널 | `repeat(auto-fit, minmax(280px, 1fr))` · gap 12 | 패널 최소 280px | 학급·데이터, 백업·유지관리 |
+| 주+보조 (2:1) | `minmax(0, 2fr) minmax(260px, 1fr)` — 주가 오른쪽이면 좌우 반전 | 보조 열 최소 260px, 비율은 2:1만 | 루틴(체크리스트:관리), 대시보드(명단:최근 기록은 1:2) |
+| 보드 (동등 열) | 카드 보드 `minmax(300px, 1fr)` · 조밀 보드 `minmax(190px, 1fr)` · gap 8 | 열 최소 300/190 두 값만, 넘치면 바디 가로 스크롤 | 단원 보드(4열), GTD 보드(5열·min-width 980px) |
+
+700px 이하에서는 주+보조·동등 패널이 한 열로 접히고, 보드는 가로 스크롤을 유지한다(§6.4). 상하 방향의 추가 고정 분할(고정 하단 바 등)은 만들지 않는다 — 고정층은 헤더·툴바 둘뿐이다.
+
+**사이드 패널 골격** — 오늘·인스펙터는 컴팩트 변형을 쓴다: `class-management-today-header`(큰 날짜/대상 + 상태 한 줄) 아래 평면 섹션 흐름, 단일 열, §6.2의 여백. 내비게이터는 헤더 없는 순수 목록이다.
+
 ## 7. 표준 컴포넌트
 
 ### 7.1 뷰 헤더
 
-순서는 제목, 한 줄 설명, 행동이다. 설명은 사용자가 이 화면에서 얻는 결과를 말하며 기능 목록을 나열하지 않는다.
+순서는 제목, 한 줄 설명, 행동이다. 설명은 사용자가 이 화면에서 얻는 결과를 말하며 기능 목록을 나열하지 않는다. 새 뷰는 직접 헤더 DOM을 만들지 말고 `scaffoldView()`(§6.5)를 사용한다.
 
 ```ts
-const header = container.createDiv({ cls: "class-management-view-header" });
-const heading = header.createDiv();
-heading.createEl("h2", { text: "화면 제목" });
-heading.createEl("p", { text: "이 화면에서 확인하고 완료할 일을 한 문장으로 설명합니다." });
-
-const actions = header.createDiv({ cls: "class-management-actions" });
+const { actions, toolbar, body } = scaffoldView(this.contentEl, {
+  cls: "class-management-example-view",
+  title: "화면 제목", // getDisplayText()와 동일
+  description: "이 화면에서 확인하고 완료할 일을 한 문장으로 설명합니다."
+});
 actions.createEl("button", { text: "주요 행동", cls: "mod-cta" });
 actions.createEl("button", { text: "보조 행동" });
 ```

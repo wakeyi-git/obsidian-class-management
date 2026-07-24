@@ -1,4 +1,4 @@
-import { registerLongPress } from "./dom";
+import { registerLongPress, scaffoldView } from "./dom";
 import { ItemView, TFile, WorkspaceLeaf } from "obsidian";
 import { showTimetableCellMenu, type TimetableCellContext } from "./timetable-cell-modal";
 import {
@@ -107,13 +107,12 @@ export class CurriculumOpsView extends ItemView {
   private render(): void {
     if (!this.data) return;
     const { calendar, standard, timetables, tablesBySemester } = this.data;
-    const container = this.contentEl;
-    container.empty();
-    container.addClass("class-management-ops-view");
     const settings = this.plugin.settings;
-
-    container.createEl("h2", {
-      text: `시간표·시수 · ${settings.schoolYear} ${settings.semester}`
+    this.contentEl.empty();
+    const { body: container } = scaffoldView(this.contentEl, {
+      cls: "class-management-ops-view",
+      title: "시간표·시수",
+      description: `${settings.schoolYear} ${settings.semester} · 계획 원장 상태와 주간 시간표, 시수 점검을 관리합니다.`
     });
 
     const currentTimetable = timetables[settings.semester] ?? null;

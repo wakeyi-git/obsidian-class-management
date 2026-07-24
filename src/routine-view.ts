@@ -1,4 +1,5 @@
 import { ItemView, Modal, Notice, Setting, WorkspaceLeaf } from "obsidian";
+import { scaffoldView } from "./dom";
 import { frequencyLabel } from "@core/routine";
 import { dayStatus } from "@core/academic-calendar";
 import type ClassManagementPlugin from "./main";
@@ -55,16 +56,16 @@ export class RoutineView extends ItemView {
 
   private render(templates: RoutineTemplate[], instance: RoutineInstance | null): void {
     this.contentEl.empty();
-    this.contentEl.addClass("class-management-routine-view");
-    const header = this.contentEl.createDiv({ cls: "class-management-view-header" });
-    const title = header.createDiv();
-    title.createEl("h2", { text: "루틴 체크리스트" });
-    title.createEl("p", { text: "일간·주간·월간 반복 업무를 날짜별 체크리스트로 보존합니다." });
-    const newButton = header.createEl("button", { text: "루틴 만들기", cls: "mod-cta" });
+    const { actions, toolbar, body } = scaffoldView(this.contentEl, {
+      cls: "class-management-routine-view",
+      title: "루틴 체크리스트",
+      description: "일간·주간·월간 반복 업무를 날짜별 체크리스트로 보존합니다."
+    });
+    const newButton = actions.createEl("button", { text: "루틴 만들기", cls: "mod-cta" });
     newButton.disabled = this.plugin.activeClassProfile.archived;
     newButton.addEventListener("click", () => new RoutineTemplateModal(this.plugin, () => void this.refresh()).open());
 
-    const navigation = this.contentEl.createDiv({ cls: "class-management-routine-navigation" });
+    const navigation = toolbar.createDiv({ cls: "class-management-routine-navigation" });
     const previous = navigation.createEl("button", { text: "‹", attr: { "aria-label": "이전 날짜" } });
     previous.addEventListener("click", () => void this.moveDate(-1));
     const dateInput = navigation.createEl("input");
@@ -84,7 +85,7 @@ export class RoutineView extends ItemView {
     const next = navigation.createEl("button", { text: "›", attr: { "aria-label": "다음 날짜" } });
     next.addEventListener("click", () => void this.moveDate(1));
 
-    const layout = this.contentEl.createDiv({ cls: "class-management-routine-layout" });
+    const layout = body.createDiv({ cls: "class-management-routine-layout" });
     const checklist = layout.createDiv({ cls: "class-management-panel" });
     checklist.createEl("h3", { text: `${this.date} 체크리스트` });
     if (templates.length === 0) {

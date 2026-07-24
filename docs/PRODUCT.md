@@ -1,6 +1,6 @@
 # Classroom Manager 제품 정의서
 
-> 마지막 갱신: 2026-07-24 (v1.49.0) · 이 문서는 구현된 코드를 근거로 작성된 사실 기술이며, 새 기능은 이 문서와 [UIUX-PRINCIPLES.md](UIUX-PRINCIPLES.md)에 맞춰 설계한다.
+> 마지막 갱신: 2026-07-24 (v1.50.0) · 이 문서는 구현된 코드를 근거로 작성된 사실 기술이며, 새 기능은 이 문서와 [UIUX-PRINCIPLES.md](UIUX-PRINCIPLES.md)에 맞춰 설계한다.
 
 ## 1. 한 줄 정의
 

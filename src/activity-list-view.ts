@@ -1,5 +1,5 @@
 import { App, ItemView, Modal, Notice, Setting, WorkspaceLeaf } from "obsidian";
-import { addOption, filterLabel } from "./dom";
+import { addOption, filterLabel, scaffoldView, type ViewScaffold } from "./dom";
 import {
   ACTIVITY_KIND_LABELS,
   EMPTY_ACTIVITY_FILTERS,
@@ -18,6 +18,7 @@ import type {
 export const ACTIVITY_LIST_VIEW_TYPE = "class-management-activity-list";
 
 export class ActivityListView extends ItemView {
+  private layout?: ViewScaffold;
   private activities: ActivityEntry[] = [];
   private filters: ActivityListFilters;
   private resultsEl?: HTMLElement;
@@ -63,16 +64,15 @@ export class ActivityListView extends ItemView {
   }
 
   async refresh(): Promise<void> {
-    // 볼트 변경 재렌더 시 읽던 위치를 보존한다(§7 부분 갱신 — 전체 재구성이어도 스크롤은 유지).
-    const scrollTop = this.contentEl.scrollTop;
+    // 볼트 변경 재렌더 시 읽던 위치를 보존한다(§7 부분 갱신 — 스크롤러는 골격 바디다).
+    const scrollTop = this.layout?.body.scrollTop ?? 0;
     this.contentEl.empty();
-    this.contentEl.addClass("class-management-activity-view");
     this.contentEl.createEl("p", { text: "데이터를 불러오고 있습니다…" });
 
     try {
       this.activities = await this.plugin.activityIndex.getEntries();
       this.renderLayout();
-      this.contentEl.scrollTop = scrollTop;
+      if (this.layout) this.layout.body.scrollTop = scrollTop;
     } catch (error) {
       this.contentEl.empty();
       this.contentEl.createEl("p", {
@@ -85,13 +85,12 @@ export class ActivityListView extends ItemView {
   private renderLayout(): void {
     // displayLimit은 여기서 되돌리지 않는다 — 볼트 변경 재렌더가 "더 보기"로 늘린 표시 범위를 잃지 않게.
     this.contentEl.empty();
-    const header = this.contentEl.createDiv({ cls: "class-management-view-heading" });
-    const headingText = header.createDiv();
-    headingText.createEl("h2", { text: "학급 통합 목록" });
-    headingText.createEl("p", {
-      text: "학생 기록과 출결, 과제, 할 일, 회신, 루틴을 검색하고 조건별로 모아봅니다."
+    this.layout = scaffoldView(this.contentEl, {
+      cls: "class-management-activity-view",
+      title: "학급 통합 목록",
+      description: "학생 기록과 출결, 과제, 할 일, 회신, 루틴을 검색하고 조건별로 모아봅니다."
     });
-    const actions = header.createDiv({ cls: "class-management-view-actions" });
+    const actions = this.layout.actions;
     const savedViews = actions.createEl("select");
     addOption(savedViews, "", "저장된 보기");
     this.plugin.settings.savedActivityViews.forEach((view) =>
@@ -180,7 +179,7 @@ export class ActivityListView extends ItemView {
       new StaleStudentsModal(this.plugin, this.activities).open()
     );
 
-    const controls = this.contentEl.createDiv({ cls: "class-management-filter-bar" });
+    const controls = this.layout.toolbar.createDiv({ cls: "class-management-filter-bar" });
     this.renderSearchControl(controls);
     this.renderStudentControl(controls);
     this.renderKindControl(controls);
@@ -188,7 +187,7 @@ export class ActivityListView extends ItemView {
     this.renderDateControl(controls, "시작일", "dateFrom");
     this.renderDateControl(controls, "종료일", "dateTo");
 
-    this.resultsEl = this.contentEl.createDiv({ cls: "class-management-activity-results" });
+    this.resultsEl = this.layout.body.createDiv({ cls: "class-management-activity-results" });
     this.renderResults();
   }
 

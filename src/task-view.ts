@@ -1,5 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
-import { addOption, filterLabel } from "./dom";
+import { addOption, filterLabel, scaffoldView, type ViewScaffold } from "./dom";
 import type ClassManagementPlugin from "./main";
 import { taskRecurrenceLabel } from "@core/task";
 import type { NoticeSheet, TaskEntry, TaskStatus,
@@ -17,6 +17,7 @@ const TASK_COLUMNS: Array<{ status: TaskStatus; label: string }> = [
 ];
 
 export class TaskView extends ItemView {
+  private layout!: ViewScaffold;
   private query = "";
   private project = "";
   private context = "";
@@ -65,17 +66,17 @@ export class TaskView extends ItemView {
 
   private render(tasks: TaskEntry[], notices: NoticeSheet[]): void {
     this.contentEl.empty();
-    this.contentEl.addClass("class-management-task-view");
-    const header = this.contentEl.createDiv({ cls: "class-management-view-header" });
-    const title = header.createDiv();
-    title.createEl("h2", { text: "GTD 할 일" });
-    title.createEl("p", { text: this.reviewSummary(tasks, notices) });
-    const add = header.createEl("button", { text: "할 일 수집", cls: "mod-cta" });
+    this.layout = scaffoldView(this.contentEl, {
+      cls: "class-management-task-view",
+      title: "GTD 할 일",
+      description: this.reviewSummary(tasks, notices)
+    });
+    const add = this.layout.actions.createEl("button", { text: "할 일 수집", cls: "mod-cta" });
     add.addEventListener("click", () => this.plugin.openTaskModal());
 
     if (this.todayRoutine && this.todayRoutine.items.length > 0) {
       const done = this.todayRoutine.items.filter((item) => item.completed).length;
-      const routineLine = this.contentEl.createDiv({ cls: "class-management-today-item is-static class-management-task-routine" });
+      const routineLine = this.layout.body.createDiv({ cls: "class-management-today-item is-static class-management-task-routine" });
       routineLine.createSpan({ text: "루틴", cls: "class-management-today-badge" });
       routineLine.createSpan({ text: `오늘 ${done}/${this.todayRoutine.items.length} 완료` });
       const open = routineLine.createEl("button", { text: "루틴 열기" });
@@ -83,7 +84,7 @@ export class TaskView extends ItemView {
     }
     this.renderFilters(tasks, notices);
     // 필터 변경 시 입력창(한글 조합·포커스)을 보존하려고 보드 영역만 다시 그린다.
-    this.boardHost = this.contentEl.createDiv();
+    this.boardHost = this.layout.body.createDiv();
     this.data = { tasks, notices };
     this.renderBoard();
   }
@@ -134,7 +135,7 @@ export class TaskView extends ItemView {
   }
 
   private renderFilters(tasks: TaskEntry[], _notices: NoticeSheet[]): void {
-    const filters = this.contentEl.createDiv({ cls: "class-management-filter-bar" });
+    const filters = this.layout.toolbar.createDiv({ cls: "class-management-filter-bar" });
     const searchLabel = filterLabel(filters, "검색");
     const search = searchLabel.createEl("input", { attr: { placeholder: "예: 상담 준비" } });
     search.type = "search";

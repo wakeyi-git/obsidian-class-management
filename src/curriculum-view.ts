@@ -9,7 +9,7 @@ import {
   taughtHoursForUnit
 } from "@core/curriculum";
 import { localDate } from "@core/utils";
-import { filterLabel } from "./dom";
+import { filterLabel, scaffoldView } from "./dom";
 import type ClassManagementPlugin from "./main";
 import type { CurriculumLesson, CurriculumUnit, CurriculumUnitStatus, RecordEntry } from "@core/types";
 
@@ -50,17 +50,24 @@ export class CurriculumView extends ItemView {
   async refresh(): Promise<void> {
     const container = this.contentEl;
     container.empty();
-    container.addClass("class-management-curriculum-view");
+    const { actions, toolbar, body } = scaffoldView(container, {
+      cls: "class-management-curriculum-view",
+      title: "단원 설계 및 운영",
+      description: `${this.plugin.settings.grade}학년 ${this.plugin.settings.semester} · 성취기준에서 시작해 수업과 과정중심 평가, 학생별 기록까지 연결합니다.`
+    });
+    const newButton = actions.createEl("button", { text: "새 단원 설계", cls: "mod-cta" });
+    newButton.addEventListener("click", () => this.plugin.openCurriculumUnitModal());
+    const reportButton = actions.createEl("button", { text: "분석·보고서" });
+    reportButton.addEventListener("click", () => void this.plugin.openReports());
     const units = this.plugin.repository.getCurriculumUnits();
     const lessons = this.plugin.repository.getCurriculumLessons();
     const records = this.plugin.repository.getRecords();
 
-    this.renderHeader(container);
-    this.renderSummary(container, units, lessons, records);
-    this.renderCycle(container, units);
-    this.renderFilters(container);
+    this.renderSummary(body, units, lessons, records);
+    this.renderCycle(body, units);
+    this.renderFilters(toolbar);
     // 필터 변경 시 입력창(한글 조합·포커스)을 보존하려고 보드 영역만 다시 그린다.
-    this.boardHost = container.createDiv();
+    this.boardHost = body.createDiv();
     this.data = { units, lessons, records };
     this.renderBoard();
   }
@@ -81,20 +88,6 @@ export class CurriculumView extends ItemView {
           .includes(this.query.trim().toLocaleLowerCase("ko")))
     );
     this.renderUnits(container, filtered, lessons, records);
-  }
-
-  private renderHeader(container: HTMLElement): void {
-    const header = container.createDiv({ cls: "class-management-header" });
-    const heading = header.createDiv();
-    heading.createEl("h2", { text: "교육과정-수업-평가-기록" });
-    heading.createEl("p", {
-      text: `${this.plugin.settings.grade}학년 ${this.plugin.settings.semester} · 성취기준에서 시작해 수업과 과정중심 평가, 학생별 기록까지 연결합니다.`
-    });
-    const actions = header.createDiv({ cls: "class-management-actions" });
-    const newButton = actions.createEl("button", { text: "새 단원 설계", cls: "mod-cta" });
-    newButton.addEventListener("click", () => this.plugin.openCurriculumUnitModal());
-    const reportButton = actions.createEl("button", { text: "분석·보고서" });
-    reportButton.addEventListener("click", () => void this.plugin.openReports());
   }
 
   private renderSummary(

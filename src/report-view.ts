@@ -1,5 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
-import { addOption, filterLabel } from "./dom";
+import { addOption, filterLabel, scaffoldView, type ViewScaffold } from "./dom";
 import type ClassManagementPlugin from "./main";
 import {
   analyzeActivities,
@@ -26,6 +26,7 @@ export const REPORT_VIEW_TYPE = "class-management-report-view";
 
 export class ReportView extends ItemView {
   private activities: ActivityEntry[] = [];
+  private layout!: ViewScaffold;
   private options: ReportOptions = {
     title: "학급 운영 월간 보고서",
     dateFrom: monthStart(),
@@ -63,12 +64,12 @@ export class ReportView extends ItemView {
 
   private render(): void {
     this.contentEl.empty();
-    this.contentEl.addClass("class-management-report-view");
-    const header = this.contentEl.createDiv({ cls: "class-management-view-header" });
-    const title = header.createDiv();
-    title.createEl("h2", { text: "분석과 보고서" });
-    title.createEl("p", { text: "기간과 학생을 선택해 현황을 집계하고 근거 링크가 포함된 검토 자료를 만듭니다." });
-    const aiSetup = header.createEl("button", { text: "AI 협업 설정" });
+    this.layout = scaffoldView(this.contentEl, {
+      cls: "class-management-report-view",
+      title: "분석과 보고서",
+      description: "기간과 학생을 선택해 현황을 집계하고 근거 링크가 포함된 검토 자료를 만듭니다."
+    });
+    const aiSetup = this.layout.actions.createEl("button", { text: "AI 협업 설정" });
     aiSetup.addEventListener("click", () => this.plugin.openAiSetup());
 
     this.renderFilters();
@@ -80,7 +81,7 @@ export class ReportView extends ItemView {
   }
 
   private renderFilters(): void {
-    const filters = this.contentEl.createDiv({ cls: "class-management-filter-bar" });
+    const filters = this.layout.toolbar.createDiv({ cls: "class-management-filter-bar" });
     const title = filterLabel(filters, "보고서 제목").createEl("input");
     title.value = this.options.title;
     title.addEventListener("input", () => (this.options.title = title.value));
@@ -117,7 +118,7 @@ export class ReportView extends ItemView {
 
   private renderAnalytics(activities: ActivityEntry[]): void {
     const analytics = analyzeActivities(activities);
-    const cards = this.contentEl.createDiv({ cls: "class-management-summary" });
+    const cards = this.layout.body.createDiv({ cls: "class-management-summary" });
     [
       ["전체 자료", `${analytics.total}건`],
       ["출결 예외", `${analytics.attendanceExceptions}건`],
@@ -133,7 +134,7 @@ export class ReportView extends ItemView {
   }
 
   private renderActions(activities: ActivityEntry[]): void {
-    const actions = this.contentEl.createDiv({ cls: "class-management-report-actions" });
+    const actions = this.layout.body.createDiv({ cls: "class-management-report-actions" });
     const markdown = actions.createEl("button", { text: "Markdown 보고서 저장", cls: "mod-cta" });
     markdown.addEventListener("click", () => void this.saveMarkdown());
     const csv = actions.createEl("button", { text: "현재 자료 CSV 내보내기" });
@@ -150,7 +151,7 @@ export class ReportView extends ItemView {
   }
 
   private renderPreview(activities: ActivityEntry[]): void {
-    const panel = this.contentEl.createDiv({ cls: "class-management-panel" });
+    const panel = this.layout.body.createDiv({ cls: "class-management-panel" });
     panel.createEl("h3", { text: `선택 자료 미리보기 ${activities.length}건` });
     if (activities.length === 0) {
       panel.createEl("p", { text: "선택한 조건에 맞는 자료가 없습니다." });
@@ -183,7 +184,7 @@ export class ReportView extends ItemView {
       ),
       normalizeSubjects(this.plugin.settings)
     );
-    const panel = this.contentEl.createDiv({ cls: "class-management-panel class-management-coverage-panel" });
+    const panel = this.layout.body.createDiv({ cls: "class-management-panel class-management-coverage-panel" });
     const heading = panel.createDiv({ cls: "class-management-coverage-heading" });
     const text = heading.createDiv();
     text.createEl("h3", { text: "학교생활기록부 근거 누락 점검" });

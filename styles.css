@@ -1,12 +1,10 @@
 .class-management-dashboard {
   --class-management-card-border: color-mix(in srgb, var(--background-modifier-border) 82%, transparent);
-  padding: 24px;
   background: var(--background-primary);
 }
 
 /* Curriculum-instruction-assessment-record integration */
 .class-management-curriculum-view {
-  padding: 24px;
   background: var(--background-primary);
 }
 
@@ -58,13 +56,10 @@
   font-weight: 700;
 }
 
-.class-management-curriculum-view {
-  overflow-x: auto;
-}
-
 .class-management-curriculum-board {
   display: grid;
-  grid-template-columns: repeat(4, minmax(360px, 1fr));
+  /* 카드 보드 표준 — 열 최소 300px (조밀 보드는 190px, DESIGN §6.5) */
+  grid-template-columns: repeat(4, minmax(300px, 1fr));
   gap: 8px;
   min-width: 1480px;
   align-items: start;
@@ -375,22 +370,34 @@
   color: var(--text-warning);
 }
 
-.class-management-header {
+/* ── 표준 뷰 골격 (DESIGN §6.5) — 헤더·툴바 고정, 바디 단일 스크롤 ── */
+
+.class-management-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+}
+
+.class-management-view-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 24px 24px 12px;
 }
 
-.class-management-header h2 {
-  margin: 0 0 4px;
+.class-management-view-header h2 {
+  margin: 0;
   font-size: 1.7rem;
 }
 
-.class-management-header p {
-  margin: 0;
+.class-management-view-header p {
+  margin: 4px 0 0;
   color: var(--text-muted);
+  font-size: var(--font-ui-small);
 }
 
 .class-management-actions {
@@ -399,9 +406,53 @@
   gap: 8px;
 }
 
+.class-management-actions:empty {
+  display: none;
+}
+
+.class-management-view-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 0 24px 12px;
+}
+
+.class-management-view-toolbar:empty {
+  display: none;
+}
+
+.class-management-view-toolbar .class-management-filter-bar {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.class-management-view-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 4px 24px 24px;
+}
+
+@media (max-width: 700px) {
+  .class-management-view-header {
+    padding: 14px 14px 8px;
+  }
+
+  .class-management-view-toolbar {
+    padding: 0 14px 8px;
+  }
+
+  .class-management-view-body {
+    padding: 4px 14px 14px;
+  }
+}
+
 .class-management-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* 요약 지표 스트립 표준 — 개수는 auto-fit이 정한다 (DESIGN §6.5) */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -431,7 +482,8 @@
 
 .class-management-grid {
   display: grid;
-  grid-template-columns: minmax(240px, 0.85fr) minmax(320px, 1.35fr);
+  /* 좌우 분할 표준 비율 1:2 — 보조(명단):주(최근 기록), 보조 열 최소 260px (DESIGN §6.5) */
+  grid-template-columns: minmax(260px, 1fr) minmax(0, 2fr);
   gap: 16px;
 }
 
@@ -730,35 +782,6 @@
 }
 
 .class-management-activity-view,
-.class-management-timeline-view {
-  padding: 24px;
-}
-
-.class-management-view-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.class-management-view-heading h2,
-.class-management-view-heading p {
-  margin: 0;
-}
-
-.class-management-view-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.class-management-view-heading p {
-  margin-top: 4px;
-  color: var(--text-muted);
-}
-
 .class-management-filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -848,10 +871,6 @@
   color: var(--interactive-accent);
 }
 
-.class-management-timeline-view .class-management-summary {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .class-management-timeline {
   position: relative;
   max-width: 840px;
@@ -925,21 +944,13 @@
   font-size: var(--font-ui-smaller);
 }
 
-.class-management-calendar-view {
-  padding: 24px;
-}
-
+/* 캘린더 탐색·제목·모드는 표준 툴바 안에서 인라인으로 흐른다 (DESIGN §6.5) */
 .class-management-calendar-header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  display: contents;
 }
 
-.class-management-calendar-header h2 {
-  margin: 0;
-  text-align: center;
+.class-management-calendar-title {
+  font-weight: 600;
 }
 
 .class-management-calendar-navigation,
@@ -983,10 +994,6 @@
   border-radius: 12px;
   background: var(--background-modifier-border);
   gap: 1px;
-}
-
-.class-management-calendar-view {
-  overflow-x: auto;
 }
 
 .class-management-calendar-weekday {
@@ -1116,31 +1123,6 @@
 .class-management-task-view,
 .class-management-routine-view,
 .class-management-report-view,
-.class-management-data-view {
-  padding: 24px;
-}
-
-.class-management-maintenance-view {
-  padding: 24px;
-}
-
-.class-management-view-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.class-management-view-header h2,
-.class-management-view-header p {
-  margin: 0 0 4px;
-}
-
-.class-management-view-header p {
-  color: var(--text-muted);
-}
-
 .class-management-task-routine {
   display: flex;
   align-items: center;
@@ -1155,9 +1137,6 @@
   gap: 8px;
 }
 
-.class-management-task-view {
-  overflow-x: auto;
-}
 
 .class-management-task-column {
   min-height: 160px;
@@ -1282,7 +1261,8 @@
 
 .class-management-routine-layout {
   display: grid;
-  grid-template-columns: minmax(320px, 1.4fr) minmax(260px, 0.8fr);
+  /* 좌우 분할 표준 비율 2:1 — 주(체크리스트):보조(루틴 관리), 보조 열 최소 260px (DESIGN §6.5) */
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
   gap: 12px;
 }
 
@@ -1319,11 +1299,6 @@
   border: 0;
   background: var(--background-primary);
   box-shadow: none;
-}
-
-.class-management-report-view .class-management-summary {
-  grid-template-columns: repeat(6, minmax(120px, 1fr));
-  overflow-x: auto;
 }
 
 .class-management-report-actions {
@@ -1658,7 +1633,8 @@
 
 .class-management-data-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(260px, 1fr));
+  /* 동등 패널 그리드 표준 — 패널 최소 280px, 열 수는 auto-fit (DESIGN §6.5) */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -1769,7 +1745,8 @@
 
 .class-management-maintenance-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  /* 동등 패널 그리드 표준 (DESIGN §6.5) */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
 }
 
@@ -1869,18 +1846,6 @@
     grid-template-columns: repeat(2, minmax(140px, 1fr));
   }
 
-  .class-management-calendar-view {
-    padding: 12px;
-  }
-
-  .class-management-calendar-header {
-    grid-template-columns: 1fr;
-  }
-
-  .class-management-calendar-header h2 {
-    grid-row: 1;
-  }
-
   .class-management-calendar-navigation,
   .class-management-calendar-modes {
     justify-content: center;
@@ -1923,10 +1888,6 @@
 }
 
 /* ===== 교육과정 운영 뷰 ===== */
-
-.class-management-ops-view {
-  padding: 16px;
-}
 
 .class-management-ops-setup {
   display: flex;
@@ -2517,8 +2478,6 @@
 /* ── 일체화 간트 ── */
 .class-management-gantt-view {
   --class-management-gantt-label: 190px;
-  padding: 12px 16px;
-  overflow: auto;
 }
 .class-management-gantt-toolbar {
   display: flex;

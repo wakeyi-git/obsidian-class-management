@@ -1,4 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
+import { scaffoldView, type ViewScaffold } from "./dom";
 import { ClassProfileModal } from "./class-profile-modal";
 import {
   buildDiagnosticMarkdown,
@@ -13,6 +14,7 @@ import { RetentionModal } from "./retention-modal";
 export const DATA_MANAGEMENT_VIEW_TYPE = "class-management-data-view";
 
 export class DataManagementView extends ItemView {
+  private layout!: ViewScaffold;
   private issues: DiagnosticIssue[] = [];
 
   constructor(
@@ -44,15 +46,15 @@ export class DataManagementView extends ItemView {
 
   private render(): void {
     this.contentEl.empty();
-    this.contentEl.addClass("class-management-data-view");
-    const header = this.contentEl.createDiv({ cls: "class-management-view-header" });
-    const title = header.createDiv();
-    title.createEl("h2", { text: "학급·학기와 데이터 관리" });
-    title.createEl("p", { text: "학급을 전환하고, 재적 상태·내보내기·연결 무결성을 관리합니다." });
-    const add = header.createEl("button", { text: "학급 추가·전환", cls: "mod-cta" });
+    this.layout = scaffoldView(this.contentEl, {
+      cls: "class-management-data-view",
+      title: "학급·학기와 데이터 관리",
+      description: "학급을 전환하고, 재적 상태·내보내기·연결 무결성을 관리합니다."
+    });
+    const add = this.layout.actions.createEl("button", { text: "학급 추가·전환", cls: "mod-cta" });
     add.addEventListener("click", () => new ClassProfileModal(this.plugin).open());
 
-    const grid = this.contentEl.createDiv({ cls: "class-management-data-grid" });
+    const grid = this.layout.body.createDiv({ cls: "class-management-data-grid" });
     this.renderProfiles(grid);
     this.renderStudents(grid);
     this.renderTools(grid);
@@ -131,7 +133,7 @@ export class DataManagementView extends ItemView {
   }
 
   private renderIssues(): void {
-    const panel = this.contentEl.createDiv({ cls: "class-management-panel class-management-diagnostic-panel" });
+    const panel = this.layout.body.createDiv({ cls: "class-management-panel class-management-diagnostic-panel" });
     panel.createEl("h3", { text: `최근 진단 결과 ${this.issues.length}건` });
     this.issues.forEach((issue) => {
       const row = panel.createDiv({ cls: `class-management-diagnostic-row is-${issue.level}` });

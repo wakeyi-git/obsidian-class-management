@@ -1,3 +1,31 @@
+export interface ViewScaffold {
+  header: HTMLElement;
+  heading: HTMLElement;
+  actions: HTMLElement;
+  toolbar: HTMLElement;
+  body: HTMLElement;
+}
+
+/**
+ * 표준 뷰 골격 (DESIGN §6.5) — 헤더·툴바는 고정, 바디가 유일한 세로 스크롤러다.
+ * 제목은 탭 이름(getDisplayText)과 같게 쓰고, 설명은 결과 중심 한 문장으로 쓴다.
+ * actions는 화면 전역 행동(≤3, CTA 1)만, toolbar는 필터 바 또는 화면 전역 기간 탐색만 담는다.
+ */
+export function scaffoldView(
+  root: HTMLElement,
+  options: { cls: string; title: string; description?: string }
+): ViewScaffold {
+  root.addClass("class-management-view", options.cls);
+  const header = root.createDiv({ cls: "class-management-view-header" });
+  const heading = header.createDiv();
+  heading.createEl("h2", { text: options.title });
+  if (options.description) heading.createEl("p", { text: options.description });
+  const actions = header.createDiv({ cls: "class-management-actions" });
+  const toolbar = root.createDiv({ cls: "class-management-view-toolbar" });
+  const body = root.createDiv({ cls: "class-management-view-body" });
+  return { header, heading, actions, toolbar, body };
+}
+
 export function addOption(select: HTMLSelectElement, value: string, text: string): void {
   const option = select.createEl("option", { text });
   option.value = value;

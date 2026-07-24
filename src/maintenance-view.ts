@@ -1,4 +1,5 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
+import { scaffoldView } from "./dom";
 import type { MigrationPreview } from "./class-repository";
 import type ClassManagementPlugin from "./main";
 
@@ -33,7 +34,6 @@ export class MaintenanceView extends ItemView {
 
   async refresh(): Promise<void> {
     this.contentEl.empty();
-    this.contentEl.addClass("class-management-maintenance-view");
     this.contentEl.createEl("p", { text: "유지관리 상태를 확인하고 있습니다…" });
     this.migration = await this.plugin.repository.previewMigrations();
     this.render();
@@ -41,12 +41,13 @@ export class MaintenanceView extends ItemView {
 
   private render(): void {
     this.contentEl.empty();
-    const header = this.contentEl.createDiv({ cls: "class-management-view-header" });
-    const title = header.createDiv();
-    title.createEl("h2", { text: "백업·복구·마이그레이션" });
-    title.createEl("p", { text: "관리 폴더를 Vault 안에 복제하고, 누락 파일만 복원하며, 레거시 형식을 안전하게 정규화합니다." });
+    const { body } = scaffoldView(this.contentEl, {
+      cls: "class-management-maintenance-view",
+      title: "백업·복구·마이그레이션",
+      description: "관리 폴더를 Vault 안에 복제하고, 누락 파일만 복원하며, 레거시 형식을 안전하게 정규화합니다."
+    });
 
-    const grid = this.contentEl.createDiv({ cls: "class-management-maintenance-grid" });
+    const grid = body.createDiv({ cls: "class-management-maintenance-grid" });
     this.renderBackup(grid);
     this.renderRecovery(grid);
     this.renderMigration(grid);

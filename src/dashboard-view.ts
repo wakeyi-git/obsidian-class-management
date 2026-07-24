@@ -1,4 +1,5 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
+import { scaffoldView } from "./dom";
 import type ClassManagementPlugin from "./main";
 import type { AttendanceMark, RecordEntry, StudentEntry } from "@core/types";
 import { localDate } from "@core/utils";
@@ -32,29 +33,24 @@ export class ClassDashboardView extends ItemView {
   async refresh(): Promise<void> {
     const container = this.contentEl;
     container.empty();
-    container.addClass("class-management-dashboard");
+    const settings = this.plugin.settings;
+    const { body } = scaffoldView(container, {
+      cls: "class-management-dashboard",
+      // 표준 골격의 예외: 대시보드 제목은 뷰 이름 대신 학급 이름이다 (DESIGN §6.5).
+      title: settings.className,
+      description: `${settings.schoolYear} ${settings.semester} · ${settings.grade}학년 · 학생 기록과 학급 운영 업무를 한눈에 확인합니다.${this.plugin.activeClassProfile.archived ? " · 읽기 전용 보관" : ""}`
+    });
 
     const students = this.plugin.repository.getStudents();
     const records = this.plugin.repository.getRecords();
     const today = localDate();
     const attendance = await this.plugin.repository.getAttendance(today);
 
-    this.renderHeader(container);
-    this.renderSummary(container, students, records, attendance, today);
+    this.renderSummary(body, students, records, attendance, today);
 
-    const grid = container.createDiv({ cls: "class-management-grid" });
+    const grid = body.createDiv({ cls: "class-management-grid" });
     this.renderStudents(grid, students);
     this.renderRecentRecords(grid, records);
-  }
-
-  private renderHeader(container: HTMLElement): void {
-    const header = container.createDiv({ cls: "class-management-header" });
-    const heading = header.createDiv();
-    heading.createEl("h2", { text: this.plugin.settings.className });
-    heading.createEl("p", {
-      text: `${this.plugin.settings.schoolYear} ${this.plugin.settings.semester} · ${this.plugin.settings.grade}학년 · 학생 기록과 학급 운영 업무를 한눈에 확인합니다.${this.plugin.activeClassProfile.archived ? " · 읽기 전용 보관" : ""}`
-    });
-
   }
 
   private renderSummary(

@@ -1,5 +1,5 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
-import { addOption } from "./dom";
+import { addOption, scaffoldView, type ViewScaffold } from "./dom";
 import { ACTIVITY_KIND_LABELS, filterActivities } from "@core/activity";
 import type ClassManagementPlugin from "./main";
 import type { ActivityEntry, ActivityKind, StudentEntry } from "@core/types";
@@ -7,6 +7,7 @@ import type { ActivityEntry, ActivityKind, StudentEntry } from "@core/types";
 export const STUDENT_TIMELINE_VIEW_TYPE = "class-management-student-timeline";
 
 export class StudentTimelineView extends ItemView {
+  private layout!: ViewScaffold;
   private student?: StudentEntry;
   private activities: ActivityEntry[] = [];
   private query = "";
@@ -50,10 +51,14 @@ export class StudentTimelineView extends ItemView {
 
   private render(): void {
     this.contentEl.empty();
-    this.contentEl.addClass("class-management-timeline-view");
 
     if (!this.student) {
-      this.contentEl.createEl("p", {
+      const { body } = scaffoldView(this.contentEl, {
+        cls: "class-management-timeline-view",
+        title: "학생별 타임라인",
+        description: "한 학생의 기록·출결·과제를 시간 순서로 모아봅니다."
+      });
+      body.createEl("p", {
         text: "대시보드나 명령 팔레트에서 학생을 선택해 주세요.",
         cls: "class-management-empty"
       });
@@ -63,18 +68,17 @@ export class StudentTimelineView extends ItemView {
     const ownActivities = this.activities.filter(
       (activity) => activity.studentNumber === this.student?.number
     );
-    const header = this.contentEl.createDiv({ cls: "class-management-view-heading" });
-    const headingText = header.createDiv();
-    headingText.createEl("h2", {
-      text: `${this.student.number}번 ${this.student.name}`
+    this.layout = scaffoldView(this.contentEl, {
+      cls: "class-management-timeline-view",
+      title: `${this.student.number}번 ${this.student.name}`,
+      description: "학생별 기록·출결·과제 통합 타임라인"
     });
-    headingText.createEl("p", { text: "학생별 기록·출결·과제 통합 타임라인" });
-    const noteButton = header.createEl("button", { text: "학생 노트 열기" });
+    const noteButton = this.layout.actions.createEl("button", { text: "학생 노트 열기" });
     noteButton.addEventListener("click", () => void this.plugin.openFile(this.student!.file));
 
     this.renderSummary(ownActivities);
     this.renderControls();
-    this.resultsEl = this.contentEl.createDiv({ cls: "class-management-timeline" });
+    this.resultsEl = this.layout.body.createDiv({ cls: "class-management-timeline" });
     this.renderResults();
   }
 
@@ -86,7 +90,7 @@ export class StudentTimelineView extends ItemView {
     const incompleteAssignments = activities.filter(
       (activity) => activity.kind === "assignment" && activity.status !== "제출"
     ).length;
-    const summary = this.contentEl.createDiv({ cls: "class-management-summary" });
+    const summary = this.layout.body.createDiv({ cls: "class-management-summary" });
     [
       ["학생 기록", `${records}건`],
       ["출결 예외", `${attendanceExceptions}건`],
@@ -99,7 +103,7 @@ export class StudentTimelineView extends ItemView {
   }
 
   private renderControls(): void {
-    const controls = this.contentEl.createDiv({ cls: "class-management-filter-bar" });
+    const controls = this.layout.toolbar.createDiv({ cls: "class-management-filter-bar" });
     const searchLabel = controls.createEl("label");
     searchLabel.createEl("span", { text: "검색" });
     const search = searchLabel.createEl("input");

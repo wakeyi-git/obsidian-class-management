@@ -1,5 +1,5 @@
 import { ItemView, Modal, Setting, WorkspaceLeaf } from "obsidian";
-import { addOption } from "./dom";
+import { addOption, scaffoldView, type ViewScaffold } from "./dom";
 import { ACTIVITY_KIND_LABELS } from "@core/activity";
 import {
   buildCalendarEvents,
@@ -17,6 +17,7 @@ export const CALENDAR_VIEW_TYPE = "class-management-calendar";
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
 
 export class ClassCalendarView extends ItemView {
+  private layout!: ViewScaffold;
   private anchor = new Date();
   private mode: "month" | "week";
   private events: CalendarEvent[] = [];
@@ -61,14 +62,18 @@ export class ClassCalendarView extends ItemView {
 
   private render(): void {
     this.contentEl.empty();
-    this.contentEl.addClass("class-management-calendar-view");
+    this.layout = scaffoldView(this.contentEl, {
+      cls: "class-management-calendar-view",
+      title: "학급 캘린더",
+      description: "월·주 단위로 학급 기록과 일정의 흐름을 살펴봅니다."
+    });
     this.renderHeader();
     this.renderFilters();
     this.renderGrid();
   }
 
   private renderHeader(): void {
-    const header = this.contentEl.createDiv({ cls: "class-management-calendar-header" });
+    const header = this.layout.toolbar.createDiv({ cls: "class-management-calendar-header" });
     const navigation = header.createDiv({ cls: "class-management-calendar-navigation" });
     const previous = navigation.createEl("button", {
       text: "‹",
@@ -92,7 +97,7 @@ export class ClassCalendarView extends ItemView {
       this.render();
     });
 
-    header.createEl("h2", { text: this.headerTitle() });
+    header.createEl("span", { text: this.headerTitle(), cls: "class-management-calendar-title" });
     const modes = header.createDiv({ cls: "class-management-calendar-modes" });
     const week = modes.createEl("button", {
       text: "주간",
@@ -107,7 +112,7 @@ export class ClassCalendarView extends ItemView {
   }
 
   private renderFilters(): void {
-    const filters = this.contentEl.createDiv({ cls: "class-management-calendar-filters" });
+    const filters = this.layout.toolbar.createDiv({ cls: "class-management-calendar-filters" });
     const kindLabel = filters.createEl("label");
     kindLabel.createEl("span", { text: "유형" });
     const kind = kindLabel.createEl("select");
@@ -154,7 +159,7 @@ export class ClassCalendarView extends ItemView {
       eventsByDate.set(event.date, group);
     });
 
-    const grid = this.contentEl.createDiv({
+    const grid = this.layout.body.createDiv({
       cls: `class-management-calendar-grid is-${this.mode}`
     });
     WEEKDAY_LABELS.forEach((weekday) =>

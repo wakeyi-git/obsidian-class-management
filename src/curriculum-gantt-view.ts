@@ -1,5 +1,5 @@
 import { ItemView, Menu, WorkspaceLeaf, setIcon } from "obsidian";
-import { registerLongPress } from "./dom";
+import { registerLongPress, scaffoldView } from "./dom";
 import { dayStatus, listDates, semesterForDate, semesterRange } from "@core/academic-calendar";
 import { localDate } from "@core/utils";
 import type ClassManagementPlugin from "./main";
@@ -39,9 +39,12 @@ export class CurriculumGanttView extends ItemView {
   }
 
   async refresh(): Promise<void> {
-    const container = this.contentEl;
-    container.empty();
-    container.addClass("class-management-gantt-view");
+    this.contentEl.empty();
+    const { toolbar, body: container } = scaffoldView(this.contentEl, {
+      cls: "class-management-gantt-view",
+      title: "교육과정 로드맵",
+      description: "학기 단원·평가·행사 배치를 한눈에 검토합니다."
+    });
 
     const calendar = await this.plugin.repository.getAcademicCalendar();
     if (!calendar) {
@@ -76,7 +79,7 @@ export class CurriculumGanttView extends ItemView {
         this.todaySuffix = " · 학기 범위 밖";
       }
     }
-    this.renderToolbar(container);
+    this.renderToolbar(toolbar);
 
     const units = this.plugin.repository
       .getCurriculumUnits()
