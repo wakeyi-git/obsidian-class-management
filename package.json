@@ -1,6 +1,6 @@
 {
   "name": "obsidian-class-management",
-  "version": "1.57.0",
+  "version": "1.58.0",
   "description": "학급 명단, 출결, 생활 기록, 할 일과 체크리스트를 로컬 Markdown으로 관리하는 Obsidian 플러그인",
   "main": "main.js",
   "type": "module",

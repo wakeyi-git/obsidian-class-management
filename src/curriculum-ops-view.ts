@@ -9,11 +9,11 @@ import {
   semesterRange,
   weekdayLabel
 } from "@core/academic-calendar";
-import { isRemovedSubject, plannedHoursBySubject, resolveDay } from "@core/timetable";
+import { isRemovedSubject, plannedHoursBySubject, resolveDay, subjectSlots } from "@core/timetable";
 import { buildAssignedSlotContents, crossCurricularThemes } from "@core/progress";
 import { wikiLinkText } from "@core/planning";
 import { collectSubjectOptions } from "@core/subject-options";
-import { buildHoursAudit } from "@core/hours-audit";
+import { buildHoursAudit, hoursAdjustmentSuggestions } from "@core/hours-audit";
 import { addDays } from "@core/academic-calendar";
 import { localDate } from "@core/utils";
 import type ClassManagementPlugin from "./main";
@@ -542,6 +542,53 @@ export class CurriculumOpsView extends ItemView {
       section.createEl("p", {
         cls: "class-management-ops-hint",
         text: "기준 시수 노트와 기초시간표를 입력하면 3단 대조가 표시됩니다."
+      });
+    }
+    this.renderHoursSuggestions(section, calendar, timetables, rows);
+  }
+
+  /** 시수 조절 제안 — 초과·미달 짝의 미래 슬롯 후보를 제안만 한다(적용은 교사, 우클릭 변경). */
+  private renderHoursSuggestions(
+    section: HTMLElement,
+    calendar: AcademicCalendar,
+    timetables: Record<string, BaseTimetable | null>,
+    rows: HoursAuditRow[]
+  ): void {
+    const semester = this.plugin.settings.semester;
+    const timetable = timetables[semester] ?? null;
+    if (!timetable) return;
+    const range = semesterRange(calendar, semester);
+    if (!range.from || !range.to) return;
+    const today = localDate();
+    const from = today > range.from ? today : range.from;
+    if (from > range.to) return;
+
+    const suggestions = hoursAdjustmentSuggestions(rows, (subject) =>
+      subjectSlots(calendar, timetable, from, range.to, subject)
+    );
+    const unders = rows.filter((row) => row.kind === "subject" && row.status === "under");
+    if (suggestions.length === 0 && unders.length === 0) return;
+
+    const box = section.createDiv({ cls: "class-management-ops-suggestions" });
+    box.createEl("h4", { text: "조절 제안" });
+    if (suggestions.length === 0) {
+      box.createEl("p", {
+        cls: "class-management-ops-hint",
+        text: "미달 과목이 있지만 초과 과목의 남은 수업이 없어 제안할 변경이 없습니다 — 기준 시수 노트 값 또는 기초시간표 편성을 확인하세요."
+      });
+      return;
+    }
+    box.createEl("p", {
+      cls: "class-management-ops-hint",
+      text: `${semester} 남은 수업에서 고를 수 있는 변경 후보입니다. 적용은 주간 시간표 칸 우클릭 → 과목 변경으로 하세요 — 저장 즉시 진도가 재배정됩니다.`
+    });
+    const list = box.createEl("ul");
+    for (const suggestion of suggestions) {
+      const slots = suggestion.slots
+        .map((slot) => `${slot.date.slice(5)}(${slot.period})`)
+        .join(" · ");
+      list.createEl("li", {
+        text: `${suggestion.from} → ${suggestion.to} ${suggestion.count}시간: ${slots}${suggestion.truncated ? " (남은 수업이 부족해 일부만 제안)" : ""}`
       });
     }
   }

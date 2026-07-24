@@ -3,6 +3,9 @@ import type { ClassRepository } from "./class-repository";
 import type { ActivityEntry, ClassProfile, CurriculumUnit, StudentEntry } from "@core/types";
 import { validateSchoolRecordEvidence } from "@core/school-record-evidence";
 import { auditConceptInquiryDesign, auditCurriculumAlignment } from "@core/curriculum";
+import { semesterRange } from "@core/academic-calendar";
+import { buildHoursAudit } from "@core/hours-audit";
+import { plannedHoursBySubject, subjectSlots } from "@core/timetable";
 import { csvCell, escapeTableCell } from "@core/utils";
 
 export type DiagnosticLevel = "error" | "warning" | "info";
@@ -174,13 +177,111 @@ export async function runDataDiagnostics(
     });
   });
 
+  issues.push(...await runCurriculumLedgerDiagnostics(app, repository));
+
   if (issues.length === 0) {
     issues.push({
       level: "info",
       code: "healthy",
-      message: "중복 학생, 연결 오류, 필수 폴더 누락을 찾지 못했습니다."
+      message: "중복 학생, 연결 오류, 폴더 누락, 교육과정 원장 이상을 찾지 못했습니다."
     });
   }
+  return issues;
+}
+
+/**
+ * 교육과정 원장 점검 — /vault-audit 스킬 항목의 단독 경로판 (읽기 전용).
+ * 시수 점검·진도 배정 상태를 데이터 진단 한 번에 함께 확인한다 (스쿨마스터 '교육과정종합점검' 대응).
+ */
+async function runCurriculumLedgerDiagnostics(
+  app: App,
+  repository: ClassRepository
+): Promise<DiagnosticIssue[]> {
+  const issues: DiagnosticIssue[] = [];
+  const calendar = await repository.getAcademicCalendar();
+  if (!calendar) return issues;
+
+  const semesterHours: Record<string, { planned: Record<string, number>; taught: Record<string, number> }> = {
+    "1학기": { planned: {}, taught: {} },
+    "2학기": { planned: {}, taught: {} }
+  };
+
+  for (const semester of ["1학기", "2학기"]) {
+    const range = semesterRange(calendar, semester);
+    if (!range.from || !range.to) continue;
+    const timetable = await repository.getBaseTimetable(semester);
+    const tables = await repository.getProgressTables(semester);
+    const bucket = semesterHours[semester];
+    if (timetable && bucket) {
+      bucket.planned = plannedHoursBySubject(calendar, timetable, range.from, range.to);
+    }
+
+    for (const table of tables) {
+      const unassigned = table.rows.filter((row) => !row.assigned.trim()).length;
+      if (unassigned > 0) {
+        issues.push({
+          level: "warning",
+          code: "progress-unassigned",
+          message: `${semester} ${table.subject} 진도표에 배정되지 않은 차시가 ${unassigned}건 있습니다. — 진도 자동 배정을 실행하세요.`,
+          source: table.file.path
+        });
+      }
+
+      if (timetable) {
+        const totalHours = table.rows.reduce((sum, row) => sum + (row.hours > 0 ? row.hours : 1), 0);
+        const slotCount = subjectSlots(calendar, timetable, range.from, range.to, table.subject).length;
+        if (slotCount !== totalHours) {
+          issues.push({
+            level: "warning",
+            code: "progress-slot-mismatch",
+            message: `${semester} ${table.subject}: 진도 시수 합 ${totalHours} ≠ 수업 슬롯 ${slotCount} — 시수 점검에서 확인하세요.`,
+            source: table.file.path
+          });
+        }
+      }
+
+      let brokenLinks = 0;
+      for (const row of table.rows) {
+        for (const cell of [row.unitLink, row.assignmentLink]) {
+          const target = cell.match(/\[\[([^\]|]+)/)?.[1]?.trim();
+          if (!target) continue;
+          if (!app.metadataCache.getFirstLinkpathDest(target, table.file.path)) brokenLinks += 1;
+        }
+      }
+      if (brokenLinks > 0) {
+        issues.push({
+          level: "error",
+          code: "broken-progress-link",
+          message: `${semester} ${table.subject} 진도표의 프로젝트·과제 링크 ${brokenLinks}건이 노트로 해석되지 않습니다.`,
+          source: table.file.path
+        });
+      }
+    }
+  }
+
+  const standard = await repository.getHoursStandard();
+  if (standard) {
+    for (const row of buildHoursAudit(standard, semesterHours["1학기"], semesterHours["2학기"])) {
+      if (row.kind !== "subject" || (row.status !== "over" && row.status !== "under")) continue;
+      issues.push({
+        level: "warning",
+        code: `hours-${row.status}`,
+        message: `${row.subject} 시수 ${row.status === "over" ? "초과" : "미달"} — 기준 ${row.standardHours} · 편성 ${row.plannedHours} (${row.deltaPercent}%)`
+      });
+    }
+  }
+
+  for (const unit of repository.getCurriculumUnits()) {
+    if (unit.startDate && unit.endDate && unit.startDate > unit.endDate) {
+      issues.push({
+        level: "error",
+        code: "unit-date-range",
+        message: `${unit.unitName} 단원의 시작일이 종료일보다 늦습니다 (${unit.startDate} > ${unit.endDate}).`,
+        source: unit.file.path
+      });
+    }
+  }
+
   return issues;
 }
 

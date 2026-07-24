@@ -147,3 +147,27 @@ test("학기형 기준 표: 1학기·2학기 열을 읽고 학년은 비면 합"
 test("판별자가 다른 노트는 기준 시수로 파싱하지 않는다", () => {
   assert.equal(parseHoursStandard(file, {}, "| 교과 | 국어 | 198 |"), null);
 });
+
+test("시수 조절 제안: 초과→미달 짝을 미래 슬롯으로 제안한다", async () => {
+  const { hoursAdjustmentSuggestions } = await loadTypeScriptModule("../packages/core/src/hours-audit.ts");
+  const rows = [
+    { kind: "subject", subject: "수학", status: "under", standardHours: 100, plannedHours: 70 },
+    { kind: "subject", subject: "체육", status: "over", standardHours: 60, plannedHours: 100 },
+    { kind: "subject", subject: "국어", status: "ok", standardHours: 100, plannedHours: 100 },
+    { kind: "subtotal", subject: "교과 소계", status: "under", standardHours: 1, plannedHours: 0 }
+  ];
+  const slots = Array.from({ length: 40 }, (_, index) => ({ date: `2026-10-${String((index % 28) + 1).padStart(2, "0")}`, period: 1 }));
+  const suggestions = hoursAdjustmentSuggestions(rows, (subject) => (subject === "체육" ? slots : []));
+  assert.equal(suggestions.length, 1);
+  assert.equal(suggestions[0].from, "체육");
+  assert.equal(suggestions[0].to, "수학");
+  assert.equal(suggestions[0].count, 30, "필요량 30 = min(부족 30, 잉여 40)");
+  assert.equal(suggestions[0].truncated, false);
+
+  const few = hoursAdjustmentSuggestions(rows, (subject) => (subject === "체육" ? slots.slice(0, 5) : []));
+  assert.equal(few[0].count, 5);
+  assert.equal(few[0].truncated, true, "후보 슬롯 부족 표시");
+
+  const none = hoursAdjustmentSuggestions(rows, () => []);
+  assert.equal(none.length, 0, "미래 슬롯이 없으면 제안하지 않는다");
+});

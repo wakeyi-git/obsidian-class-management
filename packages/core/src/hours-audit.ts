@@ -1,5 +1,5 @@
 import type { TFile } from "obsidian";
-import type { HoursAuditRow, HoursStandard, HoursStandardEntry, SemesterHours } from "./types";
+import type { HoursAuditRow, HoursStandard, HoursStandardEntry, SemesterHours, SubjectSlot } from "./types";
 import { sectionTableRows } from "./academic-calendar";
 import { yamlString } from "./utils";
 
@@ -218,4 +218,59 @@ export function buildHoursAudit(
     rows.push(makeRow("total", "총계", "", totals.s1, totals.s2, totals.standard, totals.p1, totals.t1, totals.p2, totals.t2));
   }
   return rows;
+}
+
+export interface HoursAdjustmentSuggestion {
+  /** 초과(잉여) 과목 — 변경으로 내어줄 쪽. */
+  from: string;
+  /** 미달(부족) 과목 — 받을 쪽. */
+  to: string;
+  /** 제안 변경 수(시간). */
+  count: number;
+  /** 변경 후보 슬롯 — 가까운 미래 순, count개까지. */
+  slots: SubjectSlot[];
+  /** 후보 슬롯이 부족해 제안이 잘렸으면 true. */
+  truncated: boolean;
+}
+
+/**
+ * 시수 초과·미달 과목을 짝지어 미래 시간표 슬롯의 변경 후보를 제안한다.
+ * 제안만 한다 — 적용은 교사가 시간표 칸 우클릭으로 (원장 의미론은 교사 몫, 1.31 교훈).
+ */
+export function hoursAdjustmentSuggestions(
+  rows: HoursAuditRow[],
+  futureSlotsOf: (subject: string) => SubjectSlot[]
+): HoursAdjustmentSuggestion[] {
+  const unders = rows
+    .filter((row) => row.kind === "subject" && row.status === "under")
+    .map((row) => ({ subject: row.subject, need: row.standardHours - row.plannedHours }))
+    .filter((entry) => entry.need > 0)
+    .sort((a, b) => b.need - a.need);
+  const overs = rows
+    .filter((row) => row.kind === "subject" && row.status === "over")
+    .map((row) => ({ subject: row.subject, surplus: row.plannedHours - row.standardHours }))
+    .filter((entry) => entry.surplus > 0)
+    .sort((a, b) => b.surplus - a.surplus);
+
+  const suggestions: HoursAdjustmentSuggestion[] = [];
+  for (const under of unders) {
+    for (const over of overs) {
+      if (under.need <= 0) break;
+      if (over.surplus <= 0) continue;
+      const want = Math.min(under.need, over.surplus);
+      const future = futureSlotsOf(over.subject);
+      const slots = future.slice(0, want);
+      if (slots.length === 0) continue;
+      suggestions.push({
+        from: over.subject,
+        to: under.subject,
+        count: slots.length,
+        slots,
+        truncated: slots.length < want
+      });
+      under.need -= slots.length;
+      over.surplus -= slots.length;
+    }
+  }
+  return suggestions;
 }
