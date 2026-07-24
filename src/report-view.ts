@@ -4,6 +4,7 @@ import type ClassManagementPlugin from "./main";
 import {
   analyzeActivities,
   buildActivitiesCsv,
+  buildCounselingMarkdown,
   buildReportMarkdown,
   selectReportActivities
 } from "@core/report";
@@ -133,6 +134,8 @@ export class ReportView extends ItemView {
     markdown.addEventListener("click", () => void this.saveMarkdown());
     const csv = actions.createEl("button", { text: "현재 자료 CSV 내보내기" });
     csv.addEventListener("click", () => void this.saveCsv(activities));
+    const counseling = actions.createEl("button", { text: "상담 자료 내보내기" });
+    counseling.addEventListener("click", () => void this.exportCounseling());
     const exportAi = actions.createEl("button", { text: "AI 초안 자료 내보내기 (익명)" });
     exportAi.disabled = !this.plugin.settings.aiCollaborationEnabled;
     exportAi.addEventListener("click", () => void this.exportAiBundle());
@@ -279,6 +282,30 @@ export class ReportView extends ItemView {
     const file = await this.plugin.repository.saveReport(title, content);
     new Notice("Markdown 보고서를 저장했습니다.");
     await this.plugin.openFile(file);
+  }
+
+  /** 학부모 상담 준비 자료 — 실명·비AI 문서를 내보내기 폴더에 만든다 (교사 본인용, 인쇄 규격). */
+  private async exportCounseling(): Promise<void> {
+    if (!this.options.studentNumber) {
+      new Notice("대상에서 학생을 선택해 주세요. — 상담 자료는 학생 1명 단위로 만듭니다.");
+      return;
+    }
+    const students = this.plugin.repository.getStudents();
+    const student = students.find((entry) => entry.number === this.options.studentNumber);
+    const label = student ? `${student.number}번 ${student.name}` : "학생";
+    try {
+      const content = buildCounselingMarkdown(
+        this.activities,
+        this.options,
+        this.plugin.settings.className,
+        students
+      );
+      const file = await this.plugin.repository.saveExport(`상담 자료 - ${label}`, content, "md");
+      new Notice(`${label} 상담 자료를 만들었습니다. 인쇄는 PDF 내보내기로 하세요.`);
+      await this.plugin.openFile(file);
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "상담 자료를 만들지 못했습니다.");
+    }
   }
 
   private async saveCsv(activities: ActivityEntry[]): Promise<void> {

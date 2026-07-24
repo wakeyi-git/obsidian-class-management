@@ -129,6 +129,91 @@ export function buildReportMarkdown(
   ].join("\n");
 }
 
+/**
+ * 학부모 상담 준비 자료 — 교사 본인용 실명 문서 (내보내기 폴더 · 인쇄 규격).
+ * AI 익명 내보내기와 반대 방향의 비AI 경로: 외부로 나가지 않는 전제이므로 이름·원본 링크를 담는다.
+ */
+export function buildCounselingMarkdown(
+  activities: ActivityEntry[],
+  options: { dateFrom: string; dateTo: string; studentNumber: string },
+  className: string,
+  students: StudentEntry[]
+): string {
+  const student = students.find((entry) => entry.number === options.studentNumber);
+  const label = student ? `${student.number}번 ${student.name}` : "학생";
+  const selected = selectReportActivities(activities, options);
+  const byDate = [...selected].sort((a, b) => a.date.localeCompare(b.date));
+
+  const attendance = byDate.filter((item) => item.kind === "attendance");
+  const attendanceCounts = new Map<string, number>();
+  for (const item of attendance) {
+    attendanceCounts.set(item.status, (attendanceCounts.get(item.status) ?? 0) + 1);
+  }
+  const attendanceExceptions = attendance.filter((item) => item.status !== "출석");
+
+  const records = byDate.filter((item) => item.kind === "record");
+  const assignments = byDate.filter((item) => item.kind === "assignment");
+  const assignmentExceptions = assignments.filter((item) => item.status !== "제출");
+  const noticeExceptions = byDate.filter(
+    (item) => item.kind === "notice" && item.status !== "회신 완료"
+  );
+
+  const line = (item: ActivityEntry): string => {
+    const description = [item.status, item.detail || item.title].filter(Boolean).join(" · ");
+    return `- ${item.date} · ${description} ([[${withoutExtension(item.file.path)}|원본]])`;
+  };
+
+  return [
+    "---",
+    "class-management: report",
+    `reportTitle: ${yamlString(`상담 자료 - ${label}`)}`,
+    `class: ${yamlString(className)}`,
+    `dateFrom: ${yamlString(options.dateFrom)}`,
+    `dateTo: ${yamlString(options.dateTo)}`,
+    `studentNumber: ${yamlString(options.studentNumber)}`,
+    `created: ${localDate()}`,
+    "cssclasses:",
+    "  - class-management-print",
+    "tags:",
+    "  - class-management/report",
+    "---",
+    "",
+    `# ${label} 상담 자료`,
+    "",
+    `- 학급: ${className} · 기간: ${options.dateFrom || "전체"} ~ ${options.dateTo || "전체"}`,
+    `- 작성일: ${localDate()} · 교사 본인 확인용 자료입니다 — 외부 공유 시 개인정보에 유의하세요.`,
+    "",
+    "## 출결",
+    "",
+    attendance.length
+      ? `- 집계: ${[...attendanceCounts.entries()].map(([status, count]) => `${status} ${count}`).join(" · ")}`
+      : "- 기간 내 출결 기록이 없습니다.",
+    ...(attendanceExceptions.length
+      ? ["", "예외 내역:", "", ...attendanceExceptions.map(line)]
+      : []),
+    "",
+    "## 학생 기록",
+    "",
+    ...(records.length ? records.map(line) : ["- 기간 내 학생 기록이 없습니다."]),
+    "",
+    "## 과제",
+    "",
+    `- 기간 내 과제 확인 ${assignments.length}건 중 미제출·보완 ${assignmentExceptions.length}건`,
+    ...(assignmentExceptions.length ? ["", ...assignmentExceptions.map(line)] : []),
+    ...(noticeExceptions.length
+      ? ["", "## 가정통신문", "", ...noticeExceptions.map(line)]
+      : []),
+    "",
+    "## 상담 메모",
+    "",
+    "- 상담 안건: ",
+    "- 학부모 의견: ",
+    "- 학생과 약속한 것: ",
+    "- 후속 확인: ",
+    ""
+  ].join("\n");
+}
+
 export function buildActivitiesCsv(activities: ActivityEntry[]): string {
   const header = ["date", "studentNumber", "studentName", "kind", "title", "status", "detail", "source"];
   const rows = activities.map((activity) => [
