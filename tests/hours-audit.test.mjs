@@ -171,3 +171,24 @@ test("시수 조절 제안: 초과→미달 짝을 미래 슬롯으로 제안한
   const none = hoursAdjustmentSuggestions(rows, () => []);
   assert.equal(none.length, 0, "미래 슬롯이 없으면 제안하지 않는다");
 });
+
+test("구분 '범교과' 행은 분리 보관되고 시수 점검에서 빠진다", () => {
+  const file = { path: "기준.md", basename: "기준", stat: { ctime: 1 } };
+  const content = [
+    "## 기준 시수",
+    "| 구분 | 교과·영역 | 1학기 | 2학기 | 학년 |",
+    "| --- | --- | ---: | ---: | ---: |",
+    "| 교과 | 수학 | 68 | 68 | 136 |",
+    "| 범교과 | 안전교육 |  |  | 51 |",
+    "|  | 통일교육 (의무) |  |  | 5 |",
+    "|  | 인성교육 (의무) |  |  |  |"
+  ].join("\n");
+  const standard = parseHoursStandard(file, { "class-management": "hours-standard" }, content);
+  assert.equal(standard.entries.length, 1, "교과 행만 시수 점검 입력");
+  assert.equal(standard.crossCurricular.length, 3);
+  assert.equal(standard.crossCurricular[0].hours, 51);
+  assert.equal(standard.crossCurricular[1].subject, "통일교육 (의무)", "구분 승계");
+  assert.equal(standard.crossCurricular[2].hours, 0, "의무·권장(시수 없음) 행도 유지");
+  const audit = buildHoursAudit(standard);
+  assert.ok(audit.every((row) => row.category !== "범교과"), "점검 표에 범교과 없음");
+});

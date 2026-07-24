@@ -10,7 +10,7 @@ import {
   weekdayLabel
 } from "@core/academic-calendar";
 import { isRemovedSubject, plannedHoursBySubject, resolveDay, subjectSlots } from "@core/timetable";
-import { buildAssignedSlotContents, crossCurricularThemes, reconstructionNotes } from "@core/progress";
+import { buildAssignedSlotContents, crossCurricularAudit, reconstructionNotes } from "@core/progress";
 import { wikiLinkText } from "@core/planning";
 import { collectSubjectOptions } from "@core/subject-options";
 import { buildHoursAudit, hoursAdjustmentSuggestions } from "@core/hours-audit";
@@ -136,7 +136,7 @@ export class CurriculumOpsView extends ItemView {
     this.renderCalendarSummary(container, calendar);
     this.renderWeek(container, calendar, timetables, tablesBySemester, standard);
     this.renderHoursAudit(container, calendar, standard, timetables);
-    this.renderThemes(container, tablesBySemester);
+    this.renderCrossCurricular(container, standard, tablesBySemester);
     this.renderReconstruction(container, tablesBySemester);
     this.renderActions(container, currentTimetable, currentTables);
   }
@@ -171,41 +171,62 @@ export class CurriculumOpsView extends ItemView {
     }
   }
 
-  /** 범교과 주제어 집계 — 진도표 비고의 #태그 기반, 법정 이수(안전 등) 확인용. */
-  private renderThemes(
+  /** 범교과 주제 점검 — 기준(기준 시수 노트 "범교과" 구분)·편성(태그 시수)·실행(경과 배정 차시)·이번 주. */
+  private renderCrossCurricular(
     container: HTMLElement,
+    standard: HoursStandard | null,
     tablesBySemester: Record<string, ProgressTable[]>
   ): void {
-    const themes = crossCurricularThemes(tablesBySemester);
+    const today = localDate();
+    const weekStart = mondayOf(today);
+    const rows = crossCurricularAudit(tablesBySemester, standard?.crossCurricular ?? [], {
+      today,
+      weekStart,
+      weekEnd: addDays(weekStart, 4)
+    });
     const section = container.createDiv({ cls: "class-management-ops-audit" });
-    section.createEl("h3", { text: "범교과 주제어" });
-    if (themes.length === 0) {
+    section.createEl("h3", { text: "범교과 주제 (기준 · 편성 · 실행)" });
+    if (rows.length === 0) {
       section.createEl("p", {
         cls: "class-management-ops-hint",
-        text: "진도표 비고 칸에 #안전 같은 태그를 적으면 주제어별 차시·시수가 집계됩니다 (예: #안전 #인성 #환경 — 한 칸에 여러 태그 가능)."
+        text: "진도표 비고 칸에 #생활안전 같은 태그를 적고, 기준 시수 노트에 구분 '범교과' 행을 추가하면 여기서 이수 현황을 점검합니다."
       });
       return;
     }
     section.createEl("p", {
       cls: "class-management-ops-hint",
-      text: "진도표 비고의 #태그를 1·2학기 합산으로 집계합니다. 안전교육처럼 이수 시수 보고가 필요한 주제를 확인하세요."
+      text: "기준은 기준 시수 노트의 구분 '범교과' 행, 편성은 진도표 비고 #태그가 붙은 차시의 시수, 실행은 그중 오늘까지 배정이 지난 차시입니다. 기준은 최소 이수라 편성이 기준 이상이면 적정입니다. '안전교육' 기준은 7대 영역(생활·교통·폭력및신변·약물및사이버·재난·직업·응급처치) 태그의 합입니다."
     });
     const table = section.createEl("table", { cls: "class-management-ops-audit-table" });
-    const head = table.createEl("thead").createEl("tr");
-    for (const label of ["주제어", "차시", "시수", "1학기", "2학기", "과목별 시수"]) {
-      head.createEl("th", { text: label });
+    const head = table.createEl("thead");
+    const groupRow = head.createEl("tr");
+    groupRow.createEl("th", { text: "" });
+    groupRow.createEl("th", { text: "" });
+    for (const label of ["1학기", "2학기", "학년"]) {
+      groupRow.createEl("th", { text: label, attr: { colspan: "3" }, cls: "is-group" });
     }
+    groupRow.createEl("th", { text: "" });
+    const headRow = head.createEl("tr");
+    for (const label of ["주제", "이번 주", "기준", "편성", "실행", "기준", "편성", "실행", "기준", "편성", "실행", "상태"]) {
+      headRow.createEl("th", { text: label });
+    }
+    const dash = (value: number): string => (value > 0 ? String(value) : "—");
+    const statusLabels = { ok: "적정", under: "미달", none: "—" } as const;
     const body = table.createEl("tbody");
-    for (const theme of themes) {
-      const row = body.createEl("tr");
-      row.createEl("td", { text: `#${theme.tag}` });
-      row.createEl("td", { text: String(theme.lessons) });
-      row.createEl("td", { text: String(theme.hours) });
-      row.createEl("td", { text: String(theme.hoursBySemester["1학기"] ?? 0) });
-      row.createEl("td", { text: String(theme.hoursBySemester["2학기"] ?? 0) });
-      row.createEl("td", {
-        text: theme.subjects.map((entry) => `${entry.subject} ${entry.hours}`).join(" · ")
-      });
+    for (const row of rows) {
+      const line = body.createEl("tr", { cls: `is-${row.status === "under" ? "under" : "ok"} is-subject` });
+      line.createEl("td", { text: row.name });
+      line.createEl("td", { text: dash(row.week) });
+      line.createEl("td", { text: dash(row.standard1) });
+      line.createEl("td", { text: dash(row.planned1) });
+      line.createEl("td", { text: dash(row.taught1) });
+      line.createEl("td", { text: dash(row.standard2) });
+      line.createEl("td", { text: dash(row.planned2) });
+      line.createEl("td", { text: dash(row.taught2) });
+      line.createEl("td", { text: dash(row.standardYear) });
+      line.createEl("td", { text: dash(row.plannedYear) });
+      line.createEl("td", { text: dash(row.taughtYear) });
+      line.createEl("td", { text: statusLabels[row.status] });
     }
   }
 

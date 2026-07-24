@@ -32,36 +32,42 @@ export function parseHoursStandard(
     return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
   };
   let lastCategory = "";
-  const entries = rows
-    .map((cells): HoursStandardEntry | null => {
-      const rawCategory = layout === "plain-year" ? "" : (cells[0] ?? "").trim();
-      const subject = (cells[layout === "plain-year" ? 0 : 1] ?? "").trim();
-      if (rawCategory) lastCategory = rawCategory;
-      if (!subject) return null;
-      let hours1 = 0;
-      let hours2 = 0;
-      let year = 0;
-      if (layout === "semester") {
-        hours1 = toHours(cells[2]);
-        hours2 = toHours(cells[3]);
-        year = toHours(cells[4]) || hours1 + hours2;
-      } else {
-        year = toHours(cells[layout === "category-year" ? 2 : 1]);
-      }
-      if (year <= 0) return null;
-      // 구분 칸을 비우면 위 행의 구분을 승계한다(병합 셀처럼 쓰는 손 편집 배려).
-      const category = layout === "plain-year"
-        ? inferCategory(subject)
-        : lastCategory || inferCategory(subject);
-      return { subject, hours1, hours2, hours: year, category };
-    })
-    .filter((entry): entry is HoursStandardEntry => entry !== null);
+  const entries: HoursStandardEntry[] = [];
+  const crossCurricular: HoursStandardEntry[] = [];
+  for (const cells of rows) {
+    const rawCategory = layout === "plain-year" ? "" : (cells[0] ?? "").trim();
+    const subject = (cells[layout === "plain-year" ? 0 : 1] ?? "").trim();
+    if (rawCategory) lastCategory = rawCategory;
+    if (!subject) continue;
+    let hours1 = 0;
+    let hours2 = 0;
+    let year = 0;
+    if (layout === "semester") {
+      hours1 = toHours(cells[2]);
+      hours2 = toHours(cells[3]);
+      year = toHours(cells[4]) || hours1 + hours2;
+    } else {
+      year = toHours(cells[layout === "category-year" ? 2 : 1]);
+    }
+    // 구분 칸을 비우면 위 행의 구분을 승계한다(병합 셀처럼 쓰는 손 편집 배려).
+    const category = layout === "plain-year"
+      ? inferCategory(subject)
+      : lastCategory || inferCategory(subject);
+    // 범교과 행은 별도 목록으로 — 시수 점검·소계에 섞이지 않고, 의무·권장(시수 0)도 유지한다.
+    if (category === "범교과") {
+      crossCurricular.push({ subject, hours1, hours2, hours: year, category });
+      continue;
+    }
+    if (year <= 0) continue;
+    entries.push({ subject, hours1, hours2, hours: year, category });
+  }
 
   return {
     file,
     schoolYear: typeof frontmatter.schoolYear === "string" ? frontmatter.schoolYear.trim() : "",
     tolerancePercent: Number.isFinite(tolerance) && tolerance >= 0 ? tolerance : 20,
-    entries
+    entries,
+    crossCurricular
   };
 }
 

@@ -535,7 +535,10 @@ export interface HoursStandard {
   file: TFile;
   schoolYear: string;
   tolerancePercent: number;
+  /** 교과·창체 기준 행 — 시수 점검(buildHoursAudit)의 입력. 구분 "범교과"는 제외된다. */
   entries: HoursStandardEntry[];
+  /** 구분 "범교과" 기준 행 — 범교과 주제 점검 전용. 의무·권장처럼 시수 없는 행(0)도 유지한다. */
+  crossCurricular: HoursStandardEntry[];
 }
 
 export interface TimetableOverride {

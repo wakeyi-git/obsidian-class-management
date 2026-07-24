@@ -298,3 +298,52 @@ test("재구성 기록을 비고의 `재구성:` 관례에서 모은다", async 
   assert.equal(notes[1].memo, "독도 프로젝트로 이관하며 2차시→1차시 축약 #안전");
   assert.equal(notes[0].memo, "순서 이동(3단원 뒤로)", "전각 콜론도 허용");
 });
+
+test("범교과 주제 점검: 기준·편성·실행·이번 주와 안전교육 합산", async () => {
+  const { crossCurricularAudit, crossCurricularTag } =
+    await loadTypeScriptModule("../packages/core/src/progress.ts");
+  assert.equal(crossCurricularTag("학교폭력 예방교육(어울림)-도박예방교육"), "학교폭력예방교육");
+
+  const table = (semester, subject, rows) => ({ file, schoolYear: "2026", semester, subject, rows });
+  const rows = crossCurricularAudit(
+    {
+      "1학기": [
+        table("1학기", "체육", [
+          { ...makeRow(1, "안전 놀이", 2), note: "#생활안전", assigned: "2026-04-01(1), 2026-04-08(1)" },
+          { ...makeRow(2, "교통", 1), note: "#교통안전", assigned: "2026-05-01(2)" }
+        ])
+      ],
+      "2학기": [
+        table("2학기", "국어", [
+          { ...makeRow(1, "독도", 1), note: "#독도교육", assigned: "2026-09-30(1)" },
+          { ...makeRow(2, "통일", 1), note: "#통일교육", assigned: "" }
+        ])
+      ]
+    },
+    [
+      { subject: "안전교육", hours1: 0, hours2: 0, hours: 51 },
+      { subject: "통일교육 (의무)", hours1: 0, hours2: 0, hours: 5 },
+      { subject: "인성교육 (의무)", hours1: 0, hours2: 0, hours: 0 }
+    ],
+    { today: "2026-10-01", weekStart: "2026-09-28", weekEnd: "2026-10-02" }
+  );
+
+  const safety = rows[0];
+  assert.equal(safety.name, "안전교육");
+  assert.equal(safety.planned1, 3, "7대 영역 합산(생활안전 2+교통안전 1)");
+  assert.equal(safety.taughtYear, 3, "오늘(10-01)까지 지난 배정 3건");
+  assert.equal(safety.status, "under", "51 기준 미달");
+
+  const unification = rows.find((row) => row.tag === "통일교육");
+  assert.equal(unification.name, "통일교육 (의무)", "기준 행 이름 그대로(부기 유지)");
+  assert.equal(unification.planned2, 1);
+  assert.equal(unification.status, "under");
+
+  const ethics = rows.find((row) => row.tag === "인성교육");
+  assert.equal(ethics.status, "none", "기준 시수 없는 의무 행은 판정 없음");
+
+  const dokdo = rows.find((row) => row.tag === "독도교육");
+  assert.equal(dokdo.name, "#독도교육", "기준에 없는 태그는 # 표기");
+  assert.equal(dokdo.week, 1, "이번 주(9-28~10-2) 배정 1건");
+  assert.ok(rows.indexOf(dokdo) > 2, "태그 전용 행은 기준 행들 뒤");
+});

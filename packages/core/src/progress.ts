@@ -427,6 +427,153 @@ export function slotContentMap(
   return map;
 }
 
+const THEME_TAG_REGEX = /#([0-9A-Za-z가-힣·]+)/g;
+const ASSIGNED_SLOT_REGEX = /(\d{4}-\d{2}-\d{2})\((\d{1,2})\)/g;
+
+/** 주제 이름 → 태그 정규화 — 괄호 부기·하이픈 세부영역·공백을 떼고 대분류만 남긴다. */
+export function crossCurricularTag(name: string): string {
+  return name
+    .replace(/[(（][^)）]*[)）]/g, "")
+    .replace(/[-－–].*$/, "")
+    .trim()
+    .replace(/[^0-9A-Za-z가-힣·]/g, "");
+}
+
+/** 학교안전교육 7대 표준안 영역 — 기준 행 "안전교육"(통합 기준, 예: 51차시)이 합산하는 태그들. */
+export const SAFETY_THEME_MEMBERS: readonly string[] = [
+  "생활안전",
+  "교통안전",
+  "폭력및신변안전",
+  "약물및사이버중독",
+  "재난안전",
+  "직업안전",
+  "응급처치"
+];
+
+export interface CrossCurricularAuditRow {
+  /** 표시명 — 기준 행 이름(부기 괄호 포함) 또는 `#태그`. */
+  name: string;
+  tag: string;
+  week: number;
+  standard1: number;
+  standard2: number;
+  standardYear: number;
+  planned1: number;
+  planned2: number;
+  plannedYear: number;
+  taught1: number;
+  taught2: number;
+  taughtYear: number;
+  /** 범교과 기준은 최소 이수(이상) 성격 — 편성≥기준이면 ok, 부족만 under, 기준 없으면 none. */
+  status: "ok" | "under" | "none";
+}
+
+interface ThemeStats {
+  planned: Record<string, number>;
+  taught: Record<string, number>;
+  week: number;
+}
+
+/**
+ * 범교과 주제 점검 — 기준(기준 시수 노트의 구분 "범교과" 행) · 편성(태그 차시 시수) ·
+ * 실행(오늘까지 배정된 태그 차시 수) · 이번 주를 시수 점검과 같은 짜임으로 만든다.
+ * 행 순서는 기준 노트의 행 순서 → 기준 없는 태그(편성 많은 순). 한 차시에 태그가 여러 개면 각 주제에 계상한다.
+ */
+export function crossCurricularAudit(
+  tablesBySemester: Record<string, ProgressTable[]>,
+  standardRows: ReadonlyArray<{ subject: string; hours1: number; hours2: number; hours: number }>,
+  options: { today: string; weekStart: string; weekEnd: string }
+): CrossCurricularAuditRow[] {
+  const stats = new Map<string, ThemeStats>();
+  for (const [semester, tables] of Object.entries(tablesBySemester)) {
+    for (const table of tables) {
+      for (const row of table.rows) {
+        const tags = new Set(
+          Array.from(row.note.matchAll(THEME_TAG_REGEX), (match) => match[1] ?? "")
+        );
+        tags.delete("");
+        if (tags.size === 0) continue;
+        const hours = row.hours > 0 ? row.hours : 1;
+        const dates = Array.from(row.assigned.matchAll(ASSIGNED_SLOT_REGEX), (match) => match[1] ?? "");
+        const taught = dates.filter((date) => date && date <= options.today).length;
+        const week = dates.filter(
+          (date) => date && date >= options.weekStart && date <= options.weekEnd
+        ).length;
+        for (const tag of tags) {
+          const bucket = stats.get(tag) ?? { planned: {}, taught: {}, week: 0 };
+          bucket.planned[semester] = (bucket.planned[semester] ?? 0) + hours;
+          bucket.taught[semester] = (bucket.taught[semester] ?? 0) + taught;
+          bucket.week += week;
+          stats.set(tag, bucket);
+        }
+      }
+    }
+  }
+
+  const emptyStats: ThemeStats = { planned: {}, taught: {}, week: 0 };
+  const statsFor = (tag: string): ThemeStats => {
+    if (tag !== "안전교육") return stats.get(tag) ?? emptyStats;
+    // 통합 안전교육 기준은 7대 영역 태그의 합 — 한 차시가 두 영역 태그를 달면 각각 계상된다.
+    const merged: ThemeStats = { planned: {}, taught: {}, week: 0 };
+    for (const member of SAFETY_THEME_MEMBERS) {
+      const bucket = stats.get(member);
+      if (!bucket) continue;
+      for (const [semester, value] of Object.entries(bucket.planned)) {
+        merged.planned[semester] = (merged.planned[semester] ?? 0) + value;
+      }
+      for (const [semester, value] of Object.entries(bucket.taught)) {
+        merged.taught[semester] = (merged.taught[semester] ?? 0) + value;
+      }
+      merged.week += bucket.week;
+    }
+    return merged;
+  };
+
+  const makeRow = (
+    name: string,
+    tag: string,
+    standard1: number,
+    standard2: number,
+    standardYear: number
+  ): CrossCurricularAuditRow => {
+    const themeStats = statsFor(tag);
+    const planned1 = themeStats.planned["1학기"] ?? 0;
+    const planned2 = themeStats.planned["2학기"] ?? 0;
+    const taught1 = themeStats.taught["1학기"] ?? 0;
+    const taught2 = themeStats.taught["2학기"] ?? 0;
+    const plannedYear = planned1 + planned2;
+    return {
+      name,
+      tag,
+      week: themeStats.week,
+      standard1,
+      standard2,
+      standardYear,
+      planned1,
+      planned2,
+      plannedYear,
+      taught1,
+      taught2,
+      taughtYear: taught1 + taught2,
+      status: standardYear > 0 ? (plannedYear >= standardYear ? "ok" : "under") : "none"
+    };
+  };
+
+  const rows: CrossCurricularAuditRow[] = [];
+  const listed = new Set<string>();
+  for (const entry of standardRows) {
+    const tag = crossCurricularTag(entry.subject);
+    if (!tag || listed.has(tag)) continue;
+    listed.add(tag);
+    rows.push(makeRow(entry.subject, tag, entry.hours1, entry.hours2, entry.hours));
+  }
+  const tagOnly = [...stats.keys()]
+    .filter((tag) => !listed.has(tag))
+    .map((tag) => makeRow(`#${tag}`, tag, 0, 0, 0))
+    .sort((a, b) => b.plannedYear - a.plannedYear || a.tag.localeCompare(b.tag));
+  return [...rows, ...tagOnly];
+}
+
 export interface CrossCurricularTheme {
   tag: string;
   lessons: number;
