@@ -485,6 +485,14 @@ export function crossCurricularAudit(
   options: { today: string; weekStart: string; weekEnd: string }
 ): CrossCurricularAuditRow[] {
   const stats = new Map<string, ThemeStats>();
+  const add = (tag: string, semester: string, hours: number, taught: number, week: number): void => {
+    const bucket = stats.get(tag) ?? { planned: {}, taught: {}, week: 0 };
+    bucket.planned[semester] = (bucket.planned[semester] ?? 0) + hours;
+    bucket.taught[semester] = (bucket.taught[semester] ?? 0) + taught;
+    bucket.week += week;
+    stats.set(tag, bucket);
+  };
+  const safetyRelevant = new Set<string>([...SAFETY_THEME_MEMBERS, "안전교육"]);
   for (const [semester, tables] of Object.entries(tablesBySemester)) {
     for (const table of tables) {
       for (const row of table.rows) {
@@ -500,34 +508,21 @@ export function crossCurricularAudit(
           (date) => date && date >= options.weekStart && date <= options.weekEnd
         ).length;
         for (const tag of tags) {
-          const bucket = stats.get(tag) ?? { planned: {}, taught: {}, week: 0 };
-          bucket.planned[semester] = (bucket.planned[semester] ?? 0) + hours;
-          bucket.taught[semester] = (bucket.taught[semester] ?? 0) + taught;
-          bucket.week += week;
-          stats.set(tag, bucket);
+          // 통합 "안전교육" 계상은 아래에서 행 단위로 — 태그별 누계에서 제외해 이중 계상을 막는다.
+          if (tag === "안전교육") continue;
+          add(tag, semester, hours, taught, week);
+        }
+        // 통합 안전교육(7대 영역 합)은 행 단위로 1회만 — 한 차시에 #생활안전 #교통안전을
+        // 같이 달거나 #안전교육을 직접 달아도 중복 누계·누락이 없다.
+        if ([...tags].some((tag) => safetyRelevant.has(tag))) {
+          add("안전교육", semester, hours, taught, week);
         }
       }
     }
   }
 
   const emptyStats: ThemeStats = { planned: {}, taught: {}, week: 0 };
-  const statsFor = (tag: string): ThemeStats => {
-    if (tag !== "안전교육") return stats.get(tag) ?? emptyStats;
-    // 통합 안전교육 기준은 7대 영역 태그의 합 — 한 차시가 두 영역 태그를 달면 각각 계상된다.
-    const merged: ThemeStats = { planned: {}, taught: {}, week: 0 };
-    for (const member of SAFETY_THEME_MEMBERS) {
-      const bucket = stats.get(member);
-      if (!bucket) continue;
-      for (const [semester, value] of Object.entries(bucket.planned)) {
-        merged.planned[semester] = (merged.planned[semester] ?? 0) + value;
-      }
-      for (const [semester, value] of Object.entries(bucket.taught)) {
-        merged.taught[semester] = (merged.taught[semester] ?? 0) + value;
-      }
-      merged.week += bucket.week;
-    }
-    return merged;
-  };
+  const statsFor = (tag: string): ThemeStats => stats.get(tag) ?? emptyStats;
 
   const makeRow = (
     name: string,

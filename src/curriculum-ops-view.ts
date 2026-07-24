@@ -195,7 +195,7 @@ export class CurriculumOpsView extends ItemView {
     }
     section.createEl("p", {
       cls: "class-management-ops-hint",
-      text: "기준은 기준 시수 노트의 구분 '범교과' 행, 편성은 진도표 비고 #태그가 붙은 차시의 시수, 실행은 그중 오늘까지 배정이 지난 차시입니다. 기준은 최소 이수라 편성이 기준 이상이면 적정입니다. '안전교육' 기준은 7대 영역(생활·교통·폭력및신변·약물및사이버·재난·직업·응급처치) 태그의 합입니다."
+      text: "기준은 기준 시수 노트의 구분 '범교과' 행, 편성은 진도표 비고 #태그가 붙은 차시의 시수, 실행은 그중 오늘까지 배정이 지난 차시입니다. 기준은 최소 이수라 편성이 기준 이상이면 적정입니다. '안전교육' 기준은 7대 영역(생활·교통·폭력및신변·약물및사이버·재난·직업·응급처치) 또는 #안전교육 태그가 붙은 차시의 합 — 한 차시에 안전 태그가 여러 개여도 1회만 계상됩니다."
     });
     const table = section.createEl("table", { cls: "class-management-ops-audit-table" });
     const head = table.createEl("thead");
