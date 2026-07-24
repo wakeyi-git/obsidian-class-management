@@ -34,7 +34,7 @@ src/
   class-repository.ts   볼트 IO 단일 창구 파사드 (폴더 규약·노트 생성/파싱·frontmatter·AI 작업 공간)
   repository/           파사드 하위 IO 모듈 (backups.ts — 백업/복구/휴지통, 분해 1단계)
   curriculum-flows.ts   교육과정 도메인 플로 (배정·주간안내·성취기준·기록·할 일 수집 — 뷰는 플러그인 위임 경유)
-  commands.ts           명령 팔레트 51개 등록
+  commands.ts           명령 팔레트 52개 등록
   *-view.ts (16)        중앙·사이드 뷰 (ItemView)
   *-modal.ts (25)       입력 모달 (+modals.ts)
   main.ts               조립: 설정·프로필·뷰 레지스트리·open 흐름 (~1,200줄)

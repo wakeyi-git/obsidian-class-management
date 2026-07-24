@@ -4,6 +4,7 @@ import { isRemovedSubject, plannedHoursBySubject, resolveDay, subjectSlots } fro
 import { assignProgress, buildAssignedSlotContents } from "@core/progress";
 import { buildHoursAudit } from "@core/hours-audit";
 import { scanOperationalTasks } from "@core/task-scan";
+import { buildNeisProgressCsv } from "@core/neis-export";
 import { auditCurriculumAlignment, emptyCurriculumUnit, taughtHoursForUnit } from "@core/curriculum";
 import {
   achievementStandardMarkdown,
@@ -826,6 +827,34 @@ export class CurriculumFlows {
       }
     } catch {
       // 스탬프 실패는 다음 로드에서 재시도된다.
+    }
+  }
+
+  /** NEIS 업로드 양식과 같은 열 짜임의 진도표 CSV를 내보낸다 (현재 학기, 1행=1차시). */
+  async exportNeisProgress(): Promise<void> {
+    try {
+      const semester = this.settings.semester;
+      const tables = await this.repository.getProgressTables(semester);
+      if (tables.length === 0) {
+        new Notice(`${semester} 진도표가 없습니다. \`진도표 차시 가져오기\`를 먼저 실행하세요.`);
+        return;
+      }
+      const csv = buildNeisProgressCsv(tables, {
+        grade: this.settings.grade,
+        semester,
+        subjectOrder: this.settings.schoolSubjects
+      });
+      const rowCount = csv.split("\r\n").length - 2;
+      const file = await this.repository.saveExport(
+        `${this.settings.grade}학년_${semester}_진도표 NEIS`,
+        csv,
+        "csv"
+      );
+      new Notice(
+        `NEIS 진도표 CSV ${rowCount}행을 만들었습니다 — ${file.path}. 엑셀에서 열어 NEIS 업로드 양식(xlsx)에 붙여 넣으세요.`
+      );
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "NEIS 진도표를 내보내지 못했습니다.");
     }
   }
 

@@ -1,5 +1,5 @@
-import type { ActivityEntry, SchoolRecordArea, StudentEntry } from "./types";
-import { localDate, yamlString } from "./utils";
+import type { ActivityEntry, ProgressTable, SchoolRecordArea, StudentEntry } from "./types";
+import { csvCell, localDate, yamlString } from "./utils";
 
 /**
  * NEIS 대비 내보내기 — 검토 완료 학생부 근거를 영역별 붙여넣기 재료로 모으고,
@@ -18,6 +18,81 @@ export function countNeisChars(text: string): NeisCharCount {
     withSpaces: [...normalized].length,
     withoutSpaces: [...normalized.replace(/\s/g, "")].length
   };
+}
+
+/** plugin 과목명 → NEIS 편제명 — 진도표 가져오기 때 적용한 매핑의 역방향(⋅는 U+22C5). */
+export function neisSubjectName(subject: string, grade: string): string {
+  if (subject === "창체(자율)") return "자율⋅자치활동";
+  if (subject === "창체(동아리)") return "동아리활동";
+  if (subject === "창체(진로)") return "진로활동";
+  if (subject === "디지털 놀이터") return `디지털 놀이터${grade}`;
+  return subject;
+}
+
+/** 비고에서 쪽수·보조쪽수를 되읽는다 — 가져오기가 "32~35쪽 (보조 6~7)"로 저장한 형식. */
+export function pagesFromNote(note: string): { pages: string; auxPages: string } {
+  const head = note.split(/<br\s*\/?>/i)[0] ?? "";
+  return {
+    pages: head.match(/(?:^|\s)(\d+(?:~\d+)?)쪽/)?.[1] ?? "",
+    auxPages: head.match(/\(보조\s+([^)]+)\)/)?.[1]?.trim() ?? ""
+  };
+}
+
+export const NEIS_PROGRESS_HEADER = [
+  "순번", "*학년", "*학기", "*편제", "단원", "학습내용", "쪽수", "보조쪽수", "해당차시", "전체차시", "준비물"
+] as const;
+
+/**
+ * NEIS 업로드 양식(예: 3학년_1학기_진도표.xlsx)과 같은 열 짜임의 진도표 CSV — 1행=1차시.
+ * 시수가 n인 행은 n행으로 펼치고, 순번은 편제(과목)별로·해당차시/전체차시는 단원별로 센다.
+ */
+export function buildNeisProgressCsv(
+  tables: ProgressTable[],
+  options: { grade: string; semester: string; subjectOrder?: readonly string[] }
+): string {
+  const semesterNumber = options.semester.replace(/[^0-9]/g, "") || options.semester;
+  const orderKey = (subject: string): number => {
+    const index = options.subjectOrder?.indexOf(subject) ?? -1;
+    if (index >= 0) return index;
+    const creative = ["창체(자율)", "창체(동아리)", "창체(진로)"].indexOf(subject);
+    return creative >= 0 ? 1000 + creative : 2000;
+  };
+  const ordered = [...tables].sort(
+    (a, b) => orderKey(a.subject) - orderKey(b.subject) || a.subject.localeCompare(b.subject)
+  );
+
+  const lines: string[][] = [[...NEIS_PROGRESS_HEADER]];
+  for (const table of ordered) {
+    const unitTotals = new Map<string, number>();
+    for (const row of table.rows) {
+      unitTotals.set(row.unit, (unitTotals.get(row.unit) ?? 0) + (row.hours > 0 ? row.hours : 1));
+    }
+    const unitCounters = new Map<string, number>();
+    let sequence = 0;
+    for (const row of table.rows) {
+      const hours = row.hours > 0 ? row.hours : 1;
+      const { pages, auxPages } = pagesFromNote(row.note);
+      for (let offset = 0; offset < hours; offset += 1) {
+        sequence += 1;
+        const lessonNo = (unitCounters.get(row.unit) ?? 0) + 1;
+        unitCounters.set(row.unit, lessonNo);
+        lines.push([
+          String(sequence),
+          options.grade,
+          semesterNumber,
+          neisSubjectName(table.subject, options.grade),
+          row.unit,
+          row.topic,
+          pages,
+          auxPages,
+          String(lessonNo),
+          String(unitTotals.get(row.unit) ?? hours),
+          row.materials
+        ]);
+      }
+    }
+  }
+  return `﻿${lines.map((cells) => cells.map(csvCell).join(",")).join("\r\n")}\r\n`;
 }
 
 export const NEIS_AREA_LABELS: Record<SchoolRecordArea, string> = {

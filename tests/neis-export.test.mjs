@@ -82,3 +82,46 @@ test("학생·기간 필터가 적용된다", () => {
   );
   assert.match(doc, /검토 완료된 학생부 근거가 없습니다/, "기간 밖 근거 제외");
 });
+
+test("NEIS 진도표 CSV — 편제 매핑·시수 전개·차시 번호", async () => {
+  const { buildNeisProgressCsv, neisSubjectName, pagesFromNote } =
+    await loadTypeScriptModule("../packages/core/src/neis-export.ts");
+
+  assert.equal(neisSubjectName("창체(자율)", "3"), "자율⋅자치활동", "U+22C5 점 유지");
+  assert.equal(neisSubjectName("디지털 놀이터", "3"), "디지털 놀이터3");
+  assert.equal(neisSubjectName("국어", "3"), "국어");
+  assert.deepEqual(pagesFromNote("36~41쪽 (보조 6~7)"), { pages: "36~41", auxPages: "6~7" });
+  assert.deepEqual(pagesFromNote("154~155쪽<br>#정보통신윤리교육"), { pages: "154~155", auxPages: "" });
+  assert.deepEqual(pagesFromNote("#생활안전"), { pages: "", auxPages: "" });
+
+  const file = { path: "진도표.md", basename: "진도표", stat: { ctime: 1 } };
+  const row = (order, unit, topic, hours, note = "", materials = "") => ({
+    order, unit, topic, hours, standard: "", materials, unitLink: "", assignmentLink: "",
+    fixedDate: "", fixedPeriod: 0, assigned: "", note
+  });
+  const csv = buildNeisProgressCsv(
+    [
+      { file, schoolYear: "2026", semester: "1학기", subject: "창체(자율)", rows: [row(1, "학급 세우기", "약속 정하기", 1)] },
+      {
+        file, schoolYear: "2026", semester: "1학기", subject: "국어",
+        rows: [
+          row(1, "1. 단원", "배울 내용", 1, "32~35쪽"),
+          row(2, "창의적교육활동", "문해력 평가", 1),
+          row(3, "1. 단원", "이어서 -1-", 2, "36~41쪽 (보조 6~7)", "책")
+        ]
+      }
+    ],
+    { grade: "3", semester: "1학기", subjectOrder: ["국어", "수학"] }
+  );
+  const lines = csv.replace(/^﻿/, "").trim().split("\r\n").map((line) =>
+    line.split(",").map((cell) => cell.replace(/^"|"$/g, "").replace(/""/g, '"'))
+  );
+  assert.equal(lines[0][3], "*편제");
+  assert.equal(lines.length, 1 + 5, "시수 2 행은 2행으로 전개");
+  assert.deepEqual(lines[1].slice(0, 6), ["1", "3", "1", "국어", "1. 단원", "배울 내용"], "subjectOrder 우선");
+  assert.deepEqual(lines[2].slice(3, 6), ["국어", "창의적교육활동", "문해력 평가"]);
+  assert.deepEqual(lines[3].slice(8, 11), ["2", "3", "책"], "해당차시는 단원별 누계(끼어든 창의적교육활동 무관), 전체차시 3");
+  assert.deepEqual(lines[4].slice(0, 1), ["4"], "순번은 과목 안에서 이어짐");
+  assert.deepEqual(lines[4].slice(6, 10), ["36~41", "6~7", "3", "3"]);
+  assert.equal(lines[5][3], "자율⋅자치활동", "교과 목록 밖 창체는 뒤에");
+});

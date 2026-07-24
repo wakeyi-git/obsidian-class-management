@@ -150,6 +150,7 @@ export class NavigatorView extends ItemView {
         { label: "학사일정 노트", icon: "calendar", run: () => void plugin.openAcademicCalendarNote() },
         { label: "기준 시수 노트", icon: "clock", run: () => void plugin.openHoursStandardNote() },
         { label: "기초시간표 노트", icon: "table", run: () => void plugin.openBaseTimetableNote() },
+        { label: "NEIS 진도표 내보내기", icon: "upload", run: () => void plugin.flows.exportNeisProgress() },
         { label: "차시 인스펙터", icon: "book-open", run: () => void plugin.openLessonInspector() }
       ],
       [CALENDAR_VIEW_TYPE]: [

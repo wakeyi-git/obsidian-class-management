@@ -1,6 +1,6 @@
 import type ClassManagementPlugin from "./main";
 
-/** 명령 팔레트 51개 — 진입점의 백업 경로(UX-FLOWS §4). 본문은 플러그인·플로 메서드에 위임한다. */
+/** 명령 팔레트 52개 — 진입점의 백업 경로(UX-FLOWS §4). 본문은 플러그인·플로 메서드에 위임한다. */
 export function registerCommands(plugin: ClassManagementPlugin): void {
   plugin.addCommand({
     id: "open-dashboard",
@@ -256,5 +256,10 @@ export function registerCommands(plugin: ClassManagementPlugin): void {
     id: "write-work-journal",
     name: "업무일지 쓰기 (오늘)",
     callback: () => void plugin.openWorkJournal()
+  });
+  plugin.addCommand({
+    id: "export-neis-progress",
+    name: "NEIS 진도표 내보내기 (현재 학기)",
+    callback: () => void plugin.flows.exportNeisProgress()
   });
 }
