@@ -119,7 +119,8 @@ const DEFAULT_SETTINGS: ClassManagementSettings = {
   activitySortBy: "date",
   activitySortDirection: "desc",
   activityVisibleColumns: ["date", "student", "kind", "status", "detail", "source"],
-  calendarViewMode: "month"
+  calendarViewMode: "month",
+  calendarShowProgress: false
 };
 
 /** 활동 색인을 쓰는 뷰의 공통 의존 — 색인 원천 7범주 + 학생 명단. */
@@ -149,7 +150,7 @@ const MANAGED_VIEWS: ReadonlyArray<{
   {
     type: CALENDAR_VIEW_TYPE,
     create: (leaf, plugin) => new ClassCalendarView(leaf, plugin),
-    dependsOn: [...INDEX_VIEW_DEPS, "calendar-hours", "school-event"]
+    dependsOn: [...INDEX_VIEW_DEPS, "calendar-hours", "school-event", "progress", "timetable"]
   },
   {
     type: TASK_VIEW_TYPE,

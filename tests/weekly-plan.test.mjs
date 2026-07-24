@@ -4,7 +4,8 @@ import { loadTypeScriptModule } from "./helpers.mjs";
 
 const { parseAcademicCalendar } = await loadTypeScriptModule("../packages/core/src/academic-calendar.ts");
 const { parseBaseTimetable, resolveWeek } = await loadTypeScriptModule("../packages/core/src/timetable.ts");
-const { assignProgress, slotContentMap } = await loadTypeScriptModule("../packages/core/src/progress.ts");
+const { assignProgress, assignedLessonsByDate, slotContentMap } =
+  await loadTypeScriptModule("../packages/core/src/progress.ts");
 const { buildWeeklyPlanDays, buildWeeklyPlanMarkdown } =
   await loadTypeScriptModule("../packages/core/src/weekly-plan.ts");
 
@@ -85,4 +86,43 @@ test("주간학습안내를 생성한다", () => {
   assert.match(markdown, /\| 아침 \| 독서/);
   assert.match(markdown, /분수 막대/);
   assert.match(markdown, /- 수요일은 재량휴업일입니다\./);
+});
+
+test("날짜별 배정 차시를 과목·교시와 함께 모은다 (캘린더 진도 레이어)", () => {
+  const byDate = assignedLessonsByDate(
+    calendar,
+    { "2학기": timetable },
+    {
+      "2학기": [
+        {
+          schoolYear: "2026",
+          semester: "2학기",
+          subject: "수학",
+          rows: [
+            {
+              order: 1,
+              unit: "1. 분수",
+              topic: "분수의 의미",
+              hours: 2,
+              standard: "",
+              materials: "",
+              unitLink: "",
+              assignmentLink: "",
+              fixedDate: "",
+              fixedPeriod: 0,
+              assigned: "",
+              note: ""
+            }
+          ]
+        }
+      ]
+    }
+  );
+  const monday = byDate.get("2026-08-17") ?? [];
+  assert.equal(monday.length, 1, "월요일 1교시 수학 한 차시");
+  assert.equal(monday[0].subject, "수학");
+  assert.equal(monday[0].period, 1);
+  assert.equal(monday[0].topic, "분수의 의미");
+  assert.equal(monday[0].semester, "2학기");
+  assert.ok(!byDate.has("2026-08-19"), "재량휴업일에는 배정이 없다");
 });

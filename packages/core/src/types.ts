@@ -80,6 +80,8 @@ export interface ClassManagementSettings {
   activitySortDirection: "asc" | "desc";
   activityVisibleColumns: ActivityColumn[];
   calendarViewMode: "month" | "week";
+  /** 학급 캘린더의 진도 차시 레이어 표시 여부(기본 꺼짐 — 소음 방지). */
+  calendarShowProgress: boolean;
 }
 
 export interface ClassProfile {

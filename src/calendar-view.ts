@@ -1,4 +1,4 @@
-import { ItemView, Modal, Setting, WorkspaceLeaf } from "obsidian";
+import { ItemView, Modal, Setting, TFile, WorkspaceLeaf } from "obsidian";
 import { addOption, scaffoldView, type ViewScaffold } from "./dom";
 import { ACTIVITY_KIND_LABELS } from "@core/activity";
 import {
@@ -9,9 +9,10 @@ import {
   type CalendarEvent
 } from "@core/calendar";
 import { dayStatus, eventsOn } from "@core/academic-calendar";
+import { assignedLessonsByDate, type AssignedLessonItem } from "@core/progress";
 import type ClassManagementPlugin from "./main";
-import type { AcademicCalendar, ActivityKind,
-  CurriculumUnit } from "@core/types";
+import type { AcademicCalendar, ActivityKind, BaseTimetable,
+  CurriculumUnit, ProgressTable } from "@core/types";
 
 export const CALENDAR_VIEW_TYPE = "class-management-calendar";
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
@@ -25,6 +26,9 @@ export class ClassCalendarView extends ItemView {
   private projects: CurriculumUnit[] = [];
   private kind: "" | ActivityKind = "";
   private studentNumber = "";
+  /** 진도 차시 레이어(옵트인) — 날짜별 배정 차시와 과목별 진도표 노트. */
+  private lessonsByDate = new Map<string, AssignedLessonItem[]>();
+  private progressNotes = new Map<string, TFile>();
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -57,7 +61,26 @@ export class ClassCalendarView extends ItemView {
     this.projects = this.plugin.repository
       .getCurriculumUnits()
       .filter((unit) => unit.conceptInquiryEnabled && unit.startDate && unit.endDate);
+    await this.loadProgressLayer();
     this.render();
+  }
+
+  /** 진도 차시 레이어 데이터 — 켜져 있을 때만 계산한다(원장 원칙: 저장 없이 매번 계산). */
+  private async loadProgressLayer(): Promise<void> {
+    this.lessonsByDate = new Map();
+    this.progressNotes = new Map();
+    if (!this.plugin.settings.calendarShowProgress || !this.academicCalendar) return;
+    const timetables: Record<string, BaseTimetable | null> = {};
+    const tablesBySemester: Record<string, ProgressTable[]> = {};
+    for (const semester of ["1학기", "2학기"]) {
+      timetables[semester] = await this.plugin.repository.getBaseTimetable(semester);
+      const tables = await this.plugin.repository.getProgressTables(semester);
+      tablesBySemester[semester] = tables;
+      for (const table of tables) {
+        this.progressNotes.set(`${semester}|${table.subject}`, table.file);
+      }
+    }
+    this.lessonsByDate = assignedLessonsByDate(this.academicCalendar, timetables, tablesBySemester);
   }
 
   private render(): void {
@@ -139,6 +162,15 @@ export class ClassCalendarView extends ItemView {
       this.render();
     });
 
+    const progressLabel = filters.createEl("label", { cls: "class-management-calendar-progress-toggle" });
+    const progressToggle = progressLabel.createEl("input", { attr: { type: "checkbox" } });
+    progressToggle.checked = this.plugin.settings.calendarShowProgress;
+    progressLabel.createEl("span", { text: "진도 차시" });
+    progressToggle.addEventListener("change", () => {
+      this.plugin.settings.calendarShowProgress = progressToggle.checked;
+      void this.plugin.saveData(this.plugin.settings).then(() => this.refresh());
+    });
+
     filters.createEl("span", {
       text: "날짜의 + 버튼으로 기록·출결·과제·할 일·회신표를 빠르게 만들 수 있습니다.",
       cls: "setting-item-description"
@@ -211,6 +243,32 @@ export class ClassCalendarView extends ItemView {
         attr: { "aria-label": `${key} 항목 추가` }
       });
       add.addEventListener("click", () => new CalendarDateActionModal(this.plugin, key).open());
+
+      const lessons = this.lessonsByDate.get(key) ?? [];
+      if (lessons.length > 0) {
+        const lessonLimit = this.mode === "month" ? 3 : 8;
+        lessons.slice(0, lessonLimit).forEach((lesson) => {
+          const summary = this.mode === "week"
+            ? [lesson.subject, lesson.topic || lesson.unit].filter(Boolean).join(" — ")
+            : lesson.subject;
+          const button = cell.createEl("button", {
+            cls: "class-management-calendar-lesson",
+            attr: { "aria-label": `${lesson.period}교시 ${lesson.subject} 배정 차시 — 진도표 열기` }
+          });
+          button.createEl("span", { text: `${lesson.period}` , cls: "class-management-calendar-lesson-period" });
+          button.createEl("span", { text: summary });
+          const note = this.progressNotes.get(`${lesson.semester}|${lesson.subject}`);
+          button.addEventListener("click", () => {
+            if (note) void this.plugin.openFile(note);
+          });
+        });
+        if (lessons.length > lessonLimit) {
+          cell.createEl("span", {
+            text: `+${lessons.length - lessonLimit}차시`,
+            cls: "class-management-calendar-more"
+          });
+        }
+      }
 
       const dayEvents = eventsByDate.get(key) ?? [];
       const limit = this.mode === "month" ? 4 : 12;

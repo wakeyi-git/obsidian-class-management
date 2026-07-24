@@ -427,6 +427,48 @@ export function slotContentMap(
   return map;
 }
 
+export interface AssignedLessonItem {
+  period: number;
+  semester: string;
+  subject: string;
+  unit: string;
+  topic: string;
+}
+
+/** 날짜별 배정 차시 목록 — 캘린더 진도 레이어용. 교시 오름차순, 원장 원칙대로 저장 없이 계산한다. */
+export function assignedLessonsByDate(
+  calendar: AcademicCalendar,
+  timetables: Record<string, BaseTimetable | null>,
+  tablesBySemester: Record<string, ProgressTable[]>
+): Map<string, AssignedLessonItem[]> {
+  const byDate = new Map<string, AssignedLessonItem[]>();
+  for (const semester of Object.keys(timetables)) {
+    const timetable = timetables[semester];
+    if (!timetable) continue;
+    const range = semesterRange(calendar, semester);
+    if (!range.from || !range.to) continue;
+    for (const table of tablesBySemester[semester] ?? []) {
+      const slots = subjectSlots(calendar, timetable, range.from, range.to, table.subject);
+      const assignment = assignProgress(table.rows, slots);
+      for (const [key, row] of slotContentMap(assignment)) {
+        const [date, periodText] = key.split("|");
+        if (!date || !periodText) continue;
+        const list = byDate.get(date) ?? [];
+        list.push({
+          period: Number(periodText),
+          semester,
+          subject: table.subject,
+          unit: row.unit,
+          topic: row.topic
+        });
+        byDate.set(date, list);
+      }
+    }
+  }
+  for (const list of byDate.values()) list.sort((a, b) => a.period - b.period);
+  return byDate;
+}
+
 /** 두 학기의 진도표를 각 학기 시간표·기간에 배정해 날짜|교시 → 차시 맵으로 합친다. */
 export function buildAssignedSlotContents(
   calendar: AcademicCalendar,
