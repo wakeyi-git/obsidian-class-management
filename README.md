@@ -2,6 +2,8 @@
 
 학급 명단과 관찰·상담·칭찬 기록을 Obsidian의 Markdown 파일로 관리하는 커뮤니티 플러그인입니다.
 
+> **English** — Classroom Manager is an Obsidian plugin for Korean elementary homeroom teachers. It keeps a whole classroom — roster, attendance, student records, assignments (with rubric levels), GTD tasks, family notices, routines, academic calendar, timetable, subject progress, weekly plans, and curriculum-unit design — as plain local Markdown, so everything stays readable even without the plugin. The UI is Korean-only by design, matching Korean school workflows (NEIS paste helpers, 학교생활기록부 evidence, 교육과정-수업-평가-기록 integration). AI collaboration is opt-in, file-based, and anonymized by default. Try it in an empty vault with the `체험 데이터 만들기` command.
+
 > **사용 설명서**: [시기별 사용 설명서](docs/MANUAL.md) — 학년 준비부터 학기말까지 시기별 할 일.
 >
 > **설계 문서**: [제품 정의서](docs/PRODUCT.md) · [화면 지도와 작업 흐름](docs/UX-FLOWS.md) · [디자인 가이드](docs/DESIGN.md) · [UI/UX 원칙](docs/UIUX-PRINCIPLES.md) — 새 기능은 이 문서들에 맞춰 설계합니다. 순수 도메인 로직은 [`packages/core`](packages/core)에 플랫폼 독립으로 분리되어 있습니다.
@@ -28,7 +30,7 @@
 - 학생별 상태·회신일·메모를 저장하는 가정통신문 회신 체크리스트
 - 일간·주간·월간 템플릿과 날짜별 실행 기록을 갖춘 루틴 체크리스트
 - 일·주·월 및 학생별 분석 보고서, 기간 변화 점검, Markdown·CSV 내보내기
-- `AGENTS.md`·`CLAUDE.md` 기반 Codex·Claude 파일 연동과 2026 기재요령 기반 학교생활기록부 영역별 검토 초안
+- AI 협업(옵트인·파일 기반): `AGENTS.md` 작업 공간, 익명 AI 초안 자료 내보내기(기재요령 요약 인라인), `AI 결과/` 초안 반입
 - 창체·교과·행동 전용 RAW 근거 입력, 학급 일괄 관찰, 학생×교과 누락 점검과 근거 검토 상태 관리
 - 여러 학급·학년도·학기 프로필 전환과 다음 학기 학생 명단 복사
 - 학생 전입·전출·졸업 상태 및 번호·이름 변경, 이전 학급 읽기 전용 보관
@@ -39,6 +41,9 @@
 - 관찰, 상담, 칭찬, 생활지도, 보호자 연락 기록 작성
 - 학생 수, 오늘 기록, 최근 기록을 보여주는 학급 대시보드 (빠른 작업·뷰 진입점 정리)
 - 왼쪽 사이드 패널 **학급 메뉴** — 뷰 진입점과 현재 화면의 작업을 작업 순서대로 표시
+- 주간학습안내·보고서 인쇄(A4) 규격, 학생 상담 자료·NEIS 붙여넣기 자료 내보내기와 글자수 검사
+- 규칙 기반 할 일 자동 수집, 범교과 주제어(#태그) 집계, 재구성 기록, 학년도 마감·이월 안내
+- CoVault 알림장 내보내기·통계 대사(선택), 성취기준 데이터셋 가져오기, 체험 데이터 만들기
 - 저장 폴더와 학급 이름 설정
 - 데스크톱과 모바일 레이아웃 지원
 

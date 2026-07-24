@@ -217,3 +217,19 @@ test("스캐폴드 노트의 frontmatter가 파서 필드와 왕복된다", () =
   assert.match(markdown, /standardCode: "6사회01-01"/);
   assert.match(markdown, /statement: "우리나라의 위치와 영역을 설명할 수 있다\."/);
 });
+
+test("성취기준 데이터셋(코드,전문)을 파싱한다", async () => {
+  const { parseStandardDataset } = await loadTypeScriptModule("../packages/core/src/planning.ts");
+  const parsed = parseStandardDataset([
+    "코드,전문",
+    "[4수01-10],여러 가지 방법으로 계산한다",
+    "4과03-01\t지층을 관찰하고 특징을 설명한다",
+    "4수01-10,중복 코드",
+    "이상한값,전문 없음",
+    ""
+  ].join("\n"));
+  assert.equal(parsed.rows.length, 2);
+  assert.deepEqual(parsed.rows[0], { code: "4수01-10", statement: "여러 가지 방법으로 계산한다" });
+  assert.equal(parsed.rows[1].code, "4과03-01");
+  assert.equal(parsed.issues.length, 2, "중복·형식 오류는 무시 목록으로");
+});

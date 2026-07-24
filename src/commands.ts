@@ -1,6 +1,6 @@
 import type ClassManagementPlugin from "./main";
 
-/** 명령 팔레트 48개 — 진입점의 백업 경로(UX-FLOWS §4). 본문은 플러그인·플로 메서드에 위임한다. */
+/** 명령 팔레트 50개 — 진입점의 백업 경로(UX-FLOWS §4). 본문은 플러그인·플로 메서드에 위임한다. */
 export function registerCommands(plugin: ClassManagementPlugin): void {
   plugin.addCommand({
     id: "open-dashboard",
@@ -241,5 +241,15 @@ export function registerCommands(plugin: ClassManagementPlugin): void {
     id: "covault-stats-reconcile",
     name: "CoVault 통계 대사",
     callback: () => plugin.openCovaultStats()
+  });
+  plugin.addCommand({
+    id: "import-standard-dataset",
+    name: "성취기준 데이터셋 가져오기",
+    callback: () => plugin.openStandardDatasetImport()
+  });
+  plugin.addCommand({
+    id: "seed-demo-data",
+    name: "체험 데이터 만들기 (빈 학급)",
+    callback: () => void plugin.seedDemoData()
   });
 }

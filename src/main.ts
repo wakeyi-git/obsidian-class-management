@@ -8,6 +8,7 @@ import { FeedbackModal } from "./feedback-modal";
 import { NeisCharCountModal } from "./neis-char-modal";
 import { YearEndModal } from "./year-end-modal";
 import { CovaultExportModal, CovaultStatsModal } from "./covault-modal";
+import { StandardDatasetModal } from "./standard-dataset-modal";
 import { AssignmentModal, AssignmentPickerModal } from "./assignment-modal";
 import { ClassCalendarView, CALENDAR_VIEW_TYPE } from "./calendar-view";
 import { ClassProfileModal } from "./class-profile-modal";
@@ -47,6 +48,7 @@ import { ReportView, REPORT_VIEW_TYPE } from "./report-view";
 import { SchoolRecordEvidenceModal } from "./school-record-evidence-modal";
 import { SchoolRecordBatchModal } from "./school-record-batch-modal";
 import { defaultSubjectsForGrade } from "@core/school-record-evidence";
+import { localDate } from "@core/utils";
 import { ClassManagementSettingTab } from "./settings-tab";
 import {
   StudentTimelineView,
@@ -969,6 +971,69 @@ export default class ClassManagementPlugin extends Plugin {
 
   openCovaultExport(): void {
     new CovaultExportModal(this).open();
+  }
+
+  openStandardDatasetImport(): void {
+    new StandardDatasetModal(this).open();
+  }
+
+  /** 체험 데이터 — 빈 학급에서만, 기능 훑어보기용 최소 셋(학생 3·출결·기록·과제·할 일). */
+  async seedDemoData(): Promise<void> {
+    if (!this.canWriteActiveClass()) return;
+    if (this.repository.getStudents(true).length > 0) {
+      new Notice("체험 데이터는 학생이 없는 빈 학급에서만 만들 수 있습니다. — 새 프로필에서 시도하세요.");
+      return;
+    }
+    try {
+      const roster: Array<[string, string]> = [["1", "김하늘"], ["2", "이바다"], ["3", "박새로"]];
+      const students = [];
+      for (const [number, name] of roster) {
+        students.push(await this.repository.createStudent({ number, name }));
+      }
+      const today = localDate();
+      await this.repository.saveAttendance(today, [
+        { studentNumber: "1", studentName: "김하늘", status: "출석" },
+        { studentNumber: "2", studentName: "이바다", status: "지각", reason: "병원 진료" },
+        { studentNumber: "3", studentName: "박새로", status: "출석" }
+      ]);
+      const [first, second] = students;
+      if (first) {
+        await this.repository.createRecord(first, {
+          recordType: "칭찬",
+          date: today,
+          content: "모둠 활동에서 친구의 발표 준비를 도왔습니다."
+        });
+      }
+      if (second) {
+        await this.repository.createRecord(second, {
+          recordType: "관찰",
+          date: today,
+          content: "수학 시간에 문제 풀이 과정을 스스로 설명했습니다."
+        });
+      }
+      await this.repository.saveAssignment(today, "체험 과제 - 알림장 사인 받아오기", [
+        { studentNumber: "1", studentName: "김하늘", status: "제출", level: "◎" },
+        { studentNumber: "2", studentName: "이바다", status: "미제출" },
+        { studentNumber: "3", studentName: "박새로", status: "제출" }
+      ], null);
+      await this.repository.createTask({
+        title: "체험: 시간표·시수 체크리스트 훑어보기",
+        status: "next",
+        project: "플러그인 체험",
+        context: "",
+        startDate: "",
+        dueDate: today,
+        priority: "normal",
+        recurrence: "none",
+        studentNumber: "",
+        studentName: "",
+        detail: "학사일정 → 기준 시수 → 기초시간표 → 진도표 순서로 채우면 배정·시수가 계산됩니다."
+      });
+      new Notice("체험 데이터를 만들었습니다 — 학생 3·출결·기록 2·과제 1·할 일 1. 대시보드에서 확인하세요.");
+      await this.openDashboard();
+    } catch (error) {
+      new Notice(error instanceof Error ? error.message : "체험 데이터를 만들지 못했습니다.");
+    }
   }
 
   openCovaultStats(): void {

@@ -1,9 +1,9 @@
 {
   "id": "class-management",
   "name": "Classroom Manager",
-  "version": "1.64.0",
+  "version": "1.65.0",
   "minAppVersion": "1.8.0",
-  "description": "학생 명단, 출결, 생활 기록, 할 일과 체크리스트를 로컬 Markdown으로 관리합니다.",
+  "description": "Homeroom class management in local Markdown for Korean elementary teachers — roster, attendance, student records, assignments, GTD tasks, timetable, and curriculum planning/integration.",
   "author": "wakeyi",
   "authorUrl": "https://github.com/wakeyi-git/obsidian-class-management",
   "isDesktopOnly": false

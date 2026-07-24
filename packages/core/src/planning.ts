@@ -275,6 +275,43 @@ export function resolveAssessmentDate(
 export const STANDARD_CODE_REGEX = /\d[가-힣]{1,2}\d{2}-\d{2}/g;
 
 /** 텍스트에서 성취기준 코드를 등장 순서대로 중복 없이 추출한다. */
+export interface StandardDatasetRow {
+  code: string;
+  statement: string;
+}
+
+export interface StandardDatasetResult {
+  rows: StandardDatasetRow[];
+  issues: string[];
+}
+
+/**
+ * 성취기준 데이터셋(CSV/TSV: 코드,전문) 붙여넣기 파싱 — 지도서 추출 없이도 노트를 채우는
+ * 3.6 가져오기 형식. 대괄호는 벗기고, 코드 형식이 아니거나 중복이면 건너뛴다.
+ */
+export function parseStandardDataset(text: string): StandardDatasetResult {
+  const rows: StandardDatasetRow[] = [];
+  const issues: string[] = [];
+  const seen = new Set<string>();
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  for (const [index, line] of lines.entries()) {
+    const cells = splitDelimited(line);
+    const code = (cells[0] ?? "").replace(/[[\]]/g, "").trim();
+    if (index === 0 && /코드|code/i.test(code)) continue;
+    if (!new RegExp(`^${STANDARD_CODE_REGEX.source}$`).test(code)) {
+      issues.push(`${index + 1}행: 코드 형식이 아닙니다 — ${code || "(빈 칸)"}`);
+      continue;
+    }
+    if (seen.has(code)) {
+      issues.push(`${index + 1}행: 중복 코드 — ${code}`);
+      continue;
+    }
+    seen.add(code);
+    rows.push({ code, statement: cells.slice(1).join(" ").trim() });
+  }
+  return { rows, issues };
+}
+
 export function extractStandardCodes(text: string): string[] {
   const codes: string[] = [];
   for (const match of text.matchAll(STANDARD_CODE_REGEX)) {
