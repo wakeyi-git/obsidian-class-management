@@ -600,9 +600,11 @@ export class ClassRepository {
     const studentsByNumber = new Map(
       this.getStudents().map((student) => [student.number, student] as const)
     );
+    // 도달수준이 하나라도 기록되면 5열 형식으로, 아니면 구형 4열을 유지한다(기존 노트 무이행).
+    const includeLevel = marks.some((mark) => mark.level);
     const rows = marks.map((mark) => {
       const student = studentsByNumber.get(mark.studentNumber);
-      return formatAssignmentTableRow(mark, student?.file.path);
+      return formatAssignmentTableRow(mark, student?.file.path, includeLevel);
     });
     const settings = this.getSettings();
     const content = [
@@ -629,8 +631,9 @@ export class ClassRepository {
       ...(unitLink
         ? [`- 연계 단원: [[${unitLink.path.replace(/\.md$/i, "")}|${unitLink.title}]]`, ""]
         : []),
-      "| 번호 | 학생 | 상태 | 메모 |",
-      "| ---: | --- | --- | --- |",
+      ...(includeLevel
+        ? ["| 번호 | 학생 | 상태 | 도달수준 | 메모 |", "| ---: | --- | --- | :---: | --- |"]
+        : ["| 번호 | 학생 | 상태 | 메모 |", "| ---: | --- | --- | --- |"]),
       ...rows,
       ""
     ].join("\n");

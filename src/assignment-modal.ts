@@ -1,6 +1,7 @@
 import { App, ButtonComponent, Modal, Notice, Setting, SuggestModal, TFile } from "obsidian";
-import { ASSIGNMENT_STATUSES } from "@core/assignment";
+import { ASSIGNMENT_LEVELS, ASSIGNMENT_STATUSES } from "@core/assignment";
 import type {
+  AssignmentLevel,
   AssignmentMark,
   AssignmentSheet,
   AssignmentStatus,
@@ -57,6 +58,7 @@ export class AssignmentModal extends Modal {
   private assignmentTitle = "";
   private unitId = "";
   private readonly statuses = new Map<string, AssignmentStatus>();
+  private readonly levels = new Map<string, AssignmentLevel | "">();
   private readonly notes = new Map<string, string>();
   private rosterEl?: HTMLElement;
   private summaryEl?: HTMLElement;
@@ -87,6 +89,7 @@ export class AssignmentModal extends Modal {
       this.assignmentTitle = existing.title;
       existing.marks.forEach((mark) => {
         this.statuses.set(mark.studentNumber, mark.status);
+        if (mark.level) this.levels.set(mark.studentNumber, mark.level);
         if (mark.note) this.notes.set(mark.studentNumber, mark.note);
       });
     }
@@ -165,6 +168,7 @@ export class AssignmentModal extends Modal {
     header.createEl("th", { text: "번호" });
     header.createEl("th", { text: "이름" });
     header.createEl("th", { text: "상태" });
+    header.createEl("th", { text: "도달수준" });
     header.createEl("th", { text: "메모" });
     const body = table.createEl("tbody");
 
@@ -187,6 +191,23 @@ export class AssignmentModal extends Modal {
       select.addEventListener("change", () => {
         this.statuses.set(student.number, select.value as AssignmentStatus);
         this.styleStatusSelect(select);
+        this.renderSummary();
+      });
+
+      const levelCell = row.createEl("td");
+      const levelSelect = levelCell.createEl("select", {
+        cls: "class-management-assignment-level",
+        attr: { "aria-label": `${student.number}번 ${student.name} 도달수준` }
+      });
+      const noneOption = levelSelect.createEl("option", { text: "—" });
+      noneOption.value = "";
+      ASSIGNMENT_LEVELS.forEach((level) => {
+        const option = levelSelect.createEl("option", { text: level });
+        option.value = level;
+      });
+      levelSelect.value = this.levels.get(student.number) ?? "";
+      levelSelect.addEventListener("change", () => {
+        this.levels.set(student.number, levelSelect.value as AssignmentLevel | "");
         this.renderSummary();
       });
 
@@ -214,8 +235,15 @@ export class AssignmentModal extends Modal {
       ASSIGNMENT_STATUSES.map((status) => [status, 0])
     );
     this.statuses.forEach((status) => counts.set(status, (counts.get(status) ?? 0) + 1));
+    const levelCounts = new Map<AssignmentLevel, number>();
+    this.levels.forEach((level) => {
+      if (level) levelCounts.set(level, (levelCounts.get(level) ?? 0) + 1);
+    });
+    const levelSummary = levelCounts.size > 0
+      ? ` · 도달 ${ASSIGNMENT_LEVELS.map((level) => `${level}${levelCounts.get(level) ?? 0}`).join(" ")}`
+      : "";
     this.summaryEl.setText(
-      `제출 ${counts.get("제출") ?? 0}/${this.students.length}명 · 미제출 ${counts.get("미제출") ?? 0}명 · 보완 ${counts.get("보완") ?? 0}명`
+      `제출 ${counts.get("제출") ?? 0}/${this.students.length}명 · 미제출 ${counts.get("미제출") ?? 0}명 · 보완 ${counts.get("보완") ?? 0}명${levelSummary}`
     );
   }
 
@@ -234,11 +262,13 @@ export class AssignmentModal extends Modal {
     this.saveButton?.setDisabled(true).setButtonText("저장하는 중…");
     const marks: AssignmentMark[] = this.students.map((student) => {
       const note = (this.notes.get(student.number) ?? "").trim();
+      const level = this.levels.get(student.number) ?? "";
       const mark: AssignmentMark = {
         studentNumber: student.number,
         studentName: student.name,
         status: this.statuses.get(student.number) ?? "제출"
       };
+      if (level) mark.level = level;
       if (note) mark.note = note;
       return mark;
     });

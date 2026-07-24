@@ -148,10 +148,15 @@ export interface AttendanceMark {
 
 export type AssignmentStatus = "제출" | "미제출" | "보완";
 
+/** 수행평가 루브릭 도달수준 — 기록일 뿐 점수 산출(비목표)이 아니다. */
+export type AssignmentLevel = "◎" | "○" | "△";
+
 export interface AssignmentMark {
   studentNumber: string;
   studentName: string;
   status: AssignmentStatus;
+  /** 선택 기록 — 하나라도 있으면 확인표가 도달수준 열이 있는 형식으로 저장된다. */
+  level?: AssignmentLevel;
   note?: string;
 }
 
