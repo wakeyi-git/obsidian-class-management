@@ -135,6 +135,7 @@ export class NavigatorView extends ItemView {
         { label: "가정통신문 회신", icon: "mail", run: () => plugin.openNoticeFlow() },
         { label: "학생 개별 기록", icon: "file-text", run: () => plugin.openSchoolRecordEvidenceFlow() },
         { label: "학급 일괄 기록", icon: "files", run: () => plugin.openSchoolRecordBatch() },
+        { label: "업무일지 쓰기", icon: "briefcase", run: () => void plugin.openWorkJournal() },
         { label: "학생 추가·명렬표", icon: "user-plus", run: () => plugin.openStudentModal() },
         { label: "학생 인스펙터", icon: "user-search", run: () => plugin.openStudentInspectorFlow() }
       ],
@@ -156,6 +157,7 @@ export class NavigatorView extends ItemView {
         { label: "출결 체크", icon: "user-check", run: () => plugin.openAttendanceModal() },
         { label: "과제 체크", icon: "clipboard-check", run: () => plugin.openAssignmentFlow() },
         { label: "할 일 빠른 수집", icon: "inbox", run: () => plugin.openTaskModal() },
+        { label: "업무일지 쓰기", icon: "briefcase", run: () => void plugin.openWorkJournal() },
         { label: "주간학습안내 생성", icon: "newspaper", run: () => void plugin.generateWeeklyPlan() }
       ],
       [ACTIVITY_LIST_VIEW_TYPE]: [
