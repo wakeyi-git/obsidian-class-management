@@ -1,6 +1,7 @@
-import type { ProgressRow, ProgressTable } from "./types";
+import type { TFile } from "obsidian";
+import type { AchievementStandardEntry, ProgressRow, ProgressTable } from "./types";
 import { splitDelimited } from "./progress";
-import { yamlString } from "./utils";
+import { stringValue, yamlString } from "./utils";
 
 /*
  * 계획 수립 도구 3종의 순수 로직 (PRODUCT §10 R0).
@@ -348,6 +349,21 @@ export function achievementStandardMarkdown(input: AchievementStandardNoteInput)
     lines.push("");
   }
   return lines.join("\n");
+}
+
+/** 성취기준 노트를 되읽는다 (R2 — 검색·연결 UI의 원천). 판별자 불일치 시 null. */
+export function parseAchievementStandard(
+  file: TFile,
+  frontmatter: Record<string, unknown> | undefined
+): AchievementStandardEntry | null {
+  if (frontmatter?.["class-management"] !== "achievement-standard") return null;
+  return {
+    file,
+    code: stringValue(frontmatter.standardCode) || file.basename,
+    subject: stringValue(frontmatter.subject),
+    gradeBand: stringValue(frontmatter.gradeBand),
+    statement: stringValue(frontmatter.statement)
+  };
 }
 
 /**

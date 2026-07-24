@@ -1,4 +1,5 @@
-import { App, ButtonComponent, Modal, Notice, Setting } from "obsidian";
+import { App, ButtonComponent, Modal, Notice, Setting, type TextAreaComponent } from "obsidian";
+import { pickStandardInto } from "./standard-picker-modal";
 import {
   ACTIVITY_PLAN_LABELS,
   emptySchoolRecordEvidence,
@@ -8,6 +9,7 @@ import {
 } from "@core/school-record-evidence";
 import { SCHOOL_RECORD_AREAS } from "@core/school-record";
 import type {
+  AchievementStandardEntry,
   ClassManagementSettings,
   CurriculumUnit,
   NewRecord,
@@ -18,6 +20,7 @@ import { localDate } from "@core/utils";
 
 export class SchoolRecordBatchModal extends Modal {
   private date = localDate();
+  private standardInput?: TextAreaComponent;
   private area: SchoolRecordArea = "creative-activities";
   private subarea = "autonomy";
   private activityName = "";
@@ -44,7 +47,8 @@ export class SchoolRecordBatchModal extends Modal {
     private readonly onSave: (records: Array<{ student: StudentEntry; record: NewRecord }>) => Promise<void>,
     initialArea: SchoolRecordArea = "creative-activities",
     private readonly curriculumUnits: CurriculumUnit[] = [],
-    initialUnit?: CurriculumUnit
+    initialUnit?: CurriculumUnit,
+    private readonly standards: AchievementStandardEntry[] = []
   ) {
     super(app);
     this.area = initialArea;
@@ -143,7 +147,32 @@ export class SchoolRecordBatchModal extends Modal {
         })
       );
       this.addText("단원·수업 주제", this.activityName, (value) => (this.activityName = value));
-      this.addTextArea("성취기준", this.achievementStandard, (value) => (this.achievementStandard = value));
+      if (this.commonEl) {
+        new Setting(this.commonEl)
+          .setName("성취기준")
+          .addTextArea((text) => {
+            this.standardInput = text;
+            text.setValue(this.achievementStandard).onChange((next) => {
+              this.achievementStandard = next;
+              this.changed();
+            });
+            text.inputEl.rows = 3;
+          })
+          .addExtraButton((button) =>
+            button.setIcon("search").setTooltip("성취기준 노트에서 검색해 추가").onClick(() => {
+              pickStandardInto(
+                this.app,
+                this.standards,
+                () => this.achievementStandard,
+                (next) => {
+                  this.achievementStandard = next;
+                  this.standardInput?.setValue(next);
+                  this.changed();
+                }
+              );
+            })
+          );
+      }
       this.addText("평가요소", this.evaluationElement, (value) => (this.evaluationElement = value));
       this.addText("평가방법", this.evaluationMethod, (value) => (this.evaluationMethod = value));
     } else {

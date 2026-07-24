@@ -31,6 +31,15 @@ export const NOTE_KINDS = [
 
 export type NoteKind = (typeof NOTE_KINDS)[number];
 
+/** 성취기준 노트의 파싱 결과 (R2 — 플러그인 인식). */
+export interface AchievementStandardEntry {
+  file: TFile;
+  code: string;
+  subject: string;
+  gradeBand: string;
+  statement: string;
+}
+
 export interface ClassManagementSettings {
   className: string;
   schoolYear: string;

@@ -6,6 +6,7 @@ const {
   achievementStandardMarkdown,
   extractStandardCodes,
   linkifyStandardCell,
+  parseAchievementStandard,
   parseAssessmentPlanImport,
   pdfPageLinks,
   resolveAssessmentDate,
@@ -182,4 +183,37 @@ test("achievementStandardMarkdown: 프론트매터·본문 형식", () => {
   const empty = achievementStandardMarkdown({ code: "4국01-01", statement: "", progressLinks: [] });
   assert.match(empty, /전문 미입력/);
   assert.doesNotMatch(empty, /## 진도표/);
+});
+
+test("성취기준 노트를 되읽는다 — 코드·전문·과목·학년군 (R2 인식)", () => {
+  const file = { path: "학급운영/교육과정/성취기준/4수01-16.md", basename: "4수01-16", stat: { ctime: 1 } };
+  const parsed = parseAchievementStandard(file, {
+    "class-management": "achievement-standard",
+    standardCode: "4수01-16",
+    subject: "수학",
+    gradeBand: "3~4학년",
+    statement: "분모가 같은 분수의 덧셈과 뺄셈을 할 수 있다."
+  });
+  assert.equal(parsed?.code, "4수01-16");
+  assert.equal(parsed?.subject, "수학");
+  assert.match(parsed?.statement ?? "", /분수의 덧셈/);
+});
+
+test("성취기준 파서 — 판별자 불일치는 null, 코드 누락은 파일 이름으로 보완", () => {
+  const file = { path: "학급운영/교육과정/성취기준/4수01-17.md", basename: "4수01-17", stat: { ctime: 1 } };
+  assert.equal(parseAchievementStandard(file, { "class-management": "record" }), null);
+  assert.equal(parseAchievementStandard(file, undefined), null);
+  const fallback = parseAchievementStandard(file, { "class-management": "achievement-standard" });
+  assert.equal(fallback?.code, "4수01-17");
+});
+
+test("스캐폴드 노트의 frontmatter가 파서 필드와 왕복된다", () => {
+  const markdown = achievementStandardMarkdown({
+    code: "6사회01-01",
+    statement: "우리나라의 위치와 영역을 설명할 수 있다.",
+    progressLinks: ["2026 2학기 사회 진도표"]
+  });
+  assert.match(markdown, /class-management: achievement-standard/);
+  assert.match(markdown, /standardCode: "6사회01-01"/);
+  assert.match(markdown, /statement: "우리나라의 위치와 영역을 설명할 수 있다\."/);
 });

@@ -1,4 +1,5 @@
-import { App, ButtonComponent, Modal, Notice, Setting } from "obsidian";
+import { App, ButtonComponent, Modal, Notice, Setting, type TextAreaComponent } from "obsidian";
+import { pickStandardInto } from "./standard-picker-modal";
 import {
   auditCurriculumAlignment,
   auditConceptInquiryDesign,
@@ -11,6 +12,7 @@ import {
   EVALUATION_METHOD_OPTIONS
 } from "@core/curriculum";
 import type {
+  AchievementStandardEntry,
   ClassManagementSettings,
   ConceptInquiryPhase,
   ConceptInquiryStrand,
@@ -27,12 +29,14 @@ export class CurriculumUnitModal extends Modal {
   private conceptFieldsEl?: HTMLElement;
   private saveButton?: ButtonComponent;
   private saving = false;
+  private standardsInput?: TextAreaComponent;
 
   constructor(
     app: App,
     private readonly settings: ClassManagementSettings,
     private readonly onSave: (unit: NewCurriculumUnit, existing?: CurriculumUnit) => Promise<void>,
-    private readonly existing?: CurriculumUnit
+    private readonly existing?: CurriculumUnit,
+    private readonly standards: AchievementStandardEntry[] = []
   ) {
     super(app);
     this.draft = existing ? unitDraft(existing) : emptyCurriculumUnit(settings);
@@ -66,9 +70,31 @@ export class CurriculumUnitModal extends Modal {
     this.addNumber("계획 시수", this.draft.plannedHours, 0, (value) => (this.draft.plannedHours = value));
 
     this.heading("1. 교육과정 재인식과 학생 요구");
-    this.addTextArea("성취기준", "코드와 내용을 함께 입력합니다. 여러 기준은 줄바꿈으로 구분합니다.", this.draft.achievementStandards, (value) => {
-      this.draft.achievementStandards = value;
-    }, 5);
+    new Setting(this.contentEl)
+      .setName("성취기준")
+      .setDesc("코드와 내용을 함께 입력합니다. 여러 기준은 줄바꿈으로 구분합니다.")
+      .addTextArea((text) => {
+        this.standardsInput = text;
+        text.setValue(this.draft.achievementStandards).onChange((next) => {
+          this.draft.achievementStandards = next;
+          this.changed();
+        });
+        text.inputEl.rows = 5;
+      })
+      .addExtraButton((button) =>
+        button.setIcon("search").setTooltip("성취기준 노트에서 검색해 추가").onClick(() => {
+          pickStandardInto(
+            this.app,
+            this.standards,
+            () => this.draft.achievementStandards,
+            (next) => {
+              this.draft.achievementStandards = next;
+              this.standardsInput?.setValue(next);
+              this.changed();
+            }
+          );
+        })
+      );
     this.addTextArea("학생 요구·삶의 맥락", "학생의 흥미, 선행 경험, 학습 필요, 학급 특성", this.draft.studentNeeds, (value) => {
       this.draft.studentNeeds = value;
     });

@@ -2,7 +2,7 @@ import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 import { formatAttendanceTableRow, parseAttendanceMetadata } from "@core/attendance";
 import { formatAssignmentTableRow, parseAssignmentTable } from "@core/assignment";
 import { formatNoticeTableRow, parseNoticeTable } from "@core/notice";
-import { linkifyStandardCell } from "@core/planning";
+import { linkifyStandardCell, parseAchievementStandard } from "@core/planning";
 import {
   parseRoutineInstanceItems,
   parseRoutineItems,
@@ -83,6 +83,7 @@ import type {
   TaskStatus
 } from "@core/types";
 import type {
+  AchievementStandardEntry,
   ActivityEntry,
   AiDraftKind,
   SchoolRecordArea,
@@ -1360,6 +1361,19 @@ export class ClassRepository {
     const existing = this.app.vault.getAbstractFileByPath(path);
     if (existing instanceof TFile) return { file: existing, created: false };
     return { file: await this.app.vault.create(path, markdown), created: true };
+  }
+
+  /** 성취기준 노트를 코드순으로 되읽는다 (R2 — 검색·연결 UI). */
+  getAchievementStandards(): AchievementStandardEntry[] {
+    return this.markdownFilesIn(this.standardsFolderPath)
+      .map((file) =>
+        parseAchievementStandard(
+          file,
+          this.app.metadataCache.getFileCache(file)?.frontmatter as Record<string, unknown> | undefined
+        )
+      )
+      .filter((entry): entry is AchievementStandardEntry => entry !== null)
+      .sort((a, b) => a.code.localeCompare(b.code));
   }
 
   /** 진도표 성취기준 셀의 코드들을 위키링크로 바꾼다. 바뀐 행 수를 돌려준다. */

@@ -1,4 +1,5 @@
-import { App, ButtonComponent, Modal, Notice, Setting } from "obsidian";
+import { App, ButtonComponent, Modal, Notice, Setting, type TextAreaComponent } from "obsidian";
+import { pickStandardInto } from "./standard-picker-modal";
 import {
   ACTIVITY_PLAN_LABELS,
   emptySchoolRecordEvidence,
@@ -9,6 +10,7 @@ import {
 } from "@core/school-record-evidence";
 import { SCHOOL_RECORD_AREAS } from "@core/school-record";
 import type {
+  AchievementStandardEntry,
   ClassManagementSettings,
   CurriculumLesson,
   CurriculumUnit,
@@ -27,6 +29,7 @@ export class SchoolRecordEvidenceModal extends Modal {
   private saveButton?: ButtonComponent;
   private warningsConfirmed = false;
   private saving = false;
+  private standardInput?: TextAreaComponent;
 
   constructor(
     app: App,
@@ -39,7 +42,8 @@ export class SchoolRecordEvidenceModal extends Modal {
     private readonly curriculumUnits: CurriculumUnit[] = [],
     private readonly curriculumLessons: CurriculumLesson[] = [],
     initialUnit?: CurriculumUnit,
-    initialLesson?: CurriculumLesson
+    initialLesson?: CurriculumLesson,
+    private readonly standards: AchievementStandardEntry[] = []
   ) {
     super(app);
     this.date = initialDate;
@@ -253,9 +257,33 @@ export class SchoolRecordEvidenceModal extends Modal {
     this.addText("단원·수업 주제", "예: 분수의 덧셈과 뺄셈", this.evidence.activityName, (value) => {
       this.evidence.activityName = value;
     });
-    this.addTextArea("성취기준", "성취기준 코드와 내용을 함께 기록할 수 있습니다.", this.evidence.achievementStandard, (value) => {
-      this.evidence.achievementStandard = value;
-    });
+    if (this.fieldsEl) {
+      new Setting(this.fieldsEl)
+        .setName("성취기준")
+        .setDesc("성취기준 코드와 내용을 함께 기록할 수 있습니다.")
+        .addTextArea((text) => {
+          this.standardInput = text;
+          text.setValue(this.evidence.achievementStandard).onChange((next) => {
+            this.evidence.achievementStandard = next;
+            this.changed();
+          });
+          text.inputEl.rows = 4;
+        })
+        .addExtraButton((button) =>
+          button.setIcon("search").setTooltip("성취기준 노트에서 검색해 추가").onClick(() => {
+            pickStandardInto(
+              this.app,
+              this.standards,
+              () => this.evidence.achievementStandard,
+              (next) => {
+                this.evidence.achievementStandard = next;
+                this.standardInput?.setValue(next);
+                this.changed();
+              }
+            );
+          })
+        );
+    }
     this.addText("평가요소", "예: 풀이 과정을 식과 말로 설명하기", this.evidence.evaluationElement, (value) => {
       this.evidence.evaluationElement = value;
     });

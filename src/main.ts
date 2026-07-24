@@ -581,7 +581,8 @@ export default class ClassManagementPlugin extends Plugin {
       },
       initialArea,
       this.repository.getCurriculumUnits(),
-      initialUnit
+      initialUnit,
+      this.repository.getAchievementStandards()
     ).open();
   }
 
@@ -784,13 +785,14 @@ export default class ClassManagementPlugin extends Plugin {
 
   openCurriculumUnitModal(existing?: CurriculumUnit): void {
     if (!this.canWriteActiveClass()) return;
+    const standards = this.repository.getAchievementStandards();
     new CurriculumUnitModal(this.app, this.settings, async (unit, current) => {
       if (current) await this.repository.updateCurriculumUnit(current.file, unit);
       else await this.repository.createCurriculumUnit(unit);
       this.activityIndex.invalidate();
       new Notice(`${unit.subject} ${unit.unitName} 단원 설계를 저장했습니다.`);
       await this.refreshViews();
-    }, existing).open();
+    }, existing, standards).open();
   }
 
   openCurriculumLessonModal(
@@ -995,7 +997,8 @@ export default class ClassManagementPlugin extends Plugin {
       this.repository.getCurriculumUnits(),
       this.repository.getCurriculumLessons(),
       initialUnit,
-      initialLesson
+      initialLesson,
+      this.repository.getAchievementStandards()
     ).open();
   }
 
