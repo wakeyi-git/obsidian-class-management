@@ -1201,21 +1201,28 @@
   opacity: 1;
 }
 
-.class-management-calendar-event {
+/* 셀 안 버튼은 테마 기본(button:not(.clickable-icon), 특이도 0,1,1)을 확실히 덮도록
+   뷰 루트로 스코프를 올린다(0,2,0) — 고정 높이·중앙 정렬·기본 배경이 남으면
+   긴 제목이 좌우로 잘리고 점 표식과 겹친다(1.66.1). */
+.class-management-calendar-view .class-management-calendar-event {
   display: flex;
   width: 100%;
+  height: auto;
   min-height: 0;
   margin-bottom: 4px;
-  padding: 4px 6px;
+  padding: 4px 6px 4px 16px;
   overflow: hidden;
   flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
   position: relative;
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
   background: var(--background-secondary);
   box-shadow: none;
-  padding-left: 16px;
   font-size: var(--font-ui-smaller);
+  font-weight: 400;
+  line-height: 1.4;
   text-align: left;
 }
 
@@ -1260,6 +1267,8 @@
 
 .class-management-calendar-event strong,
 .class-management-calendar-event span {
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2244,24 +2253,33 @@
   color: var(--text-accent);
 }
 
-/* 진도 차시 레이어(옵트인) — 기록·일정과 구분되는 보조 정보라 muted 톤 텍스트 행 */
-.class-management-calendar-lesson {
+/* 진도 차시 레이어(옵트인) — 기록·일정과 구분되는 보조 정보라 muted 톤 텍스트 행.
+   테마 버튼 기본값(고정 높이·배경·중앙 정렬·ui-small 폰트)을 덮도록 뷰 루트로 스코프. */
+.class-management-calendar-view .class-management-calendar-lesson {
   display: flex;
   align-items: baseline;
+  justify-content: flex-start;
   gap: 4px;
   width: 100%;
-  padding: 0 2px;
+  height: auto;
+  min-height: 0;
+  margin: 0 0 2px;
+  padding: 1px 2px;
   background: none;
   border: none;
+  border-radius: 4px;
   box-shadow: none;
-  font-size: 0.72em;
+  font-size: var(--font-ui-smaller);
+  font-weight: 400;
+  line-height: 1.4;
   color: var(--text-muted);
   cursor: pointer;
   text-align: left;
 }
 
-.class-management-calendar-lesson:hover,
-.class-management-calendar-lesson:focus-visible {
+.class-management-calendar-view .class-management-calendar-lesson:hover,
+.class-management-calendar-view .class-management-calendar-lesson:focus-visible {
+  background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
 
@@ -2271,6 +2289,15 @@
   text-align: right;
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
+}
+
+/* 학습 내용(둘째 span)은 한 줄 말줄임 — 주간 뷰의 긴 제목 넘침 방지 */
+.class-management-calendar-lesson span:not(.class-management-calendar-lesson-period) {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .class-management-calendar-progress-toggle {
