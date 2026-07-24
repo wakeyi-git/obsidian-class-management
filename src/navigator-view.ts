@@ -93,7 +93,7 @@ export class NavigatorView extends ItemView {
           { type: DASHBOARD_VIEW_TYPE, label: "학급 대시보드", icon: "school", open: () => void plugin.openDashboard() },
           { type: CALENDAR_VIEW_TYPE, label: "학급 캘린더", icon: "calendar-days", open: () => void plugin.openCalendar() },
           { type: ACTIVITY_LIST_VIEW_TYPE, label: "통합 목록", icon: "list", open: () => void plugin.openActivityList() },
-          { type: STUDENT_TIMELINE_VIEW_TYPE, label: "학생별 타임라인", icon: "user", open: () => plugin.openStudentTimelineFlow() },
+          { type: STUDENT_TIMELINE_VIEW_TYPE, label: "학생 타임라인", icon: "user", open: () => plugin.openStudentTimelineFlow() },
           { type: TASK_VIEW_TYPE, label: "GTD 할 일", icon: "list-todo", open: () => void plugin.openTasks() },
           { type: ROUTINE_VIEW_TYPE, label: "루틴 체크리스트", icon: "repeat", open: () => void plugin.openRoutines() }
         ]
@@ -160,7 +160,7 @@ export class NavigatorView extends ItemView {
         { label: "학생 빠른 기록", icon: "pencil", run: () => plugin.openRecordFlow() },
         { label: "출결 체크", icon: "user-check", run: () => plugin.openAttendanceModal() },
         { label: "과제 체크", icon: "clipboard-check", run: () => plugin.openAssignmentFlow() },
-        { label: "학생별 타임라인", icon: "user", run: () => plugin.openStudentTimelineFlow() }
+        { label: "학생 타임라인", icon: "user", run: () => plugin.openStudentTimelineFlow() }
       ],
       [STUDENT_TIMELINE_VIEW_TYPE]: [
         { label: "학생 빠른 기록", icon: "pencil", run: () => plugin.openRecordFlow() },

@@ -74,7 +74,7 @@ export function registerCommands(plugin: ClassManagementPlugin): void {
   });
   plugin.addCommand({
     id: "open-student-timeline",
-    name: "학생별 타임라인 열기",
+    name: "학생 타임라인 열기",
     callback: () => plugin.openStudentTimelineFlow()
   });
   plugin.addCommand({

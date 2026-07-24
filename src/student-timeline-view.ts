@@ -55,7 +55,7 @@ export class StudentTimelineView extends ItemView {
     if (!this.student) {
       const { body } = scaffoldView(this.contentEl, {
         cls: "class-management-timeline-view",
-        title: "학생별 타임라인",
+        title: "학생 타임라인",
         description: "한 학생의 기록·출결·과제를 시간 순서로 모아봅니다."
       });
       body.createEl("p", {

@@ -1029,7 +1029,6 @@
 
 .class-management-timeline {
   position: relative;
-  max-width: 840px;
 }
 
 .class-management-timeline::before {
