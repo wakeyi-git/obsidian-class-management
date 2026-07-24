@@ -10,7 +10,7 @@ import {
   weekdayLabel
 } from "@core/academic-calendar";
 import { isRemovedSubject, plannedHoursBySubject, resolveDay, subjectSlots } from "@core/timetable";
-import { buildAssignedSlotContents, crossCurricularThemes } from "@core/progress";
+import { buildAssignedSlotContents, crossCurricularThemes, reconstructionNotes } from "@core/progress";
 import { wikiLinkText } from "@core/planning";
 import { collectSubjectOptions } from "@core/subject-options";
 import { buildHoursAudit, hoursAdjustmentSuggestions } from "@core/hours-audit";
@@ -58,6 +58,12 @@ const AUDIT_STATUS_LABELS: Record<HoursAuditRow["status"], string> = {
 
 export class CurriculumOpsView extends ItemView {
   private weekAnchor = mondayOf(localDate());
+
+  /** 특정 주로 이동 — 주간학습안내 노트의 "시간표에서 수정" 동선이 사용한다. */
+  setWeek(date: string): void {
+    this.weekAnchor = mondayOf(date);
+    if (this.data) this.render();
+  }
   /** refresh()가 채우는 학기 데이터 캐시 — 주 이동은 이 캐시로 render()만 다시 한다. */
   private data?: {
     calendar: AcademicCalendar | null;
@@ -131,7 +137,38 @@ export class CurriculumOpsView extends ItemView {
     this.renderWeek(container, calendar, timetables, tablesBySemester, standard);
     this.renderHoursAudit(container, calendar, standard, timetables);
     this.renderThemes(container, tablesBySemester);
+    this.renderReconstruction(container, tablesBySemester);
     this.renderActions(container, currentTimetable, currentTables);
+  }
+
+  /** 재구성 기록 — 진도표 비고의 `재구성: 사유` 관례를 모아 보인다 (기록이 있을 때만). */
+  private renderReconstruction(
+    container: HTMLElement,
+    tablesBySemester: Record<string, ProgressTable[]>
+  ): void {
+    const notes = reconstructionNotes(tablesBySemester);
+    if (notes.length === 0) return;
+    const section = container.createDiv({ cls: "class-management-ops-audit" });
+    section.createEl("h3", { text: `재구성 기록 (${notes.length})` });
+    section.createEl("p", {
+      cls: "class-management-ops-hint",
+      text: "차시를 수정·이동·통합한 의도의 기록입니다 — 진도표 비고에 `재구성: 사유`로 적으면 모입니다. 변경 전 원본은 백업 폴더의 자동 스냅숏에 있습니다."
+    });
+    const table = section.createEl("table", { cls: "class-management-ops-audit-table" });
+    const head = table.createEl("thead").createEl("tr");
+    for (const label of ["학기", "과목", "순", "단원·영역", "학습 내용", "재구성 사유"]) {
+      head.createEl("th", { text: label });
+    }
+    const body = table.createEl("tbody");
+    for (const note of notes) {
+      const row = body.createEl("tr");
+      row.createEl("td", { text: note.semester });
+      row.createEl("td", { text: note.subject });
+      row.createEl("td", { text: String(note.order) });
+      row.createEl("td", { text: note.unit });
+      row.createEl("td", { text: note.topic });
+      row.createEl("td", { text: note.memo });
+    }
   }
 
   /** 범교과 주제어 집계 — 진도표 비고의 #태그 기반, 법정 이수(안전 등) 확인용. */

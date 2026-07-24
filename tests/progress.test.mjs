@@ -275,3 +275,26 @@ test("범교과 주제어를 비고 태그에서 집계한다", () => {
   assert.equal(themes[0].tag, "안전", "시수 많은 순 정렬");
   assert.equal(themes.find((theme) => theme.tag === "인성").hours, 1);
 });
+
+test("재구성 기록을 비고의 `재구성:` 관례에서 모은다", async () => {
+  const { reconstructionNotes } = await loadTypeScriptModule("../packages/core/src/progress.ts");
+  const notes = reconstructionNotes({
+    "2학기": [
+      {
+        file, schoolYear: "2026", semester: "2학기", subject: "국어",
+        rows: [
+          { ...makeRow(3, "토론하기", 1), note: "재구성: 독도 프로젝트로 이관하며 2차시→1차시 축약 #안전" },
+          { ...makeRow(1, "일반", 1), note: "메모만" }
+        ]
+      },
+      {
+        file, schoolYear: "2026", semester: "2학기", subject: "과학",
+        rows: [{ ...makeRow(2, "실험", 1), note: "재구성： 순서 이동(3단원 뒤로)" }]
+      }
+    ]
+  });
+  assert.equal(notes.length, 2);
+  assert.equal(notes[0].subject, "과학", "과목명 정렬");
+  assert.equal(notes[1].memo, "독도 프로젝트로 이관하며 2차시→1차시 축약 #안전");
+  assert.equal(notes[0].memo, "순서 이동(3단원 뒤로)", "전각 콜론도 허용");
+});

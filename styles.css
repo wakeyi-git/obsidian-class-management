@@ -2851,6 +2851,27 @@
   user-select: none;
 }
 
+/* ===== 주간학습안내 역편집 배너 ===== */
+/* 스냅숏 노트 상단에서 원본 수정·재생성으로 잇는 동선 — 인쇄물에는 나오지 않는다 */
+.class-management-weekly-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.class-management-weekly-banner-actions {
+  display: flex;
+  gap: 8px;
+}
+
 /* ===== 인쇄·PDF 규격 (cssclasses: class-management-print) ===== */
 /* 주간학습안내·보고서 등 생성 노트가 옵시디언 PDF 내보내기/인쇄에서 A4 1장 규격으로
    나오도록 하는 인쇄 전용 규칙. 화면 표시는 바꾸지 않는다. 색은 잉크 절약을 위해
@@ -2860,8 +2881,9 @@
     font-size: 11pt;
     line-height: 1.45;
   }
-  /* 속성(frontmatter) 블록은 인쇄물에 불필요하다 */
-  .markdown-preview-view.class-management-print .metadata-container {
+  /* 속성(frontmatter) 블록·화면 전용 배너는 인쇄물에 불필요하다 */
+  .markdown-preview-view.class-management-print .metadata-container,
+  .markdown-preview-view.class-management-print .class-management-weekly-banner {
     display: none;
   }
   .markdown-preview-view.class-management-print h1 {

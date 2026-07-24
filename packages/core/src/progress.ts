@@ -488,6 +488,47 @@ export function crossCurricularThemes(
     .sort((a, b) => b.hours - a.hours || a.tag.localeCompare(b.tag));
 }
 
+export interface ReconstructionNote {
+  semester: string;
+  subject: string;
+  order: number;
+  unit: string;
+  topic: string;
+  memo: string;
+}
+
+/**
+ * 재구성 기록 — 차시를 수정·이동·통합했을 때 비고에 `재구성: 사유`로 남긴 의도를 모은다.
+ * (스쿨마스터 재구성현황 대응 — 원 차시 대비는 백업 스냅숏이, 의도는 이 관례가 담당)
+ */
+export function reconstructionNotes(
+  tablesBySemester: Record<string, ProgressTable[]>
+): ReconstructionNote[] {
+  const notes: ReconstructionNote[] = [];
+  for (const [semester, tables] of Object.entries(tablesBySemester)) {
+    for (const table of tables) {
+      for (const row of table.rows) {
+        const memo = row.note.match(/재구성\s*[:：]\s*(.+)/)?.[1]?.trim();
+        if (!memo) continue;
+        notes.push({
+          semester,
+          subject: table.subject,
+          order: row.order,
+          unit: row.unit,
+          topic: row.topic,
+          memo
+        });
+      }
+    }
+  }
+  return notes.sort(
+    (a, b) =>
+      a.semester.localeCompare(b.semester) ||
+      a.subject.localeCompare(b.subject) ||
+      a.order - b.order
+  );
+}
+
 export interface AssignedLessonItem {
   period: number;
   semester: string;

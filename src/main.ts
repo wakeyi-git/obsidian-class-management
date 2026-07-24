@@ -224,6 +224,26 @@ export default class ClassManagementPlugin extends Plugin {
 
     registerCommands(this);
 
+    // 주간학습안내 역편집 동선 — 스냅숏 노트를 직접 고치는 대신 원본(시간표·진도표)으로
+    // 안내하고 한 번에 재생성한다(§5 재생성 가능 산출물 원칙).
+    this.registerMarkdownPostProcessor((element, context) => {
+      const frontmatter = this.app.metadataCache.getCache(context.sourcePath)?.frontmatter;
+      if (frontmatter?.["class-management"] !== "weekly-plan") return;
+      const heading = element.querySelector("h1");
+      if (!heading) return;
+      const weekStart = String(frontmatter.weekStart ?? "");
+      const banner = element.createDiv({ cls: "class-management-weekly-banner" });
+      banner.createEl("span", {
+        text: "이 노트는 학사일정·시간표·진도표에서 생성된 스냅숏입니다. 내용을 바꾸려면 원본을 고치고 다시 생성하세요."
+      });
+      const actions = banner.createDiv({ cls: "class-management-weekly-banner-actions" });
+      const openOps = actions.createEl("button", { text: "시간표에서 수정" });
+      openOps.addEventListener("click", () => void this.openCurriculumOps(weekStart || undefined));
+      const regenerate = actions.createEl("button", { text: "이 주 다시 생성" });
+      regenerate.addEventListener("click", () => void this.generateWeeklyPlan(weekStart || undefined));
+      heading.before(banner);
+    });
+
     this.addSettingTab(new ClassManagementSettingTab(this.app, this));
 
     let refreshTimer: number | undefined;
@@ -688,10 +708,11 @@ export default class ClassManagementPlugin extends Plugin {
     await this.app.workspace.revealLeaf(leaf);
   }
 
-  async openCurriculumOps(): Promise<void> {
+  async openCurriculumOps(weekStart?: string): Promise<void> {
     const existing = this.app.workspace.getLeavesOfType(CURRICULUM_OPS_VIEW_TYPE)[0];
     const leaf = existing ?? this.app.workspace.getLeaf(true);
     if (!existing) await leaf.setViewState({ type: CURRICULUM_OPS_VIEW_TYPE, active: true });
+    if (weekStart && leaf.view instanceof CurriculumOpsView) leaf.view.setWeek(weekStart);
     await this.app.workspace.revealLeaf(leaf);
   }
 
