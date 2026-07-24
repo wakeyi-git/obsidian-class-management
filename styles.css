@@ -1256,7 +1256,12 @@
   background: var(--color-green);
 }
 
-/* 통합(프로젝트)의 표식은 제목의 ✦ 하나만 — 점과 겹으로 달지 않는다 (UIUX §4) */
+/* 통합(프로젝트)의 표식은 제목의 ✦ 하나만 — 점과 겹으로 달지 않는다 (UIUX §4).
+   표식 패딩(16px) 대신 다른 블럭의 표식 시작 위치(6px)에 ✦가 서도록 맞춘다. */
+.class-management-calendar-view .class-management-calendar-event.is-project {
+  padding-left: 6px;
+}
+
 .class-management-calendar-view .class-management-calendar-event.is-project::before {
   content: none;
 }
@@ -2251,22 +2256,22 @@
   color: var(--text-error, var(--color-red));
 }
 
+/* 행사 = 보라 ● — 로드맵과 같은 표식 (UIUX §4). flex 중앙 정렬로 점을 줄과 맞춘다. */
 .class-management-calendar-school-event {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.75em;
   color: var(--text-accent);
 }
 
-/* 행사 = 보라 ● — 로드맵과 같은 표식 (UIUX §4) */
 .class-management-calendar-school-event::before {
   content: "";
-  display: inline-block;
+  flex-shrink: 0;
   width: 6px;
   height: 6px;
-  margin-right: 4px;
   border-radius: 50%;
   background: var(--color-purple);
-  vertical-align: middle;
 }
 
 /* 진도 차시 레이어(옵트인) — 기록·일정과 구분되는 보조 정보라 muted 톤 텍스트 행.
