@@ -793,20 +793,36 @@ export class CurriculumFlows {
     }
   }
 
-  /** 어제 이전의 수업 기록에 recordStatus: raw를 스탬프한다. 한 번 raw가 되면 다시 쓰지 않는다. */
+  /**
+   * 어제 이전의 수업일지·행사 노트에 recordStatus: raw를 스탬프한다(§6 원칙 3).
+   * 한 번 raw가 되면 플러그인은 다시 쓰지 않는다 — 과거는 불변. 교사 편집은 자유.
+   * (R1 결정 2026-07-24: 행사는 경과 후 raw 대상, 과제는 학기 내 계속 갱신되는 확인표라 제외)
+   */
   async stampRawLessonRecords(): Promise<void> {
     try {
       const today = localDate();
-      const targets = this.repository
+      const lessons = this.repository
         .getCurriculumLessons()
         .filter((lesson) => lesson.date && lesson.date < today && !lesson.recordStatus);
-      for (const lesson of targets) {
+      for (const lesson of lessons) {
         await this.app.fileManager.processFrontMatter(lesson.file, (frontmatter) => {
           if (!frontmatter.recordStatus) frontmatter.recordStatus = "raw";
         });
       }
-      if (targets.length > 0) {
-        new Notice(`지난 수업일지 ${targets.length}건을 RAW로 확정했습니다.`);
+      const events = this.repository
+        .getSchoolEventNotes()
+        .filter((event) => event.date && event.date < today && !event.recordStatus);
+      for (const event of events) {
+        await this.app.fileManager.processFrontMatter(event.file, (frontmatter) => {
+          if (!frontmatter.recordStatus) frontmatter.recordStatus = "raw";
+        });
+      }
+      const parts = [
+        lessons.length > 0 ? `수업일지 ${lessons.length}건` : "",
+        events.length > 0 ? `행사 노트 ${events.length}건` : ""
+      ].filter(Boolean);
+      if (parts.length > 0) {
+        new Notice(`지난 ${parts.join("·")}을 RAW로 확정했습니다.`);
       }
     } catch {
       // 스탬프 실패는 다음 로드에서 재시도된다.

@@ -1455,6 +1455,21 @@ export class ClassRepository {
     );
   }
 
+  /** 행사 노트 목록 — 경과 후 raw 확정 판별용 (date·recordStatus만 읽는다). */
+  getSchoolEventNotes(): Array<{ file: TFile; date: string; recordStatus: string }> {
+    return this.markdownFilesIn(this.eventsFolderPath)
+      .map((file) => {
+        const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+        if (frontmatter?.["class-management"] !== "school-event") return null;
+        return {
+          file,
+          date: stringValue(frontmatter.date),
+          recordStatus: stringValue(frontmatter.recordStatus)
+        };
+      })
+      .filter((entry): entry is { file: TFile; date: string; recordStatus: string } => entry !== null);
+  }
+
   /** 학사일정의 모든 행사 노트를 일괄 생성한다(이미 있으면 건너뜀). */
   async ensureAllEventNotes(events: SchoolEvent[]): Promise<string[]> {
     const created: string[] = [];
