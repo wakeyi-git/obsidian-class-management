@@ -1,7 +1,7 @@
 {
   "id": "class-management",
   "name": "Classroom Manager",
-  "version": "1.65.0",
+  "version": "1.66.0",
   "minAppVersion": "1.8.0",
   "description": "Homeroom class management in local Markdown for Korean elementary teachers — roster, attendance, student records, assignments, GTD tasks, timetable, and curriculum planning/integration.",
   "author": "wakeyi",

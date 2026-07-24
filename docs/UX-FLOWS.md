@@ -1,6 +1,6 @@
 # 화면 지도와 작업 흐름
 
-> 마지막 갱신: 2026-07-24 (v1.44.0) · 원칙은 [UIUX-PRINCIPLES.md](UIUX-PRINCIPLES.md), 데이터 모델은 [PRODUCT.md](PRODUCT.md).
+> 마지막 갱신: 2026-07-24 (v1.66.0) · 원칙은 [UIUX-PRINCIPLES.md](UIUX-PRINCIPLES.md), 데이터 모델은 [PRODUCT.md](PRODUCT.md).
 
 ## 1. 레이아웃 — 3분할
 

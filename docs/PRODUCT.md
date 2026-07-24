@@ -1,6 +1,6 @@
 # Classroom Manager 제품 정의서
 
-> 마지막 갱신: 2026-07-24 (v1.50.0) · 이 문서는 구현된 코드를 근거로 작성된 사실 기술이며, 새 기능은 이 문서와 [UIUX-PRINCIPLES.md](UIUX-PRINCIPLES.md)에 맞춰 설계한다.
+> 마지막 갱신: 2026-07-24 (v1.66.0) · 이 문서는 구현된 코드를 근거로 작성된 사실 기술이며, 새 기능은 이 문서와 [UIUX-PRINCIPLES.md](UIUX-PRINCIPLES.md)에 맞춰 설계한다.
 
 ## 1. 한 줄 정의
 
@@ -22,21 +22,22 @@
 
 - 사용자: 담임교사 1인(현재 3학년), 학급 1~n개(프로필 전환)
 - 환경: 옵시디언 데스크톱·모바일(`isDesktopOnly: false`), 데이터는 볼트 `학급운영/` 아래
-- 유지보수: AI 협업 기반 솔로 개발 — 단순함과 테스트(150개)·린트가 유지 가능성의 핵심
+- 유지보수: AI 협업 기반 솔로 개발 — 단순함과 테스트(173개)·린트가 유지 가능성의 핵심
 - **공동 작업자로서의 LLM**: 개발(바이브 코딩)과 운영(계획 수립·초안 작성·데이터 추출) 모두에서 LLM은 명시적 협업자다. 협업 모델은 §9-1, 규약은 [UIUX-PRINCIPLES.md §6-1](UIUX-PRINCIPLES.md).
 
 ## 5. 계층 구조
 
 ```
 packages/core/          순수 도메인 로직 (플랫폼 독립 — obsidian은 import type만, DOM·볼트 IO 토큰도 가드 테스트로 금지)
-  학사일정·시간표·진도·단원·시수감사·주간안내·노트 직렬화/파싱 등 23모듈
+  학사일정·시간표·진도·단원·시수감사·주간안내·할일스캔·NEIS·CoVault다리·노트 직렬화/파싱 등 26모듈
 src/
-  class-repository.ts   볼트 IO 단일 창구 (폴더 규약·노트 생성/파싱·frontmatter·AI 작업 공간·백업/복구/이행)
-  curriculum-flows.ts   교육과정 도메인 플로 (배정·주간안내·성취기준·기록 흐름 — 뷰는 플러그인 위임 경유)
+  class-repository.ts   볼트 IO 단일 창구 파사드 (폴더 규약·노트 생성/파싱·frontmatter·AI 작업 공간)
+  repository/           파사드 하위 IO 모듈 (backups.ts — 백업/복구/휴지통, 분해 1단계)
+  curriculum-flows.ts   교육과정 도메인 플로 (배정·주간안내·성취기준·기록·할 일 수집 — 뷰는 플러그인 위임 경유)
   commands.ts           명령 팔레트 50개 등록
   *-view.ts (16)        중앙·사이드 뷰 (ItemView)
-  *-modal.ts (20)       입력 모달 (+modals.ts)
-  main.ts               조립: 설정·프로필·뷰 레지스트리·open 흐름 (~1,000줄)
+  *-modal.ts (25)       입력 모달 (+modals.ts)
+  main.ts               조립: 설정·프로필·뷰 레지스트리·open 흐름 (~1,200줄)
 ```
 
 의존 방향: `views/modals → main·repository → core`. 역방향 금지(core는 아무것도 모른다).

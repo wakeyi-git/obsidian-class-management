@@ -12,7 +12,7 @@ Classroom Manager 옵시디언 플러그인 저장소. 실사용 볼트는 `~/Do
 ## 코드 경계 (테스트로 강제됨)
 
 - `packages/core` = 순수 도메인 로직. **obsidian은 `import type`만**, 코어 밖 모듈 참조 금지 — `tests/core-purity.test.mjs`가 검사. 플러그인 쪽에서는 `@core/*` 별칭으로 임포트.
-- 볼트 IO는 `src/class-repository.ts`로만. 뷰·모달은 plugin 메서드 호출.
+- 볼트 IO는 `src/class-repository.ts`(와 그 하위 모듈 `src/repository/` — 파사드 경유 전용)로만. 뷰·모달은 plugin 메서드 호출.
 - 노트 직렬화·Bases 정의는 core가 단일 진실 — 볼트 데이터 스크립트도 core를 esbuild로 번들해 같은 함수를 쓴다(손으로 형식 흉내 금지).
 
 ## 검증·릴리스 절차
