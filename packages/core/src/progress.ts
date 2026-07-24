@@ -427,6 +427,67 @@ export function slotContentMap(
   return map;
 }
 
+export interface CrossCurricularTheme {
+  tag: string;
+  lessons: number;
+  hours: number;
+  hoursBySemester: Record<string, number>;
+  subjects: Array<{ subject: string; hours: number }>;
+}
+
+/**
+ * 진도표 비고의 `#주제어` 태그 집계 — 안전·인성 같은 범교과 학습 주제의 이수 확인용.
+ * 열 추가 없이 비고 칸에 태그를 덧붙이는 방식이라 기존 진도표를 이행할 필요가 없다.
+ */
+export function crossCurricularThemes(
+  tablesBySemester: Record<string, ProgressTable[]>
+): CrossCurricularTheme[] {
+  const themes = new Map<
+    string,
+    {
+      lessons: number;
+      hours: number;
+      hoursBySemester: Map<string, number>;
+      subjects: Map<string, number>;
+    }
+  >();
+  for (const [semester, tables] of Object.entries(tablesBySemester)) {
+    for (const table of tables) {
+      for (const row of table.rows) {
+        const tags = new Set(
+          Array.from(row.note.matchAll(/#([0-9A-Za-z가-힣·]+)/g), (match) => match[1] ?? "")
+        );
+        tags.delete("");
+        for (const tag of tags) {
+          const bucket = themes.get(tag) ?? {
+            lessons: 0,
+            hours: 0,
+            hoursBySemester: new Map<string, number>(),
+            subjects: new Map<string, number>()
+          };
+          const hours = row.hours > 0 ? row.hours : 1;
+          bucket.lessons += 1;
+          bucket.hours += hours;
+          bucket.hoursBySemester.set(semester, (bucket.hoursBySemester.get(semester) ?? 0) + hours);
+          bucket.subjects.set(table.subject, (bucket.subjects.get(table.subject) ?? 0) + hours);
+          themes.set(tag, bucket);
+        }
+      }
+    }
+  }
+  return [...themes.entries()]
+    .map(([tag, bucket]) => ({
+      tag,
+      lessons: bucket.lessons,
+      hours: bucket.hours,
+      hoursBySemester: Object.fromEntries(bucket.hoursBySemester),
+      subjects: [...bucket.subjects.entries()]
+        .map(([subject, hours]) => ({ subject, hours }))
+        .sort((a, b) => b.hours - a.hours || a.subject.localeCompare(b.subject))
+    }))
+    .sort((a, b) => b.hours - a.hours || a.tag.localeCompare(b.tag));
+}
+
 export interface AssignedLessonItem {
   period: number;
   semester: string;

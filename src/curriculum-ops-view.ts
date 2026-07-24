@@ -10,7 +10,7 @@ import {
   weekdayLabel
 } from "@core/academic-calendar";
 import { isRemovedSubject, plannedHoursBySubject, resolveDay } from "@core/timetable";
-import { buildAssignedSlotContents } from "@core/progress";
+import { buildAssignedSlotContents, crossCurricularThemes } from "@core/progress";
 import { wikiLinkText } from "@core/planning";
 import { collectSubjectOptions } from "@core/subject-options";
 import { buildHoursAudit } from "@core/hours-audit";
@@ -130,7 +130,46 @@ export class CurriculumOpsView extends ItemView {
     this.renderCalendarSummary(container, calendar);
     this.renderWeek(container, calendar, timetables, tablesBySemester, standard);
     this.renderHoursAudit(container, calendar, standard, timetables);
+    this.renderThemes(container, tablesBySemester);
     this.renderActions(container, currentTimetable, currentTables);
+  }
+
+  /** 범교과 주제어 집계 — 진도표 비고의 #태그 기반, 법정 이수(안전 등) 확인용. */
+  private renderThemes(
+    container: HTMLElement,
+    tablesBySemester: Record<string, ProgressTable[]>
+  ): void {
+    const themes = crossCurricularThemes(tablesBySemester);
+    const section = container.createDiv({ cls: "class-management-ops-audit" });
+    section.createEl("h3", { text: "범교과 주제어" });
+    if (themes.length === 0) {
+      section.createEl("p", {
+        cls: "class-management-ops-hint",
+        text: "진도표 비고 칸에 #안전 같은 태그를 적으면 주제어별 차시·시수가 집계됩니다 (예: #안전 #인성 #환경 — 한 칸에 여러 태그 가능)."
+      });
+      return;
+    }
+    section.createEl("p", {
+      cls: "class-management-ops-hint",
+      text: "진도표 비고의 #태그를 1·2학기 합산으로 집계합니다. 안전교육처럼 이수 시수 보고가 필요한 주제를 확인하세요."
+    });
+    const table = section.createEl("table", { cls: "class-management-ops-audit-table" });
+    const head = table.createEl("thead").createEl("tr");
+    for (const label of ["주제어", "차시", "시수", "1학기", "2학기", "과목별 시수"]) {
+      head.createEl("th", { text: label });
+    }
+    const body = table.createEl("tbody");
+    for (const theme of themes) {
+      const row = body.createEl("tr");
+      row.createEl("td", { text: `#${theme.tag}` });
+      row.createEl("td", { text: String(theme.lessons) });
+      row.createEl("td", { text: String(theme.hours) });
+      row.createEl("td", { text: String(theme.hoursBySemester["1학기"] ?? 0) });
+      row.createEl("td", { text: String(theme.hoursBySemester["2학기"] ?? 0) });
+      row.createEl("td", {
+        text: theme.subjects.map((entry) => `${entry.subject} ${entry.hours}`).join(" · ")
+      });
+    }
   }
 
   private renderSetup(

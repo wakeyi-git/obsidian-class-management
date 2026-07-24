@@ -4,6 +4,7 @@ import { loadTypeScriptModule } from "./helpers.mjs";
 
 const {
   assignProgress,
+  crossCurricularThemes,
   formatAssignedSlots,
   parseProgressImport,
   parseProgressTable,
@@ -243,4 +244,34 @@ test("구분행이 헤더보다 먼저 나와도 이름 기반 열 해석이 유
   );
   assert.equal(parsed.rows.length, 1);
   assert.equal(parsed.rows[0].note, "메모"); // 구분행을 헤더로 오인하면 구버전 배치가 되어 비고가 어긋난다
+});
+
+test("범교과 주제어를 비고 태그에서 집계한다", () => {
+  const table = (semester, subject, rows) => ({
+    file, schoolYear: "2026", semester, subject, rows
+  });
+  const themes = crossCurricularThemes({
+    "1학기": [
+      table("1학기", "체육", [
+        { ...makeRow(1, "안전하게 놀기", 2), note: "#안전" },
+        { ...makeRow(2, "표현", 1), note: "" }
+      ])
+    ],
+    "2학기": [
+      table("2학기", "국어", [
+        { ...makeRow(1, "토론", 1), note: "#인성 #안전 메모" }
+      ]),
+      table("2학기", "창체(자율)", [
+        { ...makeRow(2, "소방 대피 훈련", 1), note: "#안전 #안전" }
+      ])
+    ]
+  });
+  const safety = themes.find((theme) => theme.tag === "안전");
+  assert.equal(safety.lessons, 3, "같은 칸의 중복 태그는 1차시로 센다");
+  assert.equal(safety.hours, 4);
+  assert.equal(safety.hoursBySemester["1학기"], 2);
+  assert.equal(safety.hoursBySemester["2학기"], 2);
+  assert.equal(safety.subjects[0].subject, "체육");
+  assert.equal(themes[0].tag, "안전", "시수 많은 순 정렬");
+  assert.equal(themes.find((theme) => theme.tag === "인성").hours, 1);
 });
