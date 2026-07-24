@@ -938,7 +938,6 @@
   min-width: 160px;
 }
 
-.class-management-activity-view,
 .class-management-filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -1276,9 +1275,6 @@
   font-size: var(--font-ui-smaller);
 }
 
-.class-management-task-view,
-.class-management-routine-view,
-.class-management-report-view,
 .class-management-task-routine {
   display: flex;
   align-items: center;
@@ -1913,20 +1909,6 @@
 
   .class-management-assignment-modal-container {
     width: calc(100vw - 20px);
-  }
-
-  .class-management-activity-view,
-  .class-management-timeline-view,
-  .class-management-task-view,
-  .class-management-routine-view,
-  .class-management-report-view,
-  .class-management-data-view,
-  .class-management-curriculum-view {
-    padding: 12px;
-  }
-
-  .class-management-maintenance-view {
-    padding: 12px;
   }
 
   .class-management-notice-modal {
